@@ -37,6 +37,29 @@ Pet owner visits the page
 | `docs/RESPONSE_TEMPLATES.md` | Copy-paste replies for the six situations that cover nearly every question. |
 | `docs/SOLO_WORKFLOW.md` | Setup steps and the 15–30 min/day routine for running this alone. |
 
+## Launch checklist — getting the app into customers' hands
+
+There is no separate customer download: **the website is the customer's app.**
+Publishing it once puts it on every customer's phone who opens your link.
+
+1. **Merge the pull request** into `main`.
+2. **Set your help-line email:** edit the `HELPLINE_EMAIL` line near the bottom
+   of `index.html` (questions are sent to this address).
+3. **Turn on GitHub Pages:** repo **Settings → Pages → Deploy from a branch →
+   `main`, `/ (root)` → Save**. A couple of minutes later your app is live at:
+
+   **https://jmal9767.github.io/Vet-Assistant-Help-Line/**
+
+4. **Share that link** — text it, put it on a business card, post it. Anyone who
+   opens it is using the customer side of the app, and the page itself shows
+   them how to add it to their home screen so it behaves like an installed app.
+   `docs/share-qr.png` is a ready-made QR code pointing at the URL — print it
+   or show it on your phone and customers scan straight into the app.
+5. **Your side:** open `https://jmal9767.github.io/Vet-Assistant-Help-Line/operator.html`
+   on your phone and add it to your home screen. Customer questions arrive in
+   your help-line email inbox; you answer them from there using the toolkit's
+   tap-to-copy templates.
+
 ## Using it as an app — without the App Store
 
 Once GitHub Pages is enabled, both pages work as installable web apps:

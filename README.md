@@ -28,12 +28,30 @@ Pet owner visits the page
 
 | File | Purpose |
 |---|---|
-| `index.html` | The public website: emergency triage, scope explanation, intake form. No dependencies, hostable free on GitHub Pages. |
-| `VetAssistantHelpLine.xcodeproj` | Xcode project for the iOS app (requires Xcode 16+). |
+| `index.html` | The public website: emergency triage, scope explanation, intake form. No dependencies, hostable free on GitHub Pages. Installable to a phone's home screen as an app (PWA) — no App Store needed. |
+| `operator.html` | **Your** page: tap-to-copy reply templates, pre-send scope checklist, one-tap emergency numbers. Add it to your own phone's home screen. |
+| `manifest.webmanifest`, `sw.js`, `icons/` | PWA plumbing: app name/icon for "Add to Home Screen" and offline caching. |
+| `VetAssistantHelpLine.xcodeproj` | Xcode project for the native iOS app (requires Xcode 16+). |
 | `VetAssistantHelpLine/` | SwiftUI source for the iOS app — same three pieces as the site: Emergency, Ask, About tabs. |
 | `docs/LEGAL_SCOPE.md` | What a veterinary assistant can and can't say — the guardrails for every reply. |
 | `docs/RESPONSE_TEMPLATES.md` | Copy-paste replies for the six situations that cover nearly every question. |
 | `docs/SOLO_WORKFLOW.md` | Setup steps and the 15–30 min/day routine for running this alone. |
+
+## Using it as an app — without the App Store
+
+Once GitHub Pages is enabled, both pages work as installable web apps:
+
+- **Clients:** they open the site in Safari (iPhone) or Chrome (Android) and tap
+  **Share → Add to Home Screen**. They get a real app icon that opens
+  full-screen — no App Store, no download, always the latest version.
+- **You:** open `…/operator.html` on your phone and add *that* to your home
+  screen. It's your pocket toolkit: reply templates you can copy with one tap,
+  the pre-send scope checklist, tap-to-call poison control, and the red-flag
+  list for triage.
+
+The `operator.html` page isn't linked from the public site, but it is publicly
+reachable if someone knows the URL — it contains nothing sensitive (the same
+templates are in this public repo).
 
 ## iOS app
 
@@ -51,10 +69,15 @@ locator, tap-to-call poison control), an **Ask** tab (structured form that opens
 a pre-filled email — no backend), and an **About** tab (scope + disclaimer).
 
 > **Practical note for a solo operator:** the website is live the moment you
-> enable GitHub Pages and costs nothing. The iOS app additionally requires an
-> Apple Developer membership ($99/yr) and App Store review to distribute. A
-> reasonable path is to launch with the website first and ship the app when
-> you're ready.
+> enable GitHub Pages and costs nothing, and clients can install it to their
+> home screens with no App Store involved (see above). Distributing this native
+> app to *clients* requires an Apple Developer membership ($99/yr) and App Store
+> review — but you can run it on **your own iPhone for free**: open the project
+> in Xcode, sign in with your Apple ID (Signing & Capabilities → your personal
+> team), plug in your phone, and press Run. Free personal signing expires after
+> 7 days, after which you just press Run again — fine for personal use, not for
+> handing to clients. A reasonable path: launch with the website/PWA now, ship
+> the App Store app only if you later want the storefront presence.
 
 ## Getting started
 

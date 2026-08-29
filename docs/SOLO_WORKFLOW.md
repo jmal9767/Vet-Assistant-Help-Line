@@ -17,7 +17,12 @@ with a 24–48 hour promise means you answer on your schedule, with time to chec
    `https://<username>.github.io/Vet-Assistant-Help-Line/`.
 4. **In the help-line inbox, create three labels/folders:** `To Answer`,
    `Answered`, `Referred to Vet`.
-5. **Read `docs/LEGAL_SCOPE.md` fully once**, and skim it again monthly.
+5. **Put the toolkit on your phone:** open `…/operator.html` on your phone and
+   use Share → Add to Home Screen. That gives you one-tap access to the reply
+   templates (with copy buttons), the pre-send scope checklist, and emergency
+   numbers wherever you are. Tell clients they can do the same with the main
+   page to get the "app" without any App Store.
+6. **Read `docs/LEGAL_SCOPE.md` fully once**, and skim it again monthly.
 
 ## Daily routine (15–30 minutes, once or twice a day)
 

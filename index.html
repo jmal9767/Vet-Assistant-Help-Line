@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vet Assistant Help Line</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-512.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="theme-color" content="#0e7c7b">
 <style>
   :root {
     --teal: #0e7c7b;
@@ -228,6 +232,10 @@
       "?subject=" + encodeURIComponent(subject) +
       "&body=" + encodeURIComponent(body);
   });
+
+  if ("serviceWorker" in navigator && window.location.protocol === "https:") {
+    navigator.serviceWorker.register("sw.js");
+  }
 </script>
 
 </body>

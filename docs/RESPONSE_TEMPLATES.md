@@ -64,7 +64,7 @@ template, re-read `LEGAL_SCOPE.md` before writing a custom reply.
 >
 > The good news is this is usually a quick phone call: your vet's office can
 > often answer dosing questions over the phone for established patients, and
-> ASPCA Poison Control ((888) 426-4435) can advise if [pet's name] already
+> ASPCA Poison Control at (888) 426-4435 can advise if [pet's name] already
 > ingested something.
 >
 > *[Disclaimer]*

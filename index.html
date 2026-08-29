@@ -99,7 +99,7 @@
 <body>
 
 <header>
-  <h1>🐾 Vet Assistant Help Line</h1>
+  <h1><span aria-hidden="true">🐾</span> Vet Assistant Help Line</h1>
   <p>Free general pet-care guidance from a veterinary assistant — answered within 24–48 hours.</p>
 </header>
 
@@ -107,7 +107,7 @@
 
   <!-- EMERGENCY TRIAGE: always first, before the form -->
   <section class="card emergency">
-    <h2>⚠️ Is this an emergency? Don't wait for me.</h2>
+    <h2><span aria-hidden="true">⚠️</span> Is this an emergency? Don't wait for me.</h2>
     <p><strong>Contact an emergency veterinarian immediately</strong> if your pet has any of these:</p>
     <ul>
       <li>Difficulty breathing</li>
@@ -124,7 +124,7 @@
       <li>Snake or spider bite</li>
     </ul>
     <div class="actions">
-      <a class="btn btn-red" href="https://vetlocator.com/" target="_blank" rel="noopener">Find an Emergency Vet</a>
+      <a class="btn btn-red" href="https://vetlocator.com/" target="_blank" rel="noopener noreferrer">Find an Emergency Vet</a>
       <a class="btn btn-red" href="tel:8884264435">Poison Control: (888) 426-4435</a>
     </div>
     <p class="note">ASPCA Animal Poison Control is available 24/7 (a consultation fee may apply).</p>
@@ -205,6 +205,10 @@
 
   document.getElementById("intakeForm").addEventListener("submit", function (e) {
     e.preventDefault();
+    if (HELPLINE_EMAIL.indexOf("REPLACE_WITH") === 0) {
+      alert("This help line isn't fully set up yet — the destination email address hasn't been configured. Please check back soon.");
+      return;
+    }
     var name = document.getElementById("name").value.trim();
     var species = document.getElementById("species").value;
     var age = document.getElementById("age").value.trim() || "Not given";

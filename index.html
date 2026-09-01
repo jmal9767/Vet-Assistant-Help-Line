@@ -197,6 +197,15 @@
     </form>
   </section>
 
+  <!-- SHARE -->
+  <section class="card" style="text-align:center;">
+    <h2><span aria-hidden="true">💚</span> Know someone with pet questions?</h2>
+    <p>Let them scan this code — it brings them straight here. No app, no sign-up.</p>
+    <img src="docs/share-qr.png" alt="QR code linking to this help line" style="width:180px;height:180px;border:1px solid var(--border);border-radius:12px;">
+    <p><button type="button" class="btn btn-teal" id="shareBtn">Share this help line</button></p>
+    <p class="note"><a href="flyer.html">Printable flyer version</a> for bulletin boards and handouts.</p>
+  </section>
+
   <!-- INSTALL AS APP -->
   <section class="card">
     <h2><span aria-hidden="true">📱</span> Keep this app on your phone</h2>
@@ -242,6 +251,23 @@
     window.location.href = "mailto:" + HELPLINE_EMAIL +
       "?subject=" + encodeURIComponent(subject) +
       "&body=" + encodeURIComponent(body);
+  });
+
+  document.getElementById("shareBtn").addEventListener("click", function () {
+    var shareData = {
+      title: "Vet Assistant Help Line",
+      text: "Free general pet-care guidance from a veterinary assistant — ask a question right from your phone.",
+      url: window.location.href.split("#")[0]
+    };
+    if (navigator.share) {
+      navigator.share(shareData).catch(function () {});
+    } else if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(shareData.url).then(function () {
+        var btn = document.getElementById("shareBtn");
+        btn.textContent = "Link copied ✓";
+        setTimeout(function () { btn.textContent = "Share this help line"; }, 1500);
+      });
+    }
   });
 
   if ("serviceWorker" in navigator && window.location.protocol === "https:") {

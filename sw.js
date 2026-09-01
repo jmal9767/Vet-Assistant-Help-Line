@@ -1,11 +1,13 @@
-const CACHE = "vahl-v1";
+const CACHE = "vahl-v2";
 const ASSETS = [
   "./",
   "./index.html",
   "./operator.html",
+  "./flyer.html",
   "./manifest.webmanifest",
   "./icons/icon-512.png",
-  "./icons/icon-180.png"
+  "./icons/icon-180.png",
+  "./docs/share-qr.png"
 ];
 
 self.addEventListener("install", (e) => {

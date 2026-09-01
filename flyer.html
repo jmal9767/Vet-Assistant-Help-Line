@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Printable Flyer — Vet Assistant Help Line</title>
+<link rel="icon" type="image/png" href="icons/icon-512.png">
+<meta name="theme-color" content="#0e7c7b">
+<style>
+  :root {
+    --teal: #0e7c7b;
+    --teal-dark: #095b5a;
+    --red: #c0392b;
+    --ink: #22303a;
+    --muted: #5c6b78;
+    --border: #dde5e8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: #e8eeee;
+    color: var(--ink);
+  }
+  .toolbar {
+    text-align: center;
+    padding: 1rem;
+  }
+  .toolbar button {
+    background: var(--teal);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: .7rem 1.4rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .toolbar p { color: var(--muted); font-size: .9rem; margin: .5rem 0 0; }
+  .sheet {
+    background: #fff;
+    width: 8.5in;
+    min-height: 11in;
+    max-width: 100%;
+    margin: 0 auto 2rem;
+    padding: .8in .9in;
+    box-shadow: 0 2px 12px rgba(0,0,0,.15);
+    display: flex;
+    flex-direction: column;
+  }
+  .flyer-header {
+    text-align: center;
+    border-bottom: 4px solid var(--teal);
+    padding-bottom: .3in;
+  }
+  .flyer-header img.logo { width: 1.1in; height: 1.1in; border-radius: 22%; }
+  .flyer-header h1 {
+    margin: .15in 0 .05in;
+    font-size: 30pt;
+    color: var(--teal-dark);
+    letter-spacing: .5px;
+  }
+  .flyer-header p.tagline {
+    margin: 0;
+    font-size: 14pt;
+    color: var(--ink);
+  }
+  .lead {
+    font-size: 12pt;
+    line-height: 1.55;
+    margin: .25in 0 .1in;
+    text-align: center;
+  }
+  .columns {
+    display: flex;
+    gap: .4in;
+    margin: .15in 0;
+  }
+  .col { flex: 1; }
+  .col h2 {
+    font-size: 13pt;
+    color: var(--teal-dark);
+    margin: 0 0 .08in;
+    border-bottom: 1.5px solid var(--border);
+    padding-bottom: .04in;
+  }
+  .col ul {
+    margin: 0;
+    padding-left: .22in;
+    font-size: 10.5pt;
+    line-height: 1.5;
+  }
+  .qr-block {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .45in;
+    margin: .2in 0;
+    padding: .25in;
+    border: 3px solid var(--teal);
+    border-radius: 14px;
+  }
+  .qr-block img { width: 2.1in; height: 2.1in; }
+  .qr-text h2 {
+    margin: 0 0 .06in;
+    font-size: 17pt;
+    color: var(--teal-dark);
+  }
+  .qr-text p { margin: 0 0 .06in; font-size: 11.5pt; line-height: 1.45; }
+  .qr-text .url {
+    font-size: 10.5pt;
+    color: var(--muted);
+    word-break: break-all;
+  }
+  .emergency-note {
+    background: #fdecea;
+    border-left: 5px solid var(--red);
+    border-radius: 6px;
+    padding: .12in .18in;
+    font-size: 10.5pt;
+    line-height: 1.45;
+    margin: .05in 0;
+  }
+  .emergency-note strong { color: var(--red); }
+  .flyer-footer {
+    margin-top: auto;
+    padding-top: .15in;
+    border-top: 1.5px solid var(--border);
+    font-size: 8.5pt;
+    color: var(--muted);
+    line-height: 1.4;
+    text-align: center;
+  }
+  @media print {
+    body { background: #fff; }
+    .toolbar { display: none; }
+    .sheet { box-shadow: none; margin: 0; width: auto; min-height: auto; padding: .3in .4in; }
+  }
+  @page { size: letter portrait; margin: .4in; }
+  @media (max-width: 700px) {
+    .sheet { width: 100%; min-height: auto; padding: 1.25rem; }
+    .columns { flex-direction: column; gap: .8rem; }
+    .qr-block { flex-direction: column; gap: 1rem; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <button onclick="window.print()">🖨️ Print this flyer</button>
+  <p>Prints on standard letter paper. Your printer dialog will open.</p>
+</div>
+
+<div class="sheet">
+  <div class="flyer-header">
+    <img class="logo" src="icons/icon-180.png" alt="">
+    <h1>Vet Assistant Help Line</h1>
+    <p class="tagline">Free general pet-care guidance from a veterinary assistant</p>
+  </div>
+
+  <p class="lead">
+    Got a question about your dog, cat, bird, or other pet? Ask it in under a minute —
+    right from your phone, <strong>no app to download, nothing to sign up for</strong> —
+    and get a personal, thoughtful answer within 24–48 hours.
+  </p>
+
+  <div class="qr-block">
+    <img src="docs/share-qr.png" alt="QR code linking to the Vet Assistant Help Line">
+    <div class="qr-text">
+      <h2>Scan to ask your question</h2>
+      <p>Point your phone's camera at the code and tap the link that pops up. It opens right in your browser.</p>
+      <p class="url">Or visit: <strong>jmal9767.github.io/Vet-Assistant-Help-Line</strong></p>
+    </div>
+  </div>
+
+  <div class="columns">
+    <div class="col">
+      <h2>Ask me about</h2>
+      <ul>
+        <li>Feeding, grooming &amp; everyday pet care</li>
+        <li>Behavior and training basics</li>
+        <li>Getting ready for a vet visit</li>
+        <li>New-pet questions</li>
+        <li>Whether something needs a vet's attention</li>
+      </ul>
+    </div>
+    <div class="col">
+      <h2>Good to know</h2>
+      <ul>
+        <li>Completely free</li>
+        <li>Answered personally within 24–48 hours</li>
+        <li>Works on any phone — no app needed</li>
+        <li>Run by a veterinary assistant (not a veterinarian — I'll point you to a vet whenever your pet needs one)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="emergency-note">
+    <strong>Pet emergency?</strong> Don't wait for a reply — contact an emergency veterinary clinic right away.
+    Suspected poisoning: ASPCA Animal Poison Control, <strong>(888) 426-4435</strong> (24/7).
+  </div>
+
+  <div class="flyer-footer">
+    This service provides general educational pet-care information only — not veterinary medical advice, diagnosis,
+    or treatment — and is not a substitute for care from a licensed veterinarian.
+  </div>
+</div>
+
+</body>
+</html>

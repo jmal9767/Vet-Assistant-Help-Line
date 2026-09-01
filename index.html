@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vet Assistant Help Line</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-512.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="theme-color" content="#0e7c7b">
+<style>
+  :root {
+    --teal: #0e7c7b;
+    --teal-dark: #095b5a;
+    --red: #c0392b;
+    --red-bg: #fdecea;
+    --ink: #22303a;
+    --muted: #5c6b78;
+    --bg: #f6f9f9;
+    --card: #ffffff;
+    --border: #dde5e8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.6;
+  }
+  header {
+    background: var(--teal);
+    color: #fff;
+    padding: 2rem 1rem;
+    text-align: center;
+  }
+  header h1 { margin: 0 0 .25rem; font-size: 1.75rem; }
+  header p { margin: 0; opacity: .9; }
+  main { max-width: 720px; margin: 0 auto; padding: 1rem; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    margin: 1.25rem 0;
+  }
+  .emergency {
+    border: 2px solid var(--red);
+    background: var(--red-bg);
+  }
+  .emergency h2 { color: var(--red); margin-top: 0; }
+  .emergency ul { columns: 2; gap: 2rem; padding-left: 1.2rem; margin: .75rem 0; }
+  .emergency li { margin-bottom: .35rem; break-inside: avoid; }
+  @media (max-width: 540px) { .emergency ul { columns: 1; } }
+  .emergency .actions { margin-top: .75rem; }
+  .btn {
+    display: inline-block;
+    padding: .65rem 1.1rem;
+    border-radius: 8px;
+    border: none;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .btn-red { background: var(--red); color: #fff; margin-right: .5rem; }
+  .btn-teal { background: var(--teal); color: #fff; }
+  .btn-teal:hover { background: var(--teal-dark); }
+  label { display: block; font-weight: 600; margin-top: 1rem; margin-bottom: .25rem; }
+  input[type="text"], input[type="email"], select, textarea {
+    width: 100%;
+    padding: .6rem .7rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 1rem;
+    font-family: inherit;
+    background: #fff;
+    color: var(--ink);
+  }
+  textarea { min-height: 120px; resize: vertical; }
+  .checkbox-row {
+    display: flex;
+    gap: .6rem;
+    align-items: flex-start;
+    margin-top: 1rem;
+    font-size: .95rem;
+  }
+  .checkbox-row input { margin-top: .3rem; }
+  .help-list { padding-left: 1.2rem; }
+  .help-list li { margin-bottom: .3rem; }
+  .cannot { color: var(--muted); font-size: .95rem; }
+  footer {
+    max-width: 720px;
+    margin: 2rem auto;
+    padding: 0 1rem 2rem;
+    font-size: .85rem;
+    color: var(--muted);
+    text-align: center;
+  }
+  .note { font-size: .9rem; color: var(--muted); margin-top: .5rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span aria-hidden="true">🐾</span> Vet Assistant Help Line</h1>
+  <p>Free general pet-care guidance from a veterinary assistant — answered within 24–48 hours.</p>
+</header>
+
+<main>
+
+  <!-- EMERGENCY TRIAGE: always first, before the form -->
+  <section class="card emergency">
+    <h2><span aria-hidden="true">⚠️</span> Is this an emergency? Don't wait for me.</h2>
+    <p><strong>Contact an emergency veterinarian immediately</strong> if your pet has any of these:</p>
+    <ul>
+      <li>Difficulty breathing</li>
+      <li>Seizures or collapse</li>
+      <li>Suspected poisoning</li>
+      <li>Hit by a car / major trauma</li>
+      <li>Bloated or swollen belly, unproductive retching</li>
+      <li>Unable to urinate (especially male cats)</li>
+      <li>Pale or blue gums</li>
+      <li>Uncontrolled bleeding</li>
+      <li>Heatstroke symptoms</li>
+      <li>Eye injury</li>
+      <li>Prolonged labor / birthing trouble</li>
+      <li>Snake or spider bite</li>
+    </ul>
+    <div class="actions">
+      <a class="btn btn-red" href="https://vetlocator.com/" target="_blank" rel="noopener noreferrer">Find an Emergency Vet</a>
+      <a class="btn btn-red" href="tel:8884264435">Poison Control: (888) 426-4435</a>
+    </div>
+    <p class="note">ASPCA Animal Poison Control is available 24/7 (a consultation fee may apply).</p>
+  </section>
+
+  <!-- WHAT I CAN HELP WITH -->
+  <section class="card">
+    <h2>What I can help with</h2>
+    <ul class="help-list">
+      <li>General pet care, feeding, and husbandry questions</li>
+      <li>Grooming, enrichment, and basic behavior tips</li>
+      <li>Preparing for vet visits &amp; what questions to ask your vet</li>
+      <li>Understanding routine care (vaccination schedules, parasite prevention basics)</li>
+      <li>Helping you decide <em>whether</em> something needs a veterinarian's attention</li>
+      <li>Pointing you to trusted resources and local services</li>
+    </ul>
+    <p class="cannot"><strong>What I can't do:</strong> I'm a veterinary assistant, not a licensed veterinarian. I cannot diagnose conditions, prescribe or recommend medication doses, or replace an exam by your vet. When in doubt, I'll always point you to a licensed veterinarian.</p>
+  </section>
+
+  <!-- INTAKE FORM -->
+  <section class="card">
+    <h2>Ask your question</h2>
+    <p class="note">This form opens a pre-filled email in your mail app — nothing is stored on this page.</p>
+    <form id="intakeForm">
+      <label for="name">Your name</label>
+      <input type="text" id="name" required autocomplete="name">
+
+      <label for="species">Pet species</label>
+      <select id="species" required>
+        <option value="">Select…</option>
+        <option>Dog</option>
+        <option>Cat</option>
+        <option>Bird</option>
+        <option>Rabbit</option>
+        <option>Reptile</option>
+        <option>Small mammal (hamster, guinea pig, etc.)</option>
+        <option>Other</option>
+      </select>
+
+      <label for="age">Pet's age (approximate)</label>
+      <input type="text" id="age" placeholder="e.g., 3 years">
+
+      <label for="category">Question category</label>
+      <select id="category" required>
+        <option value="">Select…</option>
+        <option>Feeding &amp; nutrition (general)</option>
+        <option>Grooming &amp; general care</option>
+        <option>Behavior &amp; training basics</option>
+        <option>Should I see a vet about this?</option>
+        <option>Preparing for a vet visit</option>
+        <option>New pet questions</option>
+        <option>Other</option>
+      </select>
+
+      <label for="question">Your question</label>
+      <textarea id="question" required placeholder="Describe what's going on. Include how long it's been happening and anything you've already tried."></textarea>
+
+      <div class="checkbox-row">
+        <input type="checkbox" id="ack" required>
+        <label for="ack" style="font-weight:400; margin:0;">I understand this help line provides <strong>general educational information only</strong>, not veterinary medical advice, diagnosis, or treatment, and is not a substitute for care from a licensed veterinarian. For emergencies I will contact an emergency vet directly.</label>
+      </div>
+
+      <p style="margin-top:1.25rem;">
+        <button type="submit" class="btn btn-teal">Send my question</button>
+      </p>
+    </form>
+  </section>
+
+  <!-- INSTALL AS APP -->
+  <section class="card">
+    <h2><span aria-hidden="true">📱</span> Keep this app on your phone</h2>
+    <p>Add this page to your home screen and it works just like an app — free, no App Store needed:</p>
+    <ul class="help-list">
+      <li><strong>iPhone / iPad:</strong> tap the Share button <span aria-hidden="true">(⬆️ in a box)</span> in Safari, then <strong>Add to Home Screen</strong>.</li>
+      <li><strong>Android:</strong> tap the menu <span aria-hidden="true">(⋮)</span> in Chrome, then <strong>Add to Home screen</strong> (or <strong>Install app</strong>).</li>
+    </ul>
+    <p class="note">You'll get a paw-print icon that opens this help line full-screen, ready whenever you have a pet question.</p>
+  </section>
+
+</main>
+
+<footer>
+  <p><strong>Disclaimer:</strong> This service is run by a veterinary assistant and provides general pet-care education only. It does not create a veterinarian–client–patient relationship, and no diagnosis, prognosis, treatment, or prescription advice is offered. Always consult a licensed veterinarian for medical concerns about your pet. If your pet is in distress, contact an emergency veterinary clinic immediately.</p>
+</footer>
+
+<script>
+  // ⚙️ SETUP: replace this with the email address you want questions sent to.
+  var HELPLINE_EMAIL = "REPLACE_WITH_YOUR_HELPLINE_EMAIL@example.com";
+
+  document.getElementById("intakeForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    if (HELPLINE_EMAIL.indexOf("REPLACE_WITH") === 0) {
+      alert("This help line isn't fully set up yet — the destination email address hasn't been configured. Please check back soon.");
+      return;
+    }
+    var name = document.getElementById("name").value.trim();
+    var species = document.getElementById("species").value;
+    var age = document.getElementById("age").value.trim() || "Not given";
+    var category = document.getElementById("category").value;
+    var question = document.getElementById("question").value.trim();
+
+    var subject = "[Help Line] " + category + " — " + species;
+    var body =
+      "Name: " + name + "\n" +
+      "Species: " + species + "\n" +
+      "Age: " + age + "\n" +
+      "Category: " + category + "\n" +
+      "Acknowledged educational-only disclaimer: Yes\n" +
+      "\nQuestion:\n" + question + "\n";
+
+    window.location.href = "mailto:" + HELPLINE_EMAIL +
+      "?subject=" + encodeURIComponent(subject) +
+      "&body=" + encodeURIComponent(body);
+  });
+
+  if ("serviceWorker" in navigator && window.location.protocol === "https:") {
+    navigator.serviceWorker.register("sw.js");
+  }
+</script>
+
+</body>
+</html>

@@ -29,6 +29,7 @@ Pet owner visits the page
 | File | Purpose |
 |---|---|
 | `index.html` | The public website: emergency triage, scope explanation, cost transparency ("What does it cost?"), and a detailed intake form with per-category guidance. No dependencies, hostable free on GitHub Pages. Installable to a phone's home screen as an app (PWA) — no App Store needed. |
+| `welcome.html` | The landing page the share-card QR code points to: services & pricing (Quick — Free, Detailed — $10, 30-min consult — $25), how payment works, and a link into the question form. |
 | `operator.html` | **Your** page: tap-to-copy reply templates, pre-send scope checklist, one-tap emergency numbers. Add it to your own phone's home screen. |
 | `manifest.webmanifest`, `sw.js`, `icons/` | PWA plumbing: app name/icon for "Add to Home Screen" and offline caching. |
 | `VetAssistantHelpLine.xcodeproj` | Xcode project for the native iOS app (requires Xcode 16+). |

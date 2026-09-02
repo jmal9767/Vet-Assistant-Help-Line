@@ -19,6 +19,7 @@
     --bg: #f6f9f9;
     --card: #ffffff;
     --border: #dde5e8;
+    color-scheme: light; /* fixed light palette — keeps text readable even in dark mode */
   }
   * { box-sizing: border-box; }
   body {
@@ -131,7 +132,7 @@
 
 <header>
   <h1><span aria-hidden="true">🐾</span> Vet Assistant Help Line</h1>
-  <p>Free general pet-care guidance from a veterinary assistant — answered within 24–48 hours.</p>
+  <p>General pet-care guidance from a veterinary assistant — quick questions are always free, answered within 24–48 hours.</p>
 </header>
 
 <main>
@@ -177,10 +178,33 @@
 
   <!-- CHARGES / COSTS -->
   <section class="card">
-    <h2><span aria-hidden="true">💵</span> What does it cost?</h2>
-    <p><span class="free-badge">This help line: $0 — always free</span></p>
-    <p>There are <strong>no charges, ever</strong>, for asking questions here. No sign-up fees, no per-question fees, no subscriptions, and no tips. This is a free educational service run by one veterinary assistant.</p>
-    <p class="note"><strong>A note on safety:</strong> I will never email you asking for payment, card numbers, gift cards, or payment-app transfers. If you receive a message like that claiming to be from this help line, it is not from me — please delete it.</p>
+    <h2><span aria-hidden="true">💵</span> Services &amp; pricing</h2>
+    <p><span class="free-badge">Quick questions: always free</span></p>
+    <p>Simple, upfront pricing — you'll always know the cost before anything starts, and there are never surprise charges.</p>
+    <table class="cost-table">
+      <thead>
+        <tr><th scope="col">Service</th><th scope="col">What's included</th><th scope="col">Price</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Quick question</strong></td>
+          <td>One email reply within 24–48 hours: a clear, plain-English answer to one general pet-care question, with links to trusted resources when helpful.</td>
+          <td><strong>Free</strong></td>
+        </tr>
+        <tr>
+          <td><strong>Detailed question</strong></td>
+          <td>An in-depth written reply with step-by-step suggestions and curated resources for your situation, plus one follow-up email within a week.</td>
+          <td><strong>$10</strong></td>
+        </tr>
+        <tr>
+          <td><strong>30-minute consult</strong></td>
+          <td>A scheduled phone or video call for general care guidance — routines, new-pet setup, vet-visit prep — with a short email recap afterward.</td>
+          <td><strong>$25</strong></td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="note"><strong>How payment works:</strong> send your question first — there's nothing to pay up front. If it fits a paid tier, I'll confirm the price with you by email <em>before</em> doing anything billable, and we'll arrange payment by the method that suits you. If your question is really one for a licensed veterinarian, I'll tell you that for free and point you in the right direction.</p>
+    <p class="note"><strong>A note on safety:</strong> I will never ask for gift cards, wire transfers, or card numbers by email, and I never charge before we've agreed on a price. If you receive a message like that claiming to be from this help line, it is not from me — please delete it.</p>
 
     <h3>Outside services that <em>do</em> charge</h3>
     <p>Some of the places I may refer you to are separate businesses with their own fees. So you're never surprised, here's what people typically encounter (actual prices vary a lot by region and clinic — always confirm when you call):</p>
@@ -275,6 +299,16 @@
       </div>
 
       <h3>Your question</h3>
+      <label for="tier">Service you'd like</label>
+      <select id="tier" required>
+        <option value="">Select…</option>
+        <option>Quick question — Free (one email reply)</option>
+        <option>Detailed question — $10 (in-depth reply + one follow-up)</option>
+        <option>30-minute consult — $25 (scheduled call)</option>
+        <option>Not sure — recommend one for me</option>
+      </select>
+      <p class="note">Nothing is charged up front — paid tiers are confirmed with you by email before any work starts.</p>
+
       <label for="category">Question category</label>
       <select id="category" required>
         <option value="">Select…</option>
@@ -451,7 +485,8 @@
       "Age: " + fieldValue("age") + "\n" +
       "Sex & spay/neuter: " + fieldValue("sex") + "\n" +
       "Approx. weight: " + fieldValue("weight") + "\n" +
-      "\nCategory: " + category + "\n" +
+      "\nService tier: " + fieldValue("tier") + "\n" +
+      "Category: " + category + "\n" +
       "How long: " + fieldValue("duration") + "\n" +
       "Acknowledged educational-only disclaimer: Yes\n" +
       "\nQuestion:\n" + fieldValue("question") + "\n" +

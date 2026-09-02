@@ -25,13 +25,29 @@ struct AboutView: View {
                     }
                 }
 
-                Section("What does it cost?") {
-                    Label("This help line: $0 — always free", systemImage: "checkmark.seal.fill")
-                        .foregroundStyle(.green)
-                        .font(.headline)
-                    Text("There are no charges, ever, for asking questions here — no sign-up fees, no per-question fees, no subscriptions, and no tips. I will never email you asking for payment, card numbers, or gift cards; a message like that is not from me.")
-                        .font(.callout)
-                    Text("Outside services I may refer you to have their own fees (prices vary by region — always confirm when you call):\n\n• ASPCA Poison Control \(HelplineConfig.poisonControlDisplay): one-time consultation fee, currently around $95\n• Emergency vet: exam/triage fee often $100–$250 up front, treatment on top — ask for an estimate first\n• Regular checkup: exam fees commonly $50–$100, plus vaccines or tests\n• Low-cost options: humane societies, nonprofit clinics, and vet-school clinics offer reduced fees; many clinics take payment plans, CareCredit, or Scratchpay")
+                Section("Services & pricing") {
+                    ForEach(HelplineConfig.serviceTiers, id: \.name) { tier in
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack(alignment: .firstTextBaseline) {
+                                Text(tier.name).font(.headline)
+                                Spacer()
+                                Text(tier.price)
+                                    .font(.headline)
+                                    .foregroundStyle(tier.price == "Free" ? Color.green : Color.accentColor)
+                            }
+                            Text(tier.details)
+                                .font(.callout)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.vertical, 2)
+                    }
+                    Text("Nothing is charged up front — paid tiers are confirmed with you by email before any work starts, and payment is arranged by the method that suits you. If your question is really one for a licensed veterinarian, I'll tell you that for free. I will never ask for gift cards, wire transfers, or card numbers.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+
+                Section("Outside costs to know about") {
+                    Text("Services I may refer you to have their own fees (prices vary by region — always confirm when you call):\n\n• ASPCA Poison Control \(HelplineConfig.poisonControlDisplay): one-time consultation fee, currently around $95\n• Emergency vet: exam/triage fee often $100–$250 up front, treatment on top — ask for an estimate first\n• Regular checkup: exam fees commonly $50–$100, plus vaccines or tests\n• Low-cost options: humane societies, nonprofit clinics, and vet-school clinics offer reduced fees; many clinics take payment plans, CareCredit, or Scratchpay")
                         .font(.callout)
                 }
 

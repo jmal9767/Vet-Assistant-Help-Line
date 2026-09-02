@@ -69,6 +69,7 @@ struct AskQuestionView: View {
     @State private var age = ""
     @State private var sex = "Not specified"
     @State private var weight = ""
+    @State private var tier = HelplineConfig.tierFormOptions[0]
     @State private var category = "Feeding & nutrition (general)"
     @State private var duration = "Not applicable — general question"
     @State private var question = ""
@@ -87,9 +88,17 @@ struct AskQuestionView: View {
         NavigationStack {
             Form {
                 Section {
-                    Text("Questions are answered by email within \(HelplineConfig.responseWindow), always free of charge. For emergencies, use the Emergency tab instead. The more detail you give, the more useful my answer can be — optional fields can be skipped.")
+                    Text("Questions are answered by email within \(HelplineConfig.responseWindow) — quick questions are always free. For emergencies, use the Emergency tab instead. The more detail you give, the more useful my answer can be — optional fields can be skipped.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
+                }
+
+                Section("Service") {
+                    Picker("Service you'd like", selection: $tier) {
+                        ForEach(HelplineConfig.tierFormOptions, id: \.self) { Text($0) }
+                    }
+                } footer: {
+                    Text("Nothing is charged up front — paid tiers are confirmed with you by email before any work starts. Full details are on the About tab.")
                 }
 
                 Section("About you") {
@@ -194,6 +203,7 @@ struct AskQuestionView: View {
         Sex & spay/neuter: \(sex == "Not specified" ? "Not given" : sex)
         Approx. weight: \(orNotGiven(weight))
 
+        Service tier: \(tier)
         Category: \(category)
         How long: \(duration)
         Acknowledged educational-only disclaimer: Yes

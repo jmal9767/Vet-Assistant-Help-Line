@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Welcome — Vet Assistant Help Line</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-512.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="theme-color" content="#0e7c7b">
+<style>
+  :root {
+    --teal: #0e7c7b;
+    --teal-dark: #095b5a;
+    --red: #c0392b;
+    --red-bg: #fdecea;
+    --ink: #22303a;
+    --muted: #5c6b78;
+    --bg: #f6f9f9;
+    --card: #ffffff;
+    --border: #dde5e8;
+    color-scheme: light; /* fixed light palette — keeps text readable even in dark mode */
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.6;
+  }
+  header {
+    background: var(--teal);
+    color: #fff;
+    padding: 2.25rem 1rem;
+    text-align: center;
+  }
+  header h1 { margin: 0 0 .35rem; font-size: 1.9rem; }
+  header p { margin: 0; opacity: .95; font-size: 1.05rem; }
+  main { max-width: 720px; margin: 0 auto; padding: 1rem; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    margin: 1.25rem 0;
+  }
+  .card h2 { margin-top: 0; color: var(--teal-dark); }
+  .price-list { margin: .5rem 0 0; }
+  .price-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    padding: .85rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .price-row:last-child { border-bottom: none; }
+  .price-name { font-weight: 700; font-size: 1.05rem; color: var(--ink); }
+  .price-desc { color: var(--muted); font-size: .95rem; margin-top: .15rem; }
+  .price-amount {
+    font-weight: 800;
+    font-size: 1.35rem;
+    color: var(--teal-dark);
+    white-space: nowrap;
+  }
+  .price-amount.free { color: #1e7e34; }
+  .includes { margin: .35rem 0 0; padding-left: 1.2rem; font-size: .93rem; color: var(--ink); }
+  .includes li { margin-bottom: .2rem; }
+  .btn {
+    display: inline-block;
+    padding: .75rem 1.3rem;
+    border-radius: 8px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    text-decoration: none;
+    text-align: center;
+  }
+  .btn-teal { background: var(--teal); color: #fff; }
+  .btn-teal:hover { background: var(--teal-dark); }
+  .cta { text-align: center; margin: 1.25rem 0; }
+  .emergency {
+    border: 2px solid var(--red);
+    background: var(--red-bg);
+  }
+  .emergency h2 { color: var(--red); }
+  .note { font-size: .9rem; color: var(--muted); margin-top: .5rem; }
+  footer {
+    max-width: 720px;
+    margin: 2rem auto;
+    padding: 0 1rem 2rem;
+    font-size: .85rem;
+    color: var(--muted);
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span aria-hidden="true">🐾</span> Vet Assistant Help Line</h1>
+  <p>Friendly, plain-English pet-care guidance from a veterinary assistant — replies within 24–48 hours.</p>
+</header>
+
+<main>
+
+  <section class="card">
+    <h2>Services &amp; pricing</h2>
+    <p>Simple, upfront pricing — you'll always know the cost before anything starts, and there are never surprise charges.</p>
+    <div class="price-list">
+      <div class="price-row">
+        <div>
+          <div class="price-name">Quick question</div>
+          <div class="price-desc">One email reply within 24–48 hours.</div>
+          <ul class="includes">
+            <li>A clear, plain-English answer to one general pet-care question</li>
+            <li>Links to trusted resources when helpful</li>
+          </ul>
+        </div>
+        <div class="price-amount free">Free</div>
+      </div>
+      <div class="price-row">
+        <div>
+          <div class="price-name">Detailed question</div>
+          <div class="price-desc">In-depth reply with resources and one follow-up.</div>
+          <ul class="includes">
+            <li>A thorough written answer with step-by-step suggestions</li>
+            <li>Curated links and printable resources for your situation</li>
+            <li>One follow-up email within a week, included</li>
+          </ul>
+        </div>
+        <div class="price-amount">$10</div>
+      </div>
+      <div class="price-row">
+        <div>
+          <div class="price-name">30-minute consult</div>
+          <div class="price-desc">Scheduled call for general care guidance.</div>
+          <ul class="includes">
+            <li>A scheduled phone or video call at a time that works for you</li>
+            <li>Time to talk through routines, new-pet setup, or vet-visit prep</li>
+            <li>A short email recap of what we covered</li>
+          </ul>
+        </div>
+        <div class="price-amount">$25</div>
+      </div>
+    </div>
+    <p class="note"><strong>How payment works:</strong> send your question first — there's nothing to pay up front. If it fits a paid tier, I'll confirm the price with you by email before doing anything billable, and we'll arrange payment by the method that suits you. If your question is really one for a licensed veterinarian, I'll tell you that for free and point you in the right direction. I will never ask for gift cards, wire transfers, or card numbers by email.</p>
+  </section>
+
+  <div class="cta">
+    <a class="btn btn-teal" href="index.html">Ask your question →</a>
+    <p class="note">The form takes about two minutes and opens a pre-filled email — nothing is stored online.</p>
+  </div>
+
+  <section class="card">
+    <h2>What I help with</h2>
+    <p>General pet care, feeding and nutrition basics, grooming, behavior and training tips, new-pet questions, senior-pet care, preparing for vet visits, and helping you decide whether something needs a veterinarian's attention.</p>
+    <p class="note">I'm a veterinary assistant, not a licensed veterinarian — everything here is general education, not diagnosis or treatment. When in doubt, I'll always point you to a vet.</p>
+  </section>
+
+  <section class="card emergency">
+    <h2><span aria-hidden="true">⚠️</span> Emergency? Don't wait for email.</h2>
+    <p>If your pet is having trouble breathing, seizing, collapsed, bleeding heavily, bloated, unable to urinate, or may have been poisoned — contact an emergency vet <strong>now</strong>.</p>
+    <p><a href="https://vetlocator.com/" target="_blank" rel="noopener noreferrer"><strong>Find an emergency vet</strong></a> · Poison Control: <a href="tel:8884264435"><strong>(888) 426-4435</strong></a> <span class="note">(24/7; a consultation fee may apply)</span></p>
+  </section>
+
+</main>
+
+<footer>
+  <p><strong>Disclaimer:</strong> This service is run by a veterinary assistant and provides general pet-care education only. It does not create a veterinarian–client–patient relationship, and no diagnosis, prognosis, treatment, or prescription advice is offered. Always consult a licensed veterinarian for medical concerns about your pet. If your pet is in distress, contact an emergency veterinary clinic immediately.</p>
+</footer>
+
+<script>
+  if ("serviceWorker" in navigator && window.location.protocol === "https:") {
+    navigator.serviceWorker.register("sw.js");
+  }
+</script>
+
+</body>
+</html>

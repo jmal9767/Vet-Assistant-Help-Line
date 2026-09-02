@@ -88,6 +88,32 @@
   .checkbox-row input { margin-top: .3rem; }
   .help-list { padding-left: 1.2rem; }
   .help-list li { margin-bottom: .3rem; }
+  .cost-table { width: 100%; border-collapse: collapse; margin: .75rem 0; font-size: .95rem; }
+  .cost-table th, .cost-table td { text-align: left; padding: .5rem .6rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .cost-table th { font-size: .85rem; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); }
+  .free-badge {
+    display: inline-block;
+    background: #e6f4ea;
+    color: #1e7e34;
+    border: 1px solid #b7dfc2;
+    border-radius: 999px;
+    padding: .15rem .7rem;
+    font-weight: 700;
+    font-size: .9rem;
+  }
+  .hint-box {
+    background: #f0f7f7;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: .6rem .9rem;
+    margin-top: .5rem;
+    font-size: .9rem;
+  }
+  .hint-box ul { margin: .3rem 0 0; padding-left: 1.1rem; }
+  .hint-box li { margin-bottom: .2rem; }
+  .optional { font-weight: 400; color: var(--muted); font-size: .85rem; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1rem; }
+  @media (max-width: 540px) { .two-col { grid-template-columns: 1fr; } }
   .cannot { color: var(--muted); font-size: .95rem; }
   footer {
     max-width: 720px;
@@ -98,6 +124,7 @@
     text-align: center;
   }
   .note { font-size: .9rem; color: var(--muted); margin-top: .5rem; }
+  .card h3 { margin: 1.25rem 0 .25rem; font-size: 1.05rem; color: var(--teal-dark); }
 </style>
 </head>
 <body>
@@ -148,43 +175,147 @@
     <p class="cannot"><strong>What I can't do:</strong> I'm a veterinary assistant, not a licensed veterinarian. I cannot diagnose conditions, prescribe or recommend medication doses, or replace an exam by your vet. When in doubt, I'll always point you to a licensed veterinarian.</p>
   </section>
 
+  <!-- CHARGES / COSTS -->
+  <section class="card">
+    <h2><span aria-hidden="true">💵</span> What does it cost?</h2>
+    <p><span class="free-badge">This help line: $0 — always free</span></p>
+    <p>There are <strong>no charges, ever</strong>, for asking questions here. No sign-up fees, no per-question fees, no subscriptions, and no tips. This is a free educational service run by one veterinary assistant.</p>
+    <p class="note"><strong>A note on safety:</strong> I will never email you asking for payment, card numbers, gift cards, or payment-app transfers. If you receive a message like that claiming to be from this help line, it is not from me — please delete it.</p>
+
+    <h3>Outside services that <em>do</em> charge</h3>
+    <p>Some of the places I may refer you to are separate businesses with their own fees. So you're never surprised, here's what people typically encounter (actual prices vary a lot by region and clinic — always confirm when you call):</p>
+    <table class="cost-table">
+      <thead>
+        <tr><th scope="col">Service</th><th scope="col">Typical charge</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>ASPCA Animal Poison Control<br><span class="note">(888) 426-4435, 24/7</span></td>
+          <td>A one-time consultation fee (currently around $95) — worth every penny in a poisoning scare.</td>
+        </tr>
+        <tr>
+          <td>Emergency vet visit</td>
+          <td>An exam/triage fee is usually charged up front (often $100–$250), with treatment costs on top. Ask for an estimate before treatment — that's a normal question.</td>
+        </tr>
+        <tr>
+          <td>Regular vet checkup</td>
+          <td>Exam fees commonly run $50–$100, plus any vaccines or tests. Call ahead and ask — clinics are used to quoting prices.</td>
+        </tr>
+        <tr>
+          <td>Low-cost / nonprofit clinics</td>
+          <td>Humane societies, shelters, and vet-school clinics often offer reduced-fee exams, vaccines, and spay/neuter services.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>If vet costs are a barrier</h3>
+    <ul class="help-list">
+      <li>Search "<em>your city</em> + low cost vet clinic" — humane societies and nonprofits often have programs.</li>
+      <li>Veterinary school clinics offer quality care at reduced prices if one is near you.</li>
+      <li>Many clinics offer payment plans; CareCredit and Scratchpay are widely accepted financing options.</li>
+      <li>For urgent situations, ask the ER clinic about financial options — it never hurts to ask.</li>
+      <li>Not sure where to start? Pick the "Vet costs &amp; payment help" category in the form below and tell me your general area — I'll point you to options.</li>
+    </ul>
+  </section>
+
   <!-- INTAKE FORM -->
   <section class="card">
     <h2>Ask your question</h2>
-    <p class="note">This form opens a pre-filled email in your mail app — nothing is stored on this page.</p>
+    <p class="note">This form opens a pre-filled email in your mail app — nothing is stored on this page. The more detail you give, the more useful my answer can be. Fields marked <em>optional</em> can be skipped.</p>
     <form id="intakeForm">
+      <h3>About you</h3>
       <label for="name">Your name</label>
       <input type="text" id="name" required autocomplete="name">
 
-      <label for="species">Pet species</label>
-      <select id="species" required>
-        <option value="">Select…</option>
-        <option>Dog</option>
-        <option>Cat</option>
-        <option>Bird</option>
-        <option>Rabbit</option>
-        <option>Reptile</option>
-        <option>Small mammal (hamster, guinea pig, etc.)</option>
-        <option>Other</option>
-      </select>
+      <label for="location">City &amp; state <span class="optional">(optional — helps me point you to local clinics and low-cost resources)</span></label>
+      <input type="text" id="location" placeholder="e.g., Columbus, OH" autocomplete="address-level2">
 
-      <label for="age">Pet's age (approximate)</label>
-      <input type="text" id="age" placeholder="e.g., 3 years">
+      <h3>About your pet</h3>
+      <div class="two-col">
+        <div>
+          <label for="petName">Pet's name <span class="optional">(optional)</span></label>
+          <input type="text" id="petName" placeholder="e.g., Bella">
+        </div>
+        <div>
+          <label for="species">Pet species</label>
+          <select id="species" required>
+            <option value="">Select…</option>
+            <option>Dog</option>
+            <option>Cat</option>
+            <option>Bird</option>
+            <option>Rabbit</option>
+            <option>Reptile</option>
+            <option>Small mammal (hamster, guinea pig, etc.)</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div>
+          <label for="breed">Breed or type <span class="optional">(optional)</span></label>
+          <input type="text" id="breed" placeholder="e.g., Labrador mix, tabby">
+        </div>
+        <div>
+          <label for="age">Pet's age (approximate)</label>
+          <input type="text" id="age" placeholder="e.g., 3 years">
+        </div>
+        <div>
+          <label for="sex">Sex &amp; spay/neuter status <span class="optional">(optional)</span></label>
+          <select id="sex">
+            <option value="">Select…</option>
+            <option>Female, spayed</option>
+            <option>Female, not spayed</option>
+            <option>Male, neutered</option>
+            <option>Male, not neutered</option>
+            <option>Not sure</option>
+          </select>
+        </div>
+        <div>
+          <label for="weight">Approximate weight <span class="optional">(optional)</span></label>
+          <input type="text" id="weight" placeholder="e.g., 45 lb">
+        </div>
+      </div>
 
+      <h3>Your question</h3>
       <label for="category">Question category</label>
       <select id="category" required>
         <option value="">Select…</option>
         <option>Feeding &amp; nutrition (general)</option>
         <option>Grooming &amp; general care</option>
         <option>Behavior &amp; training basics</option>
+        <option>Parasite prevention basics (fleas, ticks, worms)</option>
+        <option>Dental &amp; oral care basics</option>
+        <option>Senior pet care</option>
+        <option>New pet questions</option>
         <option>Should I see a vet about this?</option>
         <option>Preparing for a vet visit</option>
-        <option>New pet questions</option>
+        <option>Vet costs &amp; payment help</option>
         <option>Other</option>
       </select>
 
+      <label for="duration">How long has this been going on?</label>
+      <select id="duration" required>
+        <option value="">Select…</option>
+        <option>Just noticed today</option>
+        <option>1–3 days</option>
+        <option>About a week</option>
+        <option>More than a week</option>
+        <option>Ongoing / comes and goes</option>
+        <option>Not applicable — general question</option>
+      </select>
+
       <label for="question">Your question</label>
-      <textarea id="question" required placeholder="Describe what's going on. Include how long it's been happening and anything you've already tried."></textarea>
+      <textarea id="question" required placeholder="Describe what's going on in as much detail as you can — what you're seeing, when it happens, and anything that makes it better or worse."></textarea>
+      <div class="hint-box" id="hintBox" hidden>
+        <strong>Helpful details to include:</strong>
+        <ul id="hintList"></ul>
+      </div>
+
+      <label for="tried">What have you already tried? <span class="optional">(optional)</span></label>
+      <textarea id="tried" style="min-height:70px;" placeholder="e.g., switched food gradually, brushed daily, tried a slow-feeder bowl…"></textarea>
+
+      <label for="changes">Any changes in eating, drinking, energy, or bathroom habits? <span class="optional">(optional)</span></label>
+      <input type="text" id="changes" placeholder="e.g., eating less than usual, drinking more water">
+
+      <p class="note"><span aria-hidden="true">📎</span> <strong>Photos help!</strong> After the email opens, you can attach photos or a short video before sending — especially useful for skin, coat, or anything that comes and goes.</p>
 
       <div class="checkbox-row">
         <input type="checkbox" id="ack" required>
@@ -218,26 +349,114 @@
   // ⚙️ SETUP: replace this with the email address you want questions sent to.
   var HELPLINE_EMAIL = "REPLACE_WITH_YOUR_HELPLINE_EMAIL@example.com";
 
+  // Per-category prompts shown under the question box so clients know what
+  // details make an answer useful.
+  var CATEGORY_HINTS = {
+    "Feeding & nutrition (general)": [
+      "Current food (brand/type) and how much per day",
+      "Treats, table scraps, or supplements",
+      "Appetite lately — normal, increased, or decreased"
+    ],
+    "Grooming & general care": [
+      "Coat type and how often you currently groom",
+      "Any mats, flaking, odor, or areas your pet won't let you touch",
+      "Tools or products you're using"
+    ],
+    "Behavior & training basics": [
+      "When and where the behavior happens, and what happens right before",
+      "How long it's been going on and whether it's getting better or worse",
+      "What you've tried and how your pet responded",
+      "Any recent changes at home (move, new pet, new schedule)"
+    ],
+    "Parasite prevention basics (fleas, ticks, worms)": [
+      "Whether your pet goes outdoors, and your general region",
+      "What prevention (if any) you currently use — no need for doses",
+      "Other pets in the home"
+    ],
+    "Dental & oral care basics": [
+      "What their teeth/breath are like now",
+      "Whether your pet tolerates having its mouth touched",
+      "When a vet last looked at their teeth"
+    ],
+    "Senior pet care": [
+      "Your pet's age and any vet-diagnosed conditions",
+      "Changes in mobility, eating, sleeping, or bathroom habits",
+      "When their last checkup was"
+    ],
+    "New pet questions": [
+      "Where the pet came from (shelter, breeder, stray) and how long you've had them",
+      "Other pets or kids in the home",
+      "Whether they've seen a vet yet"
+    ],
+    "Should I see a vet about this?": [
+      "Exactly what you're seeing (a photo/video attached to the email helps a lot)",
+      "When it started and whether it's getting better or worse",
+      "Eating, drinking, energy, and bathroom habits",
+      "Anything your pet may have gotten into"
+    ],
+    "Preparing for a vet visit": [
+      "What the visit is for",
+      "What you most want to get out of the appointment",
+      "Anything you're worried about asking"
+    ],
+    "Vet costs & payment help": [
+      "Your general area (city/state) so I can find local options",
+      "What kind of care you're trying to afford (routine, dental, urgent…)",
+      "Whether your pet is currently unwell — if so, please don't wait on me"
+    ],
+    "Other": [
+      "Anything about your pet's history that seems relevant",
+      "What outcome you're hoping for"
+    ]
+  };
+
+  var categorySelect = document.getElementById("category");
+  var hintBox = document.getElementById("hintBox");
+  var hintList = document.getElementById("hintList");
+  categorySelect.addEventListener("change", function () {
+    var hints = CATEGORY_HINTS[categorySelect.value];
+    hintList.textContent = "";
+    if (hints) {
+      hints.forEach(function (h) {
+        var li = document.createElement("li");
+        li.textContent = h;
+        hintList.appendChild(li);
+      });
+    }
+    hintBox.hidden = !hints;
+  });
+
+  function fieldValue(id) {
+    var el = document.getElementById(id);
+    var v = (el.value || "").trim();
+    return v || "Not given";
+  }
+
   document.getElementById("intakeForm").addEventListener("submit", function (e) {
     e.preventDefault();
     if (HELPLINE_EMAIL.indexOf("REPLACE_WITH") === 0) {
       alert("This help line isn't fully set up yet — the destination email address hasn't been configured. Please check back soon.");
       return;
     }
-    var name = document.getElementById("name").value.trim();
     var species = document.getElementById("species").value;
-    var age = document.getElementById("age").value.trim() || "Not given";
     var category = document.getElementById("category").value;
-    var question = document.getElementById("question").value.trim();
 
     var subject = "[Help Line] " + category + " — " + species;
     var body =
-      "Name: " + name + "\n" +
+      "Name: " + fieldValue("name") + "\n" +
+      "Location: " + fieldValue("location") + "\n" +
+      "\nPet name: " + fieldValue("petName") + "\n" +
       "Species: " + species + "\n" +
-      "Age: " + age + "\n" +
-      "Category: " + category + "\n" +
+      "Breed/type: " + fieldValue("breed") + "\n" +
+      "Age: " + fieldValue("age") + "\n" +
+      "Sex & spay/neuter: " + fieldValue("sex") + "\n" +
+      "Approx. weight: " + fieldValue("weight") + "\n" +
+      "\nCategory: " + category + "\n" +
+      "How long: " + fieldValue("duration") + "\n" +
       "Acknowledged educational-only disclaimer: Yes\n" +
-      "\nQuestion:\n" + question + "\n";
+      "\nQuestion:\n" + fieldValue("question") + "\n" +
+      "\nAlready tried:\n" + fieldValue("tried") + "\n" +
+      "\nChanges in eating/drinking/energy/bathroom habits:\n" + fieldValue("changes") + "\n";
 
     window.location.href = "mailto:" + HELPLINE_EMAIL +
       "?subject=" + encodeURIComponent(subject) +

@@ -1,36 +1,30 @@
-const CACHE = "vahl-v1";
-const ASSETS = [
-  "./",
-  "./index.html",
-  "./operator.html",
-  "./manifest.webmanifest",
-  "./icons/icon-512.png",
-  "./icons/icon-180.png"
-];
+/*
+ * Temporary retirement worker for the former PWA at this exact origin/scope.
+ * Nothing in the current site registers a service worker. Keep this file only
+ * long enough to replace previously installed vahl workers and clear their
+ * obsolete cached intake/operator pages.
+ */
+"use strict";
 
-self.addEventListener("install", (e) => {
-  e.waitUntil(
-    caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting())
-  );
+self.addEventListener("install", (event) => {
+  event.waitUntil(self.skipWaiting());
 });
 
-self.addEventListener("activate", (e) => {
-  e.waitUntil(
-    caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
-      .then(() => self.clients.claim())
-  );
-});
+self.addEventListener("activate", (event) => {
+  event.waitUntil((async () => {
+    const cacheNames = await caches.keys();
+    await Promise.all(
+      cacheNames
+        .filter((name) => name === "vahl-v1" || name.startsWith("vahl-"))
+        .map((name) => caches.delete(name))
+    );
 
-self.addEventListener("fetch", (e) => {
-  if (e.request.method !== "GET") return;
-  e.respondWith(
-    fetch(e.request)
-      .then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE).then((c) => c.put(e.request, copy));
-        return res;
-      })
-      .catch(() => caches.match(e.request).then((hit) => hit || caches.match("./index.html")))
-  );
+    await self.registration.unregister();
+
+    const windows = await self.clients.matchAll({
+      type: "window",
+      includeUncontrolled: true
+    });
+    await Promise.all(windows.map((client) => client.navigate(client.url)));
+  })());
 });

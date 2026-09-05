@@ -1,123 +1,177 @@
-# Vet Assistant Help Line
+# Veterinary Assistant Help Line
 
-A free, one-person pet-care help line run by a veterinary assistant. Pet owners
-submit general care questions through a simple web page; emergencies are
-redirected to emergency veterinary services *before* they ever reach the queue;
-everything else arrives by email as a structured request answered within
-24–48 hours using pre-vetted templates.
+Veterinary Assistant Help Line is an iOS app from Bay Area Apps LLC for paid,
+human-written pet-care education. Pet owners complete a safety screen, choose
+a permitted nonmedical category, answer one category-specific prompt, review the
+request, and purchase one question credit through Apple before preparing and sending a
+structured email to the operator.
 
-**Designed for a solo operator:** no backend, no server costs, no live phone
-line, and legal scope-of-practice guardrails built into every step.
+The app does not use AI and does not provide veterinary medical advice. The
+emergency and out-of-scope routes are always available without a purchase.
 
-## How it works
+## Product boundary
 
-```
-Pet owner visits the page
-        │
-        ├─ Emergency symptoms? ──► Redirected to ER vet / poison control (never queued)
-        │
-        └─ General question ────► Structured email lands in your help-line inbox
-                                          │
-                                  You reply within 24–48h
-                                  using response templates
-                                  (educational info only,
-                                   refer-to-vet by default)
-```
+- One consumable in-app purchase unlocks one general-education question email
+  for human scope review; an eligible question receives one educational answer.
+- Apple supplies the localized price shown in the app.
+- Questions are sent to `info@bayareaapps.com` through the device's email
+  system.
+- A valid paid email or authorized replacement normally receives a human answer
+  or scope/referral notice by 5:00 p.m. Pacific Time on the second business day
+  after actual inbox receipt. The first business day after receipt is day one;
+  weekends and U.S. federal holidays do not count, and there is no 5:00 p.m.
+  receipt cutoff or rollover. This is a target, not a guarantee.
+- Medical concerns, medication or dosing questions, diagnosis, treatment,
+  prognosis, urgency decisions, and interpretation of photos, records, tests,
+  or imaging are not accepted.
+- There is no live consultation, subscription, public operator portal, web
+  intake form, OpenAI integration, account, or question-content database. A
+  minimal operator redemption ledger stores only keyed reference hashes,
+  environment, and redemption time to prevent purchase replay.
 
-## What's in this repo
+## Customer flow
 
-| File | Purpose |
+1. Read the free emergency and scope screen.
+2. Confirm the question is not about a sick, injured, painful, post-operative,
+   pregnant, or possibly poisoned animal.
+3. Choose one of the four safe education categories.
+4. Use the category-specific prompt and example to write one general question.
+5. Review the request and confirm the response target, purchase lifecycle, and
+   18+ purchase authorization.
+6. Complete the verified Apple in-app purchase, or use an unfinished verified
+   credit from an interrupted attempt.
+7. Review and send the structured email. Cancelling fallback before copying the
+   complete message leaves the unfinished credit immediately reusable. Once Apple
+   Mail displays the complete email, a saved, cancelled, failed, or unknown result
+   locks it until the client confirms sent or every copy deleted without sending;
+   a copied or opened fallback is locked the same way. Apple Mail's sent result
+   means queued, not guaranteed delivered.
+8. The operator verifies the emailed Apple signature and fresh Production
+   transaction status, then atomically redeems the transaction once before
+   accepting the email as a paid initial question.
+
+## Repository map
+
+| Path | Purpose |
 |---|---|
-| `index.html` | The public website: emergency triage, scope explanation, intake form. No dependencies, hostable free on GitHub Pages. Installable to a phone's home screen as an app (PWA) — no App Store needed. |
-| `operator.html` | **Your** page: tap-to-copy reply templates, pre-send scope checklist, one-tap emergency numbers. Add it to your own phone's home screen. |
-| `manifest.webmanifest`, `sw.js`, `icons/` | PWA plumbing: app name/icon for "Add to Home Screen" and offline caching. |
-| `VetAssistantHelpLine.xcodeproj` | Xcode project for the native iOS app (requires Xcode 16+). |
-| `VetAssistantHelpLine/` | SwiftUI source for the iOS app — same three pieces as the site: Emergency, Ask, About tabs. |
-| `docs/LEGAL_SCOPE.md` | What a veterinary assistant can and can't say — the guardrails for every reply. |
-| `docs/RESPONSE_TEMPLATES.md` | Copy-paste replies for the six situations that cover nearly every question. |
-| `docs/SOLO_WORKFLOW.md` | Setup steps and the 15–30 min/day routine for running this alone. |
+| `VetAssistantHelpLine/` | SwiftUI app, typed intake models, StoreKit service, email composer, emergency actions, and in-app policies |
+| `VetAssistantHelpLineTests/` | Unit tests for categories, validation, and structured email generation |
+| `VetAssistantHelpLine.xcodeproj/` | Xcode project and shared build/test scheme |
+| `.github/workflows/` | macOS iOS build/test checks and repository validation |
+| `index.html` | Public marketing, support, and emergency landing page; it never accepts questions or payment |
+| `privacy.html`, `terms.html` | Public policy pages for App Store metadata |
+| `sw.js` | Temporary retirement worker that removes the obsolete PWA cache and unregisters itself; the current site never registers it |
+| `docs/LEGAL_SCOPE.md` | Operator scope rules and California source links |
+| `docs/RESPONSE_TEMPLATES.md` | Conservative human-response templates |
+| `docs/SOLO_WORKFLOW.md` | Daily operator and escalation workflow |
+| `operator/` | Apple-signed transaction verification and atomic one-use redemption ledger |
 
-## Launch checklist — getting the app into customers' hands
+## Open and test
 
-There is no separate customer download: **the website is the customer's app.**
-Publishing it once puts it on every customer's phone who opens your link.
+Requirements: Xcode 16 or later and an iOS 17 or later simulator/device.
 
-1. **Merge the pull request** into `main`.
-2. **Set your help-line email:** edit the `HELPLINE_EMAIL` line near the bottom
-   of `index.html` (questions are sent to this address).
-3. **Turn on GitHub Pages:** repo **Settings → Pages → Deploy from a branch →
-   `main`, `/ (root)` → Save**. A couple of minutes later your app is live at:
+1. Open `VetAssistantHelpLine.xcodeproj`.
+2. Select the shared `VetAssistantHelpLine` scheme.
+3. For local purchase testing, confirm the scheme uses
+   `VetAssistantHelpLine/Configuration/VetAssistantHelpLine.storekit`.
+4. Run the app and use Xcode's StoreKit transaction manager to test success,
+   cancellation, pending approval, interruption, and unfinished-credit
+   recovery.
+5. Run the `VetAssistantHelpLineTests` test target.
 
-   **https://jmal9767.github.io/Vet-Assistant-Help-Line/**
+Command-line verification on macOS:
 
-4. **Share that link** — text it, put it on a business card, post it. Anyone who
-   opens it is using the customer side of the app, and the page itself shows
-   them how to add it to their home screen so it behaves like an installed app.
-   `docs/share-qr.png` is a ready-made QR code pointing at the URL — print it
-   or show it on your phone and customers scan straight into the app.
-5. **Your side:** open `https://jmal9767.github.io/Vet-Assistant-Help-Line/operator.html`
-   on your phone and add it to your home screen. Customer questions arrive in
-   your help-line email inbox; you answer them from there using the toolkit's
-   tap-to-copy templates.
+```sh
+xcodebuild \
+  -project VetAssistantHelpLine.xcodeproj \
+  -scheme VetAssistantHelpLine \
+  -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=latest' \
+  clean test CODE_SIGNING_ALLOWED=NO
+```
 
-## Using it as an app — without the App Store
+## App Store Connect setup
 
-Once GitHub Pages is enabled, both pages work as installable web apps:
+Before TestFlight or App Store submission:
 
-- **Clients:** they open the site in Safari (iPhone) or Chrome (Android) and tap
-  **Share → Add to Home Screen**. They get a real app icon that opens
-  full-screen — no App Store, no download, always the latest version.
-- **You:** open `…/operator.html` on your phone and add *that* to your home
-  screen. It's your pocket toolkit: reply templates you can copy with one tap,
-  the pre-send scope checklist, tap-to-call poison control, and the red-flag
-  list for triage.
+1. Set the development team in Signing & Capabilities and confirm the included
+   In-App Purchase capability.
+2. Register the bundle identifier
+   `com.bayareaapps.vetassistanthelpline`.
+3. Create a **Consumable** in-app purchase with product identifier
+   `com.bayareaapps.vetassistanthelpline.education_question`.
+4. Match the App Store Connect product name and short display description to the
+   local StoreKit configuration (`One nonmedical education question email.`),
+   select the live price, and put the complete timing, scope, email-handoff, and
+   replacement disclosure adjacent to the purchase and in the listing/review notes.
+5. Complete the Paid Apps agreement, tax, and banking setup.
+6. Deploy only `index.html`, `privacy.html`, `terms.html`, `site.css`, and—only
+   during an old-PWA migration—the temporary `sw.js`. Never publish the repository
+   root, app source, StoreKit configuration, tests, `docs/`, or `operator/`.
+   Host the public files at the stable branded path used by the app, including
+   `https://bayareaapps.com/veterinary-assistant-help-line/privacy.html`, and
+   use the landing page as the App Store Connect Support URL. Confirm both URLs
+   return HTTP 200 without authentication on a physical device. Use a CDN, proxy,
+   or host that can send HSTS, `X-Content-Type-Options: nosniff`, a restrictive
+   `frame-ancestors` directive, Referrer-Policy, and Permissions-Policy; do not
+   assume a repository-only GitHub Pages deployment can set those response headers.
+   Verify direct requests for `/operator/`, `/docs/`, source, tests, and `.storekit`
+   files return 404, and verify actual log, cookie, subprocessor, and retention
+   behavior against the published privacy policy.
+   If the former GitHub Pages/PWA origin was ever live, first deploy the included
+   `sw.js` at that same origin and scope with `Cache-Control: no-cache`; verify on
+   a browser that previously installed `vahl-v1` that obsolete cached intake and
+   operator pages disappear and the worker unregisters. Remove the retirement
+   file only after that migration is complete.
+7. Complete App Privacy answers for name, email address, emails/messages, other
+   user content, and purchase history as linked, nontracking data used for App
+   Functionality. Keep the included privacy manifest aligned with any future
+   required-reason API use.
+8. Configure the operator verifier with Apple's current root certificates, the
+   App Apple ID, protected App Store Server API credentials, a separately stored
+   HMAC key, and an encrypted production ledger. Test archived-proof verification,
+   fresh current-status lookup, revocation rejection, unavailable/retry handling,
+   key/environment metadata mismatch, and replay rejection. Use completely separate
+   Production and Sandbox ledgers and HMAC keys. Validate an aged signed-proof fixture
+   before launch so non-expiring credits remain verifiable without weakening the
+   fresh server proof.
+9. Configure and verify SPF, DKIM, DMARC, TLS delivery, MFA, recovery, and
+   forwarding-rule alerts for the service mailbox and domain.
+   Enable GitHub secret scanning and push protection where the repository plan
+   supports them, and review the full repository history for old credentials
+   before making the code public.
+10. Add App Review notes explaining the free emergency route, the pre-purchase
+    scope screen, the consumable question credit, and how reviewers can test it.
+    Pair the app name with “Nonmedical education by email — not monitored for
+    emergencies” in the App Store listing and adjacent purchase disclosure. Before
+    enabling sales, obtain App Review treatment for the payment model and the
+    email-app dependency using a reviewable build and complete notes; do not assume
+    an asynchronous answer delivered outside the app will be classified as an
+    in-app digital service. If App Review treats it as an outside-app service,
+    rejects the external-mail dependency, or finds the app below minimum utility,
+    keep sales disabled and revise the payment/submission architecture before
+    release rather than changing only metadata.
+11. Test the live product in Sandbox and TestFlight on a physical device.
+12. Generate Xcode's archive Privacy Report, reconcile it with the privacy
+   manifest and App Store Connect answers, then run Organizer validation.
+13. Document a wind-down plan before sales begin: stop new sales first, keep the
+    mailbox, verifier, and ledger available, honor device credits not marked sent,
+    reconcile signed proofs and every paid message already handed off, resolve
+    payment holds and disputes, honor every open replacement window, and support
+    Apple refund resolution
+    before treating the paid service as ended.
 
-The `operator.html` page isn't linked from the public site, but it is publicly
-reachable if someone knows the URL — it contains nothing sensitive (the same
-templates are in this public repo).
+The repository deliberately leaves `DEVELOPMENT_TEAM` unset because Apple
+team identifiers are account-specific. The code should not be described as
+released or production-verified until signed Xcode builds, StoreKit Sandbox
+tests, operator verification, policy hosting, and App Review configuration are
+complete.
 
-## iOS app
+## Operating documents
 
-Open `VetAssistantHelpLine.xcodeproj` in Xcode 16 or later and run. Before
-shipping:
+Read [Legal Scope](docs/LEGAL_SCOPE.md), [Response
+Templates](docs/RESPONSE_TEMPLATES.md), and [Solo
+Workflow](docs/SOLO_WORKFLOW.md) before accepting customer questions.
 
-1. Set your help-line address in `VetAssistantHelpLine/HelplineConfig.swift`
-   (`HelplineConfig.email`).
-2. Set your own bundle identifier and signing team in the target's
-   Signing & Capabilities settings (it ships with a `com.example` placeholder).
-3. Add a 1024×1024 app icon to `Assets.xcassets/AppIcon`.
+## Support
 
-The app mirrors the website: an **Emergency** tab (red-flag signs, ER vet
-locator, tap-to-call poison control), an **Ask** tab (structured form that opens
-a pre-filled email — no backend), and an **About** tab (scope + disclaimer).
-
-> **Practical note for a solo operator:** the website is live the moment you
-> enable GitHub Pages and costs nothing, and clients can install it to their
-> home screens with no App Store involved (see above). Distributing this native
-> app to *clients* requires an Apple Developer membership ($99/yr) and App Store
-> review — but you can run it on **your own iPhone for free**: open the project
-> in Xcode, sign in with your Apple ID (Signing & Capabilities → your personal
-> team), plug in your phone, and press Run. Free personal signing expires after
-> 7 days, after which you just press Run again — fine for personal use, not for
-> handing to clients. A reasonable path: launch with the website/PWA now, ship
-> the App Store app only if you later want the storefront presence.
-
-## Getting started
-
-1. Create a dedicated email address for the help line.
-2. Open `index.html` and set `HELPLINE_EMAIL` (near the bottom of the file) to
-   that address.
-3. Enable GitHub Pages: repo **Settings → Pages → Deploy from branch → main,
-   / (root)**. Your site goes live at
-   `https://<username>.github.io/Vet-Assistant-Help-Line/`.
-4. Read `docs/LEGAL_SCOPE.md` before answering your first question.
-
-Full details in [`docs/SOLO_WORKFLOW.md`](docs/SOLO_WORKFLOW.md).
-
-## Important disclaimer
-
-This service provides **general educational information only**. It is not
-veterinary medical advice, diagnosis, or treatment, and does not create a
-veterinarian–client–patient relationship. Scope-of-practice rules vary by
-state — see `docs/LEGAL_SCOPE.md` and verify against your state's veterinary
-practice act.
+Bay Area Apps LLC — `info@bayareaapps.com`

@@ -1,46 +1,101 @@
 import SwiftUI
 
 struct AboutView: View {
-    private let canHelp = [
-        "General pet care, feeding, and husbandry questions",
-        "Grooming, enrichment, and basic behavior tips",
-        "Preparing for vet visits & what to ask your vet",
-        "Understanding routine care basics",
-        "Deciding whether something needs a veterinarian",
-        "Pointing you to trusted resources"
-    ]
+    @EnvironmentObject private var purchaseStore: PurchaseStore
 
     var body: some View {
-        NavigationStack {
-            List {
-                Section {
-                    Text("Free general pet-care guidance from a veterinary assistant, answered within \(HelplineConfig.responseWindow).")
-                        .font(.headline)
-                }
+        List {
+            Section {
+                Label(HelplineConfig.serviceName, systemImage: "pawprint.fill")
+                    .font(.headline)
+                Text("Nonmedical education by email — not monitored for emergencies")
+                    .foregroundStyle(.secondary)
+                Text(HelplineConfig.responsePromise)
+                    .font(.callout.weight(.semibold))
+            }
 
-                Section("What I can help with") {
-                    ForEach(canHelp, id: \.self) { item in
-                        Label(item, systemImage: "checkmark.circle.fill")
-                            .foregroundStyle(.primary)
-                    }
-                }
-
-                Section("What I can't do") {
-                    Text("I'm a veterinary assistant, not a licensed veterinarian. I cannot diagnose conditions, prescribe or recommend medication doses, or replace an exam by your vet. When in doubt, I'll always point you to a licensed veterinarian.")
+            Section("One-question service") {
+                if let product = purchaseStore.product {
+                    LabeledContent("Apple price", value: product.displayPrice)
+                    Text(product.displayName)
                         .font(.callout)
+                } else {
+                    LabeledContent("Price", value: "Shown by Apple")
                 }
 
-                Section("Disclaimer") {
-                    Text(HelplineConfig.disclaimer)
+                Text(HelplineConfig.purchaseCoverageStatement)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                Text(HelplineConfig.replacementQuestionPolicy)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section("Eligible topics") {
+                ForEach(QuestionCategory.allCases) { category in
+                    Label(category.title, systemImage: "checkmark.circle.fill")
+                }
+            }
+
+            Section("Free provider & cost guidance") {
+                Text(HelplineConfig.freeProviderAndCostGuidance)
+                    .font(.callout)
+                if let url = HelplineConfig.emergencyVetLocatorURL {
+                    Link("Search Maps for veterinary providers", destination: url)
+                }
+                if let url = HelplineConfig.californiaVeterinaryLicenseLookupURL {
+                    Link("Verify a California veterinary license", destination: url)
+                }
+                Text("For a sick, injured, or distressed pet, contact a veterinarian now and do not wait while comparing costs.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section("Professional boundary") {
+                Text(HelplineConfig.scopeStatement)
+                    .font(.callout)
+                Text("Emergency contacts and the service's medical-scope restrictions appear before any category or purchase is shown.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section("Policies") {
+                NavigationLink("Privacy") {
+                    PrivacyView()
+                }
+                NavigationLink("Terms") {
+                    TermsView()
+                }
+            }
+
+            Section("Free service & purchase support") {
+                Text("Questions about how the service, email process, or Apple purchase works do not require a paid submission.")
+                    .font(.callout)
+                if let url = HelplineConfig.contactEmailURL {
+                    Link(HelplineConfig.recipientEmail, destination: url)
+                } else {
+                    Text(HelplineConfig.recipientEmail)
+                        .textSelection(.enabled)
+                }
+                if let reference = purchaseStore.lastCompletedTransactionReference {
+                    LabeledContent("Last used Apple transaction") {
+                        Text(reference)
+                            .font(.caption.monospaced())
+                            .textSelection(.enabled)
+                    }
+                    Text("Readable on this device for 90 days for purchase and missing-email support; removed on the next app launch after expiry.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
             }
-            .navigationTitle("About")
         }
+        .navigationTitle("About")
     }
 }
 
 #Preview {
-    AboutView()
+    NavigationStack {
+        AboutView()
+            .environmentObject(PurchaseStore())
+    }
 }

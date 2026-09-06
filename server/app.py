@@ -287,7 +287,7 @@ def create_app(config=None, gateway=None):
                     abort(409, description="This reference already belongs to a different draft.")
                 return jsonify(id=question_id)
             if not accepting(c):
-                abort(503, description="New questions are paused or the queue is full. No payment was taken.")
+                return jsonify(error="New questions are paused or the queue is full. No payment was taken.",resetDraft=True),503
             if c.execute("SELECT 1 FROM questions WHERE fingerprint=? AND created>? AND state NOT IN ('refunded','expired')", (fingerprint, now()-86400)).fetchone():
                 abort(409, description="This question already has a submission. Use the saved private link or contact free support; do not pay twice.")
             c.execute("INSERT INTO questions(id,token_hash,fingerprint,payload,created,updated,amount,currency) VALUES(?,?,?,?,?,?,?,?)",
@@ -298,10 +298,12 @@ def create_app(config=None, gateway=None):
     def checkout(question_id):
         with db() as c:
             q = fetch_question(c, question_id)
-            if q["state"] != "pending" or now() >= q["created"]+1800:
+            if q["state"] != "pending" or now() >= q["created"]+3600:
                 abort(409, description="This checkout is paid or no longer available. Check your private receipt; do not pay again if charged.")
             if q["checkout_url"]:
                 return jsonify(url=q["checkout_url"])
+            if now() >= q["created"]+1800:
+                abort(409, description="This draft is too old to start checkout. Contact free support if a payment may already exist.")
             if not c.execute("SELECT accepting FROM settings WHERE id=1").fetchone()[0]:
                 abort(503, description="New checkout is paused. No new payment was requested.")
         session = pay.create_checkout(q, base, request.headers.get("X-Question-Token", ""))
@@ -362,6 +364,9 @@ def create_app(config=None, gateway=None):
         # A redirect or client-supplied payment status never authorizes an answer.
         if q["state"] == "pending" and q["session"]:
             session = pay.session(q["session"])
+            if session.get("status") == "expired" and session.get("payment_status") == "unpaid":
+                with db() as c:
+                    c.execute("UPDATE questions SET state='expired',updated=?,version=version+1 WHERE id=? AND state='pending'", (now(),question_id))
             if session.get("status") == "complete" and session.get("payment_status") == "paid":
                 payment = pay.payment(session["payment_intent"])
                 charge = payment.get("latest_charge")
@@ -531,6 +536,7 @@ def create_app(config=None, gateway=None):
                 with db() as c:
                     c.execute("DELETE FROM questions WHERE id=? AND state='pending'", (q["id"],))
         with db() as c:
+            c.execute("DELETE FROM questions WHERE state='expired' AND created<?",(now()-7*86400,))
             c.execute("DELETE FROM questions WHERE state IN ('answered','closed','refunded') AND mail_state NOT IN ('pending','unresolved') AND updated<?",(now()-90*86400,))
             c.execute("DELETE FROM events WHERE created<?",(now()-90*86400,))
         # SQLite secure_delete + encrypted-volume rotation/backup retention are deployment gates.

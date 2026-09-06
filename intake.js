@@ -12,7 +12,7 @@ async function api(path, payload, token) {
     headers: {"Content-Type":"application/json", ...(token ? {"X-Question-Token":token} : {})},
     body: payload ? JSON.stringify(payload) : undefined});
   const body = await response.json();
-  if (!response.ok) { const error=new Error(body.error || "Service unavailable."); error.status=response.status; throw error; }
+  if (!response.ok) { const error=new Error(body.error || "Service unavailable."); error.status=response.status; error.resetDraft=body.resetDraft===true; throw error; }
   return body;
 }
 function selectCategory(category) {
@@ -45,7 +45,7 @@ byId("question-form").addEventListener("submit", async event => {
     await api("api/questions", {...payload,id,token,category:selected.id,catalogVersion:catalog.version,confirmations});
     showPending(order); byId("receipt-link").focus();
   } catch (failure) {
-    if (failure.status && failure.status < 500) {
+    if ((failure.status && failure.status < 500) || failure.resetDraft) {
       try {sessionStorage.removeItem("helpline-pending");}catch { /* Optional storage. */ }
       showError(failure.message);
     } else {

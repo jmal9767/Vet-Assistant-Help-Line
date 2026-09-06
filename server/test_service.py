@@ -302,6 +302,14 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual(self.publish(data,sources=["https://[malformed.example"]).status_code,422)
         self.assertEqual(self.publish(data,sources=ANSWER["sources"]*2).status_code,422)
 
+    def test_confirmed_expired_checkout_can_start_over_without_duplicate_charge(self):
+        data=self.payload();self.client.post("/api/questions",json=data);self.post(data,"/checkout")
+        self.gateway.sessions["cs_test_"+data["id"]]["status"]="expired"
+        self.assertEqual(self.get(data)["state"],"expired")
+        self.assertEqual(self.post(data,"/checkout").status_code,409)
+        retry=dict(data,id=str(uuid.uuid4()),token=secrets.token_hex(32))
+        self.assertEqual(self.client.post("/api/questions",json=retry).status_code,201)
+
 
 class DeadlineTests(unittest.TestCase):
     def stamp(self, value): return int(datetime.fromisoformat(value).replace(tzinfo=PACIFIC).timestamp())

@@ -58,6 +58,7 @@ final class NoRedirects: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
 
 @MainActor
 final class PrivateInbox: ObservableObject {
+    private struct Failure: Decodable { let error: String }
     @Published private(set) var catalog: ServiceCatalog?
     @Published private(set) var questions: [OperatorQuestion] = []
     @Published private(set) var unlocked = false
@@ -159,7 +160,6 @@ final class PrivateInbox: ObservableObject {
         }
         let (data, response) = try await session.data(for: request)
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            struct Failure: Decodable { let error: String }
             let message = (try? JSONDecoder().decode(Failure.self, from: data).error) ?? "The inbox could not be reached securely. Check the service URL and device key."
             throw InboxError.message(message)
         }

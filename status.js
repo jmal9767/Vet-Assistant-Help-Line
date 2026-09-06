@@ -27,6 +27,8 @@ async function refresh() {
     $("state").textContent=labels[current.state] || "Contact support";$("reference").textContent=`Reference: ${current.id}`;$("question").textContent=current.question;$("note").textContent=current.note;
     $("due").textContent=current.due ? `Response target: ${date(current.clarification_due || current.due)}` : "Payment may still be confirming. Do not create another purchase if you were charged.";
     $("checkout").hidden=current.state!=="pending";$("cancel").hidden=current.state!=="paid" || Boolean(current.answer);
+    $("new-question").hidden=!["answered","closed","refunded","expired"].includes(current.state);
+    if(current.state==="expired") { $("due").textContent="Stripe confirmed this checkout expired without payment."; $("new-question").textContent="Start a new unpaid draft"; }
     $("answer").hidden=!current.answer;if(current.answer) renderAnswer("answer-body",current.answer);
     $("clarification-answer").hidden=!current.clarification_answer;if(current.clarification_answer) renderAnswer("clarification-body",current.clarification_answer);
     $("clarification-form").hidden=current.state!=="answered" || Boolean(current.clarification) || Date.now()/1000>current.clarification_deadline;

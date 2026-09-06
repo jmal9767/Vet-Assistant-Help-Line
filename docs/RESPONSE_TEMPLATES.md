@@ -1,112 +1,41 @@
-# Response Templates
+# Human response standards
 
-Copy, personalize the `[bracketed]` parts, and send. Every template ends with the
-standard disclaimer — keep it on every reply. If a question doesn't fit any
-template, re-read `LEGAL_SCOPE.md` before writing a custom reply.
+These are writing aids for Jahmal, not automatic replies. Read the actual question and its nonmedical context. A client is paying for an explanation or organizer that addresses their request, not a copied disclaimer or list of links.
 
----
+## Every eligible answer
 
-## 1. Emergency redirect (send immediately, skip the queue)
+Start by answering the question directly in plain language. Then give the requested checklist or explanation with a usable example. State the relevant limit briefly and include one to three authoritative HTTPS sources personally checked. Do not use an unrelated general homepage as proof of a specific claim. Catalog links are starting points for research, not guaranteed support for every answer. Avoid medical advice or product recommendations that happen to appear on a source page.
 
-> Hi [name] — what you're describing could be an emergency, and I don't want you
-> waiting on me. **Please contact an emergency veterinarian right away.**
->
-> - Find one near you: https://vetlocator.com/
-> - Suspected poisoning: ASPCA Animal Poison Control, **(888) 426-4435** (24/7; a
->   consultation fee may apply)
->
-> I hope [pet's name] is okay. Once things are stable, I'm happy to help with
-> general care questions.
->
-> *[Disclaimer — see bottom of this file]*
+The editor requires a direct-answer section, practical-content section and boundary section, plus all five human-review confirmations. It does not generate content or verify clinical accuracy. There is no diagnosis, safety approval, dosing, treatment, individualized exercise/training plan, record interpretation, or veterinarian supervision behind this service.
 
----
+## Category-specific response goals
 
-## 2. "This needs a vet" (urgent but not 911)
+| Category | Useful substance | Avoid |
+|---|---|---|
+| Brushing & grooming preparation | Explain a general term; provide appointment-preparation headings and questions for the person handling the pet | Nail measurements, restraint, mats against skin, ear/dental procedures, products, skin concerns |
+| Bringing a pet home | Organize spaces, existing supplies, responsibilities and routine appointment logistics | Declaring an interaction/setup safe, species-specific care prescriptions, confinement durations |
+| Enrichment & everyday routines | Explain the general concept and give a blank idea/rotation organizer | Exercise duration/intensity, behavior assessment or training prescriptions |
+| Routine vet-visit preparation | Explain roles/check-in logistics; provide a blank question-priority list | Deciding urgency, fasting/medication directions, interpreting costs or clinical recommendations |
+| Sitters & household organization | Give a task-owner-checkoff structure, contact headings or nonmedical handover format | Medication schedules, clinical monitoring, food portions, caregiver approval |
 
-> Hi [name] — thanks for reaching out about [pet's name]. What you're describing
-> is something a licensed veterinarian should examine in person — as a veterinary
-> assistant I can't assess or diagnose it, and I wouldn't want to guess with
-> [pet's name]'s health.
->
-> I'd recommend calling your vet **[today / within the next day or two]** and
-> mentioning: [symptom], how long it's been going on, and [any detail they gave —
-> appetite/energy/bathroom changes].
->
-> To make the visit productive, jot down: when it started, whether it's getting
-> better or worse, any changes in eating, drinking, energy, or bathroom habits,
-> and a photo/video if it's something visible or intermittent.
->
-> *[Disclaimer]*
+For example, a sitter-handover answer can suggest headings such as “contacts,” “agreed everyday tasks,” “where supplies are kept,” and “check-in arrangements.” Explain what each heading is for, and give a blank task/owner/completed-time example. Do not request personal contact details in the service or add medical instructions. A response should fit the client’s requested format and clarify how to use the organizer.
 
----
+For a routine-visit question list, describe a simple blank structure: topic, question, answer to write down, and next step supplied by the clinic. Do not invent the clinic’s answers or interpret an existing treatment plan. When explaining staff roles, check the relevant jurisdiction’s licensing-board information and distinguish this independent service from supervised work in a clinic.
 
-## 3. General care answer (fully in scope)
+## Free out-of-scope reply
 
-> Hi [name] — great question about [topic]!
->
-> [General, educational answer. Stick to widely published guidance. No doses, no
-> product recommendations for their specific animal, no "your pet has/needs X."]
->
-> Every pet is different, so it's worth mentioning this at [pet's name]'s next
-> checkup too — your vet can tailor it to [him/her/them] specifically.
->
-> *[Disclaimer]*
+Use only after actually reviewing the message:
 
----
+> Your question needs a licensed veterinarian’s assessment, which I cannot provide as an independent veterinary assistant. Please contact your veterinarian or an emergency veterinary hospital; do not wait for this service if your pet may need care. This referral is free. [State the actual full-refund status without claiming a pending refund is complete.]
 
-## 4. Medication / dosing question (always refuse the dose)
+Do not add reassurance such as “probably fine,” “normal,” “not urgent,” or “safe to wait.” Do not give a diagnosis with a disclaimer appended. Do not supply emergency treatment instructions through this paid service. Urgent contact directions are already free on the public form.
 
-> Hi [name] — I have to be upfront: as a veterinary assistant I'm not able to
-> recommend medications or doses, even over-the-counter ones. Dosing depends on
-> species, weight, health history, and other medications, and getting it wrong
-> can be dangerous — several common human medications are toxic to pets.
->
-> The good news is this is usually a quick phone call: your vet's office can
-> often answer dosing questions over the phone for established patients, and
-> ASPCA Poison Control at (888) 426-4435 can advise if [pet's name] already
-> ingested something.
->
-> *[Disclaimer]*
+For a scope question received before payment, explain briefly whether the **topic** fits, without assessing the animal. Ask only for the general topic, not a symptom history. If only a phone number, clinic fee, referral or account issue is involved, keep it free.
 
----
+## Included clarification
 
-## 5. "I can't afford the vet"
+Identify the part of the original answer the client wants explained, then clarify that part using a concrete example. Do not repeat the entire original response or open another paid checkout. If the clarification introduces medical concerns, give a free professional referral; do not answer clinically. If the original question should never have been accepted, refund it. If it is a new unrelated nonmedical topic, explain the boundary without charging automatically or requiring another purchase just to resolve confusion.
 
-> Hi [name] — I hear you, vet care costs are genuinely hard, and I'm sorry
-> you're in this spot. I can't recommend home treatment as a substitute, but
-> here are options that help a lot of people:
->
-> - Low-cost/nonprofit clinics and humane societies in your area (search
->   "[their city] low cost vet clinic")
-> - Veterinary school clinics, if one is nearby (often reduced prices)
-> - Payment plans: many clinics offer them, and CareCredit / Scratchpay are
->   widely accepted
-> - For urgent situations, some ER clinics will discuss financial options —
->   it's always worth asking
->
-> Please don't wait too long if [pet's name] seems to be getting worse.
->
-> *[Disclaimer]*
+## Email and refund wording
 
----
-
-## 6. Second-guessing another vet's advice (never do it)
-
-> Hi [name] — I'm not able to weigh in on your veterinarian's advice; they've
-> examined [pet's name] and know the full picture, which I don't. If something
-> about the plan doesn't sit right or wasn't clear, the best move is to call the
-> clinic and ask — vets expect follow-up questions, and you're also always
-> entitled to a second opinion from another licensed veterinarian.
->
-> *[Disclaimer]*
-
----
-
-## Standard disclaimer (append to every reply)
-
-> ---
-> *I'm a veterinary assistant, not a licensed veterinarian. This is general
-> educational information only — not veterinary medical advice, diagnosis, or
-> treatment, and not a substitute for an exam by a licensed veterinarian. If
-> your pet is in distress, contact an emergency veterinary clinic immediately.*
+Publish the reviewed answer once, then use the app’s Mail handoff. Never say “email delivered” because the composer returned a sent result. Check Mail and use the recorded handoff recovery to avoid duplicates. For refunds, distinguish “requested,” “pending/requires review,” and “processed by Stripe”; bank credit timing is separate. Give free support and the existing reference, never a replacement purchase requirement.

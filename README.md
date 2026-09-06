@@ -1,123 +1,61 @@
-# Vet Assistant Help Line
+# Veterinary Assistant Help Line
 
-A free, one-person pet-care help line run by a veterinary assistant. Pet owners
-submit general care questions through a simple web page; emergencies are
-redirected to emergency veterinary services *before* they ever reach the queue;
-everything else arrives by email as a structured request answered within
-24–48 hours using pre-vetted templates.
+One service for **Jahmal Parris / Bay Area Apps LLC**: a public client question website, a private iPhone work inbox, and a small payment-verifying server. Clients contact Jahmal for human-written, general nonmedical education. The iPhone app is for Jahmal only and is not intended for App Store submission.
 
-**Designed for a solo operator:** no backend, no server costs, no live phone
-line, and legal scope-of-practice guardrails built into every step.
+The source is prepared for configuration and review. A Stripe account alone does not connect it: HTTPS hosting, server secrets, webhook registration, the support mailbox, and a signed installation on Jahmal’s iPhone are still required. Do not open live intake before the acceptance checks in `docs/SOLO_WORKFLOW.md` are complete.
 
-## How it works
+## One service catalog
 
-```
-Pet owner visits the page
-        │
-        ├─ Emergency symptoms? ──► Redirected to ER vet / poison control (never queued)
-        │
-        └─ General question ────► Structured email lands in your help-line inbox
-                                          │
-                                  You reply within 24–48h
-                                  using response templates
-                                  (educational info only,
-                                   refer-to-vet by default)
-```
+`VetAssistantHelpLine/Resources/service-catalog.json` is the one source for categories, fifteen starter questions, scope confirmations, response-quality checklist, price, and response deadlines. It is bundled into the private iPhone app and available through authenticated `/api/admin/catalog`. The website’s `/api/catalog` returns only explicitly approved client fields; internal writing goals, research bookmarks and the operator checklist are excluded. Do not create separate catalogs in HTML or Swift.
 
-## What's in this repo
+## Who sees what
 
-| File | Purpose |
+| Audience | Available information |
 |---|---|
-| `index.html` | The public website: emergency triage, scope explanation, intake form. No dependencies, hostable free on GitHub Pages. Installable to a phone's home screen as an app (PWA) — no App Store needed. |
-| `operator.html` | **Your** page: tap-to-copy reply templates, pre-send scope checklist, one-tap emergency numbers. Add it to your own phone's home screen. |
-| `manifest.webmanifest`, `sw.js`, `icons/` | PWA plumbing: app name/icon for "Add to Home Screen" and offline caching. |
-| `VetAssistantHelpLine.xcodeproj` | Xcode project for the native iOS app (requires Xcode 16+). |
-| `VetAssistantHelpLine/` | SwiftUI source for the iOS app — same three pieces as the site: Emergency, Ask, About tabs. |
-| `docs/LEGAL_SCOPE.md` | What a veterinary assistant can and can't say — the guardrails for every reply. |
-| `docs/RESPONSE_TEMPLATES.md` | Copy-paste replies for the six situations that cover nearly every question. |
-| `docs/SOLO_WORKFLOW.md` | Setup steps and the 15–30 min/day routine for running this alone. |
+| Clients before purchase | Service description, professional role and limits, categories/examples, price, what is included, response target, refunds, privacy and support |
+| A client using their private question link | Their question, published answer and cited sources, clarification, payment/refund status and deadlines |
+| Authenticated operator | Internal response goals, research bookmarks, review checklist, service notes, payment references, reply handoff status and inbox controls |
+| Private repository/operating guides | Pricing rationale, business strategy, technical setup, security procedures and development decisions |
 
-## Launch checklist — getting the app into customers' hands
+Client responses are selected by an allowlist at the server, not filtered only in the browser. Adding a new internal catalog or stored-payload field therefore does not expose it automatically. Notes remain private; receipts receive a standard client notice derived from payment/refund status. Only the final published reply content and its citations are shown to that client. The private service guide is available after unlocking the iPhone app. Keep the repository private and never serve its root directory publicly.
 
-There is no separate customer download: **the website is the customer's app.**
-Publishing it once puts it on every customer's phone who opens your link.
+The five topics are brushing/grooming preparation, bringing a pet home, enrichment/everyday routines, routine vet-visit preparation, and sitter/household organization. The price is **$9.99 USD** for one topic, a practical answer with relevant sources, and one same-topic clarification. Medical concerns, referrals, scope questions and payment support are outside checkout. A referral-only or otherwise ineligible paid question receives a full refund.
 
-1. **Merge the pull request** into `main`.
-2. **Set your help-line email:** edit the `HELPLINE_EMAIL` line near the bottom
-   of `index.html` (questions are sent to this address).
-3. **Turn on GitHub Pages:** repo **Settings → Pages → Deploy from a branch →
-   `main`, `/ (root)` → Save**. A couple of minutes later your app is live at:
+## Code map
 
-   **https://jmal9767.github.io/Vet-Assistant-Help-Line/**
+| Location | Responsibility |
+|---|---|
+| `VetAssistantHelpLine/` | SwiftUI operator inbox, Keychain credentials, device unlock, human answer editor, Mail handoff |
+| `server/app.py` | Public intake/private receipt API, private operator API, Stripe verification, SQLite state, refunds |
+| `server/domain.py` | Catalog validation, conservative extra scope routing, Pacific business-day deadlines |
+| `index.html`, `intake.js` | Client category selection, examples, scope confirmations, saved receipt link, Stripe checkout |
+| `status.html`, `status.js` | Private payment status, published answer, clarification and cancellation |
+| `terms.html`, `privacy.html` | Client-facing policies; update when the catalog or actual deployment changes |
+| `docs/PRODUCT_REVIEW.md` | Question/response review, price decision, removed conflicts and remaining launch gates |
+| `docs/RESPONSE_TEMPLATES.md` | Human writing standards and category-specific examples; never automatic replies |
+| `docs/SOLO_WORKFLOW.md` | Server setup, daily work, email/reconciliation, test-to-live/device checks |
+| `docs/LEGAL_SCOPE.md`, `SECURITY.md` | Service boundaries and security operations |
 
-4. **Share that link** — text it, put it on a business card, post it. Anyone who
-   opens it is using the customer side of the app, and the page itself shows
-   them how to add it to their home screen so it behaves like an installed app.
-   `docs/share-qr.png` is a ready-made QR code pointing at the URL — print it
-   or show it on your phone and customers scan straight into the app.
-5. **Your side:** open `https://jmal9767.github.io/Vet-Assistant-Help-Line/operator.html`
-   on your phone and add it to your home screen. Customer questions arrive in
-   your help-line email inbox; you answer them from there using the toolkit's
-   tap-to-copy templates.
+The obsolete client iOS purchase screens, StoreKit product configuration and Apple transaction verifier were removed. They are recoverable from Git history; do not restore them into this architecture. There is no AI SDK, ChatGPT app, second client app, or duplicate payment integration. `sw.js` only retires an old service worker at an existing origin; the current site registers no worker and caches no private pages.
 
-## Using it as an app — without the App Store
+## Local verification
 
-Once GitHub Pages is enabled, both pages work as installable web apps:
+Python 3.12 and Node are used for server/site checks. No Stripe key is needed for the automated tests and they make no real charges.
 
-- **Clients:** they open the site in Safari (iPhone) or Chrome (Android) and tap
-  **Share → Add to Home Screen**. They get a real app icon that opens
-  full-screen — no App Store, no download, always the latest version.
-- **You:** open `…/operator.html` on your phone and add *that* to your home
-  screen. It's your pocket toolkit: reply templates you can copy with one tap,
-  the pre-send scope checklist, tap-to-call poison control, and the red-flag
-  list for triage.
+```sh
+python3 -m venv .venv
+.venv/bin/python -m pip install --require-hashes -r server/requirements.lock
+.venv/bin/python -m unittest discover -s server -p 'test_*.py' -v
+.venv/bin/python scripts/check_repository.py
+node --check intake.js
+node --check status.js
+node --check sw.js
+```
 
-The `operator.html` page isn't linked from the public site, but it is publicly
-reachable if someone knows the URL — it contains nothing sensitive (the same
-templates are in this public repo).
+On a Mac with Xcode 16 or newer, open `VetAssistantHelpLine.xcodeproj` and run the shared `VetAssistantHelpLine` scheme. The iOS workflow builds, tests and analyzes without signing on a simulator. A simulator cannot validate Face ID/passcode, Apple Mail delivery, or a real Apple Pay checkout; those require the physical-device acceptance checks.
 
-## iOS app
+Runtime dependencies are pinned and hash-locked in `server/requirements.lock`. Dependabot watches `/server`. Review SDK behavior when updating Stripe, including StripeObject conversion and signature verification, and rerun the payment contract tests.
 
-Open `VetAssistantHelpLine.xcodeproj` in Xcode 16 or later and run. Before
-shipping:
+## Deployment shape
 
-1. Set your help-line address in `VetAssistantHelpLine/HelplineConfig.swift`
-   (`HelplineConfig.email`).
-2. Set your own bundle identifier and signing team in the target's
-   Signing & Capabilities settings (it ships with a `com.example` placeholder).
-3. Add a 1024×1024 app icon to `Assets.xcassets/AppIcon`.
-
-The app mirrors the website: an **Emergency** tab (red-flag signs, ER vet
-locator, tap-to-call poison control), an **Ask** tab (structured form that opens
-a pre-filled email — no backend), and an **About** tab (scope + disclaimer).
-
-> **Practical note for a solo operator:** the website is live the moment you
-> enable GitHub Pages and costs nothing, and clients can install it to their
-> home screens with no App Store involved (see above). Distributing this native
-> app to *clients* requires an Apple Developer membership ($99/yr) and App Store
-> review — but you can run it on **your own iPhone for free**: open the project
-> in Xcode, sign in with your Apple ID (Signing & Capabilities → your personal
-> team), plug in your phone, and press Run. Free personal signing expires after
-> 7 days, after which you just press Run again — fine for personal use, not for
-> handing to clients. A reasonable path: launch with the website/PWA now, ship
-> the App Store app only if you later want the storefront presence.
-
-## Getting started
-
-1. Create a dedicated email address for the help line.
-2. Open `index.html` and set `HELPLINE_EMAIL` (near the bottom of the file) to
-   that address.
-3. Enable GitHub Pages: repo **Settings → Pages → Deploy from branch → main,
-   / (root)**. Your site goes live at
-   `https://<username>.github.io/Vet-Assistant-Help-Line/`.
-4. Read `docs/LEGAL_SCOPE.md` before answering your first question.
-
-Full details in [`docs/SOLO_WORKFLOW.md`](docs/SOLO_WORKFLOW.md).
-
-## Important disclaimer
-
-This service provides **general educational information only**. It is not
-veterinary medical advice, diagnosis, or treatment, and does not create a
-veterinarian–client–patient relationship. Scope-of-practice rules vary by
-state — see `docs/LEGAL_SCOPE.md` and verify against your state's veterinary
-practice act.
+Serve the Flask application at the root of a dedicated HTTPS origin using a production WSGI server and persistent private storage. Do not publish this repository as a static directory or expose its database, source files, environment, or Git metadata. GitHub Pages alone cannot run the payment and inbox APIs. The iPhone stores a separate private device credential, never a Stripe secret. Server configuration and launch steps are in the operating guide.

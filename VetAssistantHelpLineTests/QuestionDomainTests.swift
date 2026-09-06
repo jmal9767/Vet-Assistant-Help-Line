@@ -1,448 +1,77 @@
-import Foundation
 import XCTest
 @testable import VetAssistantHelpLine
 
-final class QuestionCategorySchemaTests: XCTestCase {
-    func testCategoriesAndGuidedQuestionsHaveCompleteStableIdentifiers() {
-        let categories = QuestionCategory.allCases
-        let expectedCategoryIDs: Set<String> = [
-            "groomingConcepts",
-            "enrichmentAndRoutines",
-            "newPetEnvironment",
-            "routineVisitPreparation"
-        ]
+final class QuestionDomainTests: XCTestCase {
+    func testBundledCatalogIsUsableByBothSides() throws {
+        let catalog = try ServiceCatalog.bundled()
+        XCTAssertEqual(catalog.priceCents, 999)
+        XCTAssertEqual(catalog.currency, "usd")
+        XCTAssertEqual(catalog.clarificationDays, 7)
+        XCTAssertEqual(catalog.categories.count, 5)
+        XCTAssertEqual(Set(catalog.categories.map(\.id)).count, 5)
+        let examples = catalog.categories.flatMap(\.examples)
+        XCTAssertEqual(examples.count, 15)
+        XCTAssertEqual(Set(examples).count, examples.count)
+        XCTAssertFalse(catalog.answerChecklist.isEmpty)
+        XCTAssertTrue(catalog.scope.contains("not a veterinarian"))
+    }
 
-        XCTAssertEqual(Set(categories.map(\.id)), expectedCategoryIDs)
-        XCTAssertEqual(categories.count, expectedCategoryIDs.count)
-
-        let questionIDs = categories.map(\.guidedQuestion.id)
-        XCTAssertEqual(Set(questionIDs).count, questionIDs.count)
-
-        for category in categories {
-            let question = category.guidedQuestion
-
-            XCTAssertFalse(category.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-            XCTAssertFalse(category.summary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-            XCTAssertFalse(question.id.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-            XCTAssertFalse(question.prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-            XCTAssertFalse(question.supportingText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-            XCTAssertFalse(question.placeholder.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+    func testConnectionRejectsInsecureOrCredentialBearingURLs() throws {
+        let token = String(repeating: "a", count: 64)
+        for url in ["http://example.com", "https://user:password@example.com", "https://example.com?token=secret", "https://example.com#secret", "https://example.com/path"] {
+            XCTAssertThrowsError(try InboxCredentials.validate(url: url, token: token), url)
         }
-    }
-}
-
-final class QuestionDraftValidationTests: XCTestCase {
-    func testDraftRequiresCategoryAndNonblankAnswer() {
-        var draft = QuestionDraft()
-
-        XCTAssertFalse(draft.guidedAnswersAreComplete)
-        XCTAssertFalse(draft.isReadyForReview)
-
-        draft.selectCategory(.groomingConcepts)
-        XCTAssertFalse(draft.guidedAnswersAreComplete)
-
-        draft.setAnswer("  \n  ", for: QuestionCategory.groomingConcepts.guidedQuestion)
-        XCTAssertFalse(draft.guidedAnswersAreComplete)
-
-        draft.setAnswer(
-            "  A general explanation of gradual brushing  ",
-            for: QuestionCategory.groomingConcepts.guidedQuestion
-        )
-
-        XCTAssertTrue(draft.guidedAnswersAreComplete)
-        XCTAssertTrue(draft.isReadyForReview)
+        XCTAssertThrowsError(try InboxCredentials.validate(url: "https://example.com", token: "sk_live_fake"))
+        let value = try InboxCredentials.validate(url: "https://example.com/", token: token)
+        XCTAssertEqual(value.baseURL.host, "example.com")
     }
 
-    func testAnswerIsTrimmedAndCapped() {
-        var draft = QuestionDraft()
-        let question = QuestionCategory.enrichmentAndRoutines.guidedQuestion
-        draft.selectCategory(.enrichmentAndRoutines)
-
-        let untrimmedAnswer = "  \n Rotate simple activities. \t "
-        draft.setAnswer(untrimmedAnswer, for: question)
-        XCTAssertEqual(draft.rawAnswer(for: question), untrimmedAnswer)
-        XCTAssertEqual(draft.answer(for: question), "Rotate simple activities.")
-
-        draft.setAnswer(
-            String(repeating: "a", count: QuestionDraft.answerLimit + 25),
-            for: question
-        )
-        XCTAssertEqual(draft.answer(for: question).count, QuestionDraft.answerLimit)
+    func testServerWireFormatAndReplyAreCompatible() throws {
+        let question = try fixture()
+        XCTAssertEqual(question.paymentIntent, "pi_test")
+        XCTAssertEqual(question.mailState, "pending")
+        XCTAssertTrue(question.needsAttention)
+        XCTAssertFalse(question.canAnswer)
+        let mail = try XCTUnwrap(question.mail)
+        XCTAssertEqual(mail.recipient, "parent@example.com")
+        XCTAssertTrue(mail.body.contains("Use headings for contacts"))
+        XCTAssertTrue(mail.body.contains("Veterinary assistant"))
+        XCTAssertFalse(mail.body.contains("pi_test"))
+        XCTAssertFalse(mail.body.contains("token"))
     }
 
-    func testChangingCategoryClearsThePreviousAnswer() {
-        var draft = QuestionDraft()
-        let firstQuestion = QuestionCategory.groomingConcepts.guidedQuestion
-
-        draft.selectCategory(.groomingConcepts)
-        draft.setAnswer("Explain gradual brushing.", for: firstQuestion)
-        XCTAssertTrue(draft.isReadyForReview)
-
-        draft.selectCategory(.newPetEnvironment)
-
-        XCTAssertEqual(draft.category?.id, QuestionCategory.newPetEnvironment.id)
-        XCTAssertEqual(draft.answer(for: firstQuestion), "")
-        XCTAssertEqual(
-            draft.answer(for: QuestionCategory.newPetEnvironment.guidedQuestion),
-            ""
-        )
-        XCTAssertFalse(draft.isReadyForReview)
+    func testHeldPaymentCannotBeAnsweredAndRemainsVisible() throws {
+        let question = try fixture(state: "payment_hold", mailState: "queued")
+        XCTAssertFalse(question.canAnswer)
+        XCTAssertTrue(question.needsAttention)
     }
 
-    func testClearCreatesAnEmptyDraftWithANewReference() {
-        var draft = completeDraft(category: .routineVisitPreparation)
-        let originalID = draft.id
-
-        draft.clear()
-
-        XCTAssertNotEqual(draft.id, originalID)
-        XCTAssertNil(draft.category)
-        XCTAssertFalse(draft.guidedAnswersAreComplete)
-        XCTAssertFalse(draft.isReadyForReview)
-    }
-}
-
-@MainActor
-final class QuestionFlowModelTests: XCTestCase {
-    func testEveryForwardGateIncludesAdultPurchaseConfirmation() {
-        let model = QuestionFlowModel()
-
-        model.continueFromSafety()
-        assertStep(model, is: .safety)
-        XCTAssertNotNil(model.validationMessage)
-
-        model.confirmsNoEmergency = true
-        model.confirmsEducationOnly = true
-        model.confirmsVeterinaryCare = true
-        model.continueFromSafety()
-        assertStep(model, is: .category)
-
-        model.continueFromCategory()
-        assertStep(model, is: .category)
-        XCTAssertNotNil(model.validationMessage)
-
-        model.draft.selectCategory(.enrichmentAndRoutines)
-        model.continueFromCategory()
-        assertStep(model, is: .details)
-
-        model.continueFromDetails()
-        assertStep(model, is: .details)
-        XCTAssertNotNil(model.validationMessage)
-
-        model.draft.setAnswer(
-            "Explain how activity rotation works in general.",
-            for: QuestionCategory.enrichmentAndRoutines.guidedQuestion
-        )
-        model.continueFromDetails()
-        assertStep(model, is: .review)
-
-        model.acknowledgesResponseTime = true
-        model.acknowledgesPurchase = true
-        model.continueFromReview()
-        assertStep(model, is: .review)
-        XCTAssertFalse(model.reviewAcknowledgementsAreComplete)
-        XCTAssertNotNil(model.validationMessage)
-
-        model.confirmsAdultPurchase = true
-        model.continueFromReview()
-        assertStep(model, is: .purchase)
-        XCTAssertTrue(model.reviewAcknowledgementsAreComplete)
-        XCTAssertNil(model.validationMessage)
+    func testUnresolvedEmailIsVisibleEvenForCompletedWork() throws {
+        let question = try fixture(state: "closed", mailState: "unresolved")
+        XCTAssertTrue(question.needsAttention)
+        XCTAssertFalse(question.canAnswer)
     }
 
-    func testStartingAnotherQuestionClearsWorkflowDraftAndAcknowledgements() {
-        let model = QuestionFlowModel()
-        model.draft = completeDraft(category: .groomingConcepts)
-        model.confirmsNoEmergency = true
-        model.confirmsEducationOnly = true
-        model.confirmsVeterinaryCare = true
-        model.acknowledgesResponseTime = true
-        model.acknowledgesPurchase = true
-        model.confirmsAdultPurchase = true
-        model.markSent()
-
-        assertStep(model, is: .sent)
-        model.startAnotherQuestion()
-
-        assertStep(model, is: .safety)
-        XCTAssertNil(model.draft.category)
-        XCTAssertFalse(model.draft.isReadyForReview)
-        XCTAssertFalse(model.confirmsNoEmergency)
-        XCTAssertFalse(model.confirmsEducationOnly)
-        XCTAssertFalse(model.confirmsVeterinaryCare)
-        XCTAssertFalse(model.acknowledgesResponseTime)
-        XCTAssertFalse(model.acknowledgesPurchase)
-        XCTAssertFalse(model.confirmsAdultPurchase)
-        XCTAssertNil(model.validationMessage)
+    @MainActor
+    func testInboxStartsLockedAndLockClearsPrivateState() {
+        let inbox = PrivateInbox()
+        XCTAssertFalse(inbox.unlocked)
+        XCTAssertTrue(inbox.questions.isEmpty)
+        inbox.lock()
+        XCTAssertFalse(inbox.unlocked)
+        XCTAssertTrue(inbox.questions.isEmpty)
     }
 
-    func testBackingUpRequiresFreshReviewAcknowledgements() {
-        let model = QuestionFlowModel()
-        model.draft = completeDraft(category: .newPetEnvironment)
-        model.confirmsNoEmergency = true
-        model.confirmsEducationOnly = true
-        model.confirmsVeterinaryCare = true
-        model.continueFromSafety()
-        model.continueFromCategory()
-        model.continueFromDetails()
-        model.acknowledgesResponseTime = true
-        model.acknowledgesPurchase = true
-        model.confirmsAdultPurchase = true
-
-        model.goBack()
-
-        assertStep(model, is: .details)
-        XCTAssertFalse(model.reviewAcknowledgementsAreComplete)
-
-        model.continueFromDetails()
-        model.acknowledgesResponseTime = true
-        model.acknowledgesPurchase = true
-        model.confirmsAdultPurchase = true
-        model.continueFromReview()
-        assertStep(model, is: .purchase)
-
-        model.goBack()
-
-        assertStep(model, is: .review)
-        XCTAssertFalse(model.reviewAcknowledgementsAreComplete)
+    private func fixture(state: String = "answered", mailState: String = "pending") throws -> OperatorQuestion {
+        let payload: [String: Any] = [
+            "id": "fixture-question", "category": "organization", "question": "What belongs in a sitter handover?",
+            "context": "A checklist for a household member.", "email": "parent@example.com", "format": "checklist",
+            "state": state, "version": 2, "amount": 999, "currency": "usd", "created": 1788700000,
+            "paid_at": 1788700000, "due": 1789000000, "answer_at": 1788800000,
+            "clarification_deadline": 1789400000, "payment_intent": "pi_test", "mail_state": mailState, "note": "",
+            "answer": ["summary": "Organize the information by what the sitter needs to find.", "practical": "Use headings for contacts, agreed tasks, supply locations, and check-in arrangements.", "boundary": "Clinical instructions come from the treating clinic.", "sources": ["https://www.avma.org/resources-tools/pet-owners/petcare"]]
+        ]
+        let decoder = JSONDecoder(); decoder.keyDecodingStrategy = .convertFromSnakeCase
+        return try decoder.decode(OperatorQuestion.self, from: JSONSerialization.data(withJSONObject: payload))
     }
-
-    private func assertStep(
-        _ model: QuestionFlowModel,
-        is expected: QuestionFlowStep,
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(model.step.rawValue, expected.rawValue, file: file, line: line)
-    }
-}
-
-final class QuestionEmailBuilderTests: XCTestCase {
-    func testIncompleteDraftDoesNotCreateEmail() {
-        XCTAssertNil(
-            QuestionEmailBuilder.build(
-                draft: QuestionDraft(),
-                credit: testCredit()
-            )
-        )
-    }
-
-    func testCreditWithoutAppleQuestionBindingDoesNotCreateEmail() {
-        XCTAssertNil(
-            QuestionEmailBuilder.build(
-                draft: completeDraft(category: .groomingConcepts),
-                credit: testCredit(appAccountToken: nil)
-            )
-        )
-    }
-
-    func testCreditWithoutSignedAppleProofDoesNotCreateEmail() {
-        let draft = completeDraft(category: .groomingConcepts)
-        XCTAssertNil(
-            QuestionEmailBuilder.build(
-                draft: draft,
-                credit: testCredit(
-                    appAccountToken: draft.id,
-                    signedTransactionJWS: ""
-                )
-            )
-        )
-    }
-
-    func testCompleteDraftCreatesTraceableEncodedEmail() throws {
-        let draftID = try XCTUnwrap(
-            UUID(uuidString: "01234567-89AB-CDEF-0123-456789ABCDEF")
-        )
-        var draft = QuestionDraft(id: draftID)
-        let category = QuestionCategory.routineVisitPreparation
-        let answer = "How can I organize appointment logistics and nonmedical questions?"
-        draft.selectCategory(category)
-        draft.setAnswer("  \(answer)  ", for: category.guidedQuestion)
-
-        let credit = testCredit(
-            id: 9_876_543_210,
-            appAccountToken: draftID,
-            environment: "Production",
-            signedTransactionJWS: "header.payload.signature"
-        )
-        let email = try XCTUnwrap(
-            QuestionEmailBuilder.build(
-                draft: draft,
-                credit: credit
-            )
-        )
-
-        XCTAssertEqual(email.recipient, HelplineConfig.recipientEmail)
-        XCTAssertTrue(email.subject.hasPrefix(HelplineConfig.emailSubjectPrefix))
-        XCTAssertTrue(email.subject.contains(category.title))
-        XCTAssertTrue(email.subject.contains("[01234567]"))
-        XCTAssertTrue(email.body.contains("Submission reference / Apple app-account token: \(draftID.uuidString)"))
-        XCTAssertTrue(email.body.contains("Apple transaction reference: 9876543210"))
-        XCTAssertTrue(email.body.contains("Apple environment: Production"))
-        XCTAssertEqual(
-            email.body.components(separatedBy: draftID.uuidString).count - 1,
-            1
-        )
-        XCTAssertTrue(email.body.contains("header.payload.signature"))
-        XCTAssertTrue(email.body.contains(category.title))
-        XCTAssertTrue(email.body.contains(category.guidedQuestion.prompt))
-        XCTAssertTrue(email.body.contains(answer))
-        XCTAssertTrue(email.body.contains(HelplineConfig.emailAttestationSummary))
-
-        let url = try XCTUnwrap(email.fallbackMailtoURL)
-        let components = try XCTUnwrap(URLComponents(url: url, resolvingAgainstBaseURL: false))
-        XCTAssertEqual(components.scheme, "mailto")
-        XCTAssertEqual(components.path, HelplineConfig.recipientEmail)
-
-        let query = Dictionary(
-            uniqueKeysWithValues: (components.queryItems ?? []).compactMap { item in
-                item.value.map { (item.name, $0) }
-            }
-        )
-        XCTAssertEqual(query["subject"], email.subject)
-        XCTAssertNil(query["body"])
-        XCTAssertTrue(email.clipboardText.contains("To: \(HelplineConfig.recipientEmail)"))
-        XCTAssertTrue(email.clipboardText.contains("Subject: \(email.subject)"))
-    }
-}
-
-@MainActor
-final class PurchaseStoreJournalTests: XCTestCase {
-    func testInitializationPreservesHandoffTombstonesAcrossAccountChanges() {
-        let suiteName = "PurchaseStoreJournalTests.\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-
-        defaults.set(
-            ["100", "200"],
-            forKey: PurchaseStore.deliveryJournalKey
-        )
-        defaults.set(
-            ["200", "300"],
-            forKey: PurchaseStore.handoffJournalKey
-        )
-        _ = PurchaseStore(
-            userDefaults: defaults,
-            startAutomatically: false
-        )
-
-        XCTAssertEqual(
-            defaults.stringArray(forKey: PurchaseStore.deliveryJournalKey),
-            ["100", "200"]
-        )
-        XCTAssertEqual(
-            defaults.stringArray(forKey: PurchaseStore.handoffJournalKey),
-            ["200", "300"]
-        )
-    }
-
-    func testCompletedTransactionReferenceExpiresAfterNinetyDays() {
-        let suiteName = "PurchaseStoreCompletedReferenceTests.\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-
-        defaults.set(
-            "123456789",
-            forKey: PurchaseStore.lastCompletedTransactionIDKey
-        )
-        defaults.set(
-            Date().addingTimeInterval(-91 * 24 * 60 * 60).timeIntervalSince1970,
-            forKey: PurchaseStore.lastCompletedTransactionDateKey
-        )
-
-        let expiredStore = PurchaseStore(
-            userDefaults: defaults,
-            startAutomatically: false
-        )
-        XCTAssertNil(expiredStore.lastCompletedTransactionReference)
-        XCTAssertNil(
-            defaults.string(forKey: PurchaseStore.lastCompletedTransactionIDKey)
-        )
-
-        defaults.set(
-            "987654321",
-            forKey: PurchaseStore.lastCompletedTransactionIDKey
-        )
-        defaults.set(
-            Date().timeIntervalSince1970,
-            forKey: PurchaseStore.lastCompletedTransactionDateKey
-        )
-        let currentStore = PurchaseStore(
-            userDefaults: defaults,
-            startAutomatically: false
-        )
-        XCTAssertEqual(
-            currentStore.lastCompletedTransactionReference,
-            "987654321"
-        )
-    }
-
-    func testCompletedTransactionReferenceRejectsMalformedStoredValue() {
-        let suiteName = "PurchaseStoreMalformedReferenceTests.\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-
-        defaults.set(
-            "not-a-transaction",
-            forKey: PurchaseStore.lastCompletedTransactionIDKey
-        )
-        defaults.set(
-            Date().timeIntervalSince1970,
-            forKey: PurchaseStore.lastCompletedTransactionDateKey
-        )
-
-        let store = PurchaseStore(
-            userDefaults: defaults,
-            startAutomatically: false
-        )
-
-        XCTAssertNil(store.lastCompletedTransactionReference)
-        XCTAssertNil(
-            defaults.string(forKey: PurchaseStore.lastCompletedTransactionIDKey)
-        )
-
-        defaults.set(
-            "123456789",
-            forKey: PurchaseStore.lastCompletedTransactionIDKey
-        )
-        defaults.set(
-            Date().addingTimeInterval(24 * 60 * 60).timeIntervalSince1970,
-            forKey: PurchaseStore.lastCompletedTransactionDateKey
-        )
-
-        let futureDatedStore = PurchaseStore(
-            userDefaults: defaults,
-            startAutomatically: false
-        )
-        XCTAssertNil(futureDatedStore.lastCompletedTransactionReference)
-        XCTAssertNil(
-            defaults.string(forKey: PurchaseStore.lastCompletedTransactionIDKey)
-        )
-    }
-}
-
-private func completeDraft(category: QuestionCategory) -> QuestionDraft {
-    var draft = QuestionDraft()
-    draft.selectCategory(category)
-    draft.setAnswer(
-        "A complete, eligible general-education question.",
-        for: category.guidedQuestion
-    )
-    return draft
-}
-
-private func testCredit(
-    id: UInt64 = 42,
-    appAccountToken: UUID? = nil,
-    environment: String = "Xcode",
-    signedTransactionJWS: String = "test.header.payload.signature"
-) -> PaidQuestionCredit {
-    PaidQuestionCredit(
-        id: id,
-        productID: HelplineConfig.educationQuestionProductID,
-        purchaseDate: Date(timeIntervalSince1970: 1_700_000_000),
-        appAccountToken: appAccountToken,
-        environment: environment,
-        signedTransactionJWS: signedTransactionJWS
-    )
 }

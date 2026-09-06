@@ -17,7 +17,7 @@ build/
 timeline.xctimeline
 playground.xcworkspace
 
-# Python verifier environment and caches
+# Python service environment and caches
 .venv/
 __pycache__/
 *.py[cod]
@@ -36,9 +36,9 @@ AuthKey_*.p8
 *.mobileprovision
 *.provisionprofile
 
-# Operator-only verification material and ledgers
-operator/certificates/
-*.jws
+# Private service data
+*.db
+*.db-*
 *.sqlite3
 *.sqlite3-journal
 *.sqlite3-shm

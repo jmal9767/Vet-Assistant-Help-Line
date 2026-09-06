@@ -85,9 +85,6 @@
             ReferencedContainer = "container:VetAssistantHelpLine.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
-      <StoreKitConfigurationFileReference
-         identifier = "../../../VetAssistantHelpLine/Configuration/VetAssistantHelpLine.storekit">
-      </StoreKitConfigurationFileReference>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"

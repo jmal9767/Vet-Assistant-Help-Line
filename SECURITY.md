@@ -1,45 +1,19 @@
-# Security Policy
+# Security and private data
 
-## Supported versions
+Report a suspected problem privately to info@bayareaapps.com without sending customer content, full card numbers, credentials, or private receipt links into a public issue.
 
-Before the first App Store release, security fixes are applied to the latest code
-on `main`. After release, fixes will also be applied to the current App Store
-version; older builds will not be supported after an update is available.
+The client page has no account cookies. A random 256-bit capability in its URL fragment authorizes that one question; the API receives it in `X-Question-Token`, compares a SHA-256 hash, and never returns the stored hash. Possession of the link grants access, so sharing or browser-history exposure is a real risk. Stripe receives the return link as part of Checkout. No analytics scripts are installed. All server responses use `no-store`, restrictive CSP and no-referrer headers.
 
-## Report a vulnerability privately
+The operator has a separate random 256-bit device token. Only its SHA-256 hash belongs on the server. The iPhone stores the token and HTTPS origin in a device-only Keychain item, requires device-owner authentication, uses an ephemeral URLSession, refuses redirects, clears the inbox on backgrounding, and obscures the app snapshot. No client questions or unfinished reply drafts are written to app storage. Mail drafts and sent messages are external to this control and must be managed in Mail.
 
-Email [info@bayareaapps.com](mailto:info@bayareaapps.com?subject=Security%20Report)
-with the subject `Security Report`. If GitHub private vulnerability reporting is
-enabled and available to you, the repository's **Security → Report a
-vulnerability** option is also acceptable. Do not open a public issue for a
-suspected vulnerability.
+SQLite lives outside the repository in a private 0700 directory with a 0600 database. The application enables `secure_delete`; this does not replace encrypted persistent storage, restricted backups and appropriate key/backup rotation. The service refuses to reuse one database across test/live modes. A single instance with local persistent SQLite storage is the supported setup; do not run replicas with different databases or put this file on an unsupported network filesystem.
 
-Include the affected version, device and operating-system version, steps to
-reproduce, the security impact, and any safe proof of concept. Do not include
-real client questions, personal information, pet medical records, credentials,
-or payment data. Use clearly fictional test data.
+Stripe Checkout owns payment entry. The server owns amount/currency, immutable draft payloads, signature verification, payment verification, unique session/intent bindings, idempotency keys, refund state and optimistic versions. A browser redirect, request field, receipt screenshot, or email does not establish payment. The server rechecks Stripe before publishing and rejects refunded, disputed or unverified payments. Refund requests block work even if a later webhook places the payment on hold. An external dispute can still race a publication after the Stripe lookup; webhook reconciliation and operator review are required.
 
-The maintainer will acknowledge a complete report within five business days,
-investigate it, and coordinate a fix and disclosure when appropriate.
+The extra word filter is deliberately conservative and incomplete. It is not clinical triage, a safety score, or proof of eligibility. Every message needs human scope review. The answer editor requires a quality checklist but software cannot establish the accuracy or legality of a human reply. Do not let “passed validation” stand in for professional judgment about scope.
 
-## Credentials and sensitive data
+Deployment must restrict access to the WSGI process, terminate HTTPS, protect secrets, suppress request bodies and auth headers in all logs, and avoid recording private fragments in analytics/error-reporting tools. The built-in rate limiter keys a short-lived HMAC of the actual peer address and ignores forwarded IP headers. A proxy therefore shares a bucket unless the deployment carefully supplies a trusted client address; configure additional edge limits and verify ordinary checkout still works. Never trust arbitrary `X-Forwarded-For` headers. Keep debug mode off.
 
-- Never commit API keys, App Store Connect private keys, signing certificates,
-  provisioning profiles, environment files, or secret build configuration.
-- Keep service credentials in the relevant provider's or deployment platform's
-  protected secret store. They must not be embedded in the iOS app, website,
-  test fixtures, logs, screenshots, or crash reports.
-- Treat client contact details and submitted question text as private.
-  Redact them before sharing diagnostics or reproduction steps.
-- Revoke and rotate an exposed provider, signing, or API credential immediately,
-  then review history and logs for unauthorized use. Do not overwrite the
-  replay-ledger HMAC key: replacement alone would make prior redemption hashes
-  uncheckable. For HMAC loss or exposure, pause paid acceptance and new sales,
-  preserve the ledger and evidence, and execute a reviewed versioned-key/epoch
-  recovery and purchase-reconciliation plan.
+Rotate the device token immediately after phone loss or compromise: replace the server hash, restart the service, and reconnect only the intended iPhone. Pause intake if the database, mailbox, payment verification or service deadlines cannot be maintained. Reconcile a compromised receipt link through verified support; do not disclose client records to someone who merely knows an email or question reference. Process deletion only after verifying ownership and preserving required payment records/unfinished obligations.
 
-## Scope
-
-Reports may cover the iOS app, public website, StoreKit purchase handling, and
-the email-based question-submission workflow. Problems in third-party services
-should also be reported to the affected provider.
+Daily retention removes confirmed-unpaid expired checkouts after seven days and resolved completed records after 90 days. Pending creations without a recorded Stripe session require manual Stripe reconciliation before deletion. Never assume a timeout means no payment. Unfinished answers, clarification requests, refund holds and unresolved Mail handoffs are not automatically purged. Email, Stripe and backups have separate retention and must be covered by the actual deployment policy.

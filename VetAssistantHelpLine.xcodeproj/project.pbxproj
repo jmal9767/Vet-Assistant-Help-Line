@@ -21,22 +21,9 @@
 		BAA000000000000000000001 /* VetAssistantHelpLineTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VetAssistantHelpLineTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		BAA00000000000000000000C /* Exceptions for "VetAssistantHelpLine" folder in "VetAssistantHelpLine" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Configuration/VetAssistantHelpLine.storekit,
-			);
-			target = AB1234567890ABCDEF000006 /* VetAssistantHelpLine */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		AB1234567890ABCDEF000001 /* VetAssistantHelpLine */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				BAA00000000000000000000C /* Exceptions for "VetAssistantHelpLine" folder in "VetAssistantHelpLine" target */,
-			);
 			path = VetAssistantHelpLine;
 			sourceTree = "<group>";
 		};
@@ -143,11 +130,6 @@
 				TargetAttributes = {
 					AB1234567890ABCDEF000006 = {
 						CreatedOnToolsVersion = 16.0;
-						SystemCapabilities = {
-							com.apple.InAppPurchase = {
-								enabled = 1;
-							};
-						};
 					};
 					BAA000000000000000000006 = {
 						CreatedOnToolsVersion = 16.0;
@@ -347,7 +329,8 @@
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Veterinary Assistant Help Line";
+				INFOPLIST_KEY_CFBundleDisplayName = "Help Line Inbox";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Unlock your private client-question inbox.";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -378,7 +361,8 @@
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Veterinary Assistant Help Line";
+				INFOPLIST_KEY_CFBundleDisplayName = "Help Line Inbox";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Unlock your private client-question inbox.";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

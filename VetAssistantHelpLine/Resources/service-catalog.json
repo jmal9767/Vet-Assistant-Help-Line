@@ -1,0 +1,93 @@
+{
+  "version": "2026-09-06",
+  "serviceName": "Veterinary Assistant Help Line",
+  "operatorName": "Jahmal Parris",
+  "businessName": "Bay Area Apps LLC",
+  "supportEmail": "info@bayareaapps.com",
+  "priceCents": 999,
+  "currency": "usd",
+  "clarificationDays": 7,
+  "responseBusinessDays": 2,
+  "scope": "General, nonmedical pet-care education from a veterinary assistant, not a veterinarian. No veterinarian supervises or reviews this independent service. Not a clinic, consultation, diagnosis, treatment, or emergency service.",
+  "responsePromise": "A human-written answer is normally provided by 5 p.m. Pacific Time on the second business day after confirmed payment. The first business day after payment is day one; weekends and observed U.S. federal holidays do not count. This is a target, not an emergency-response guarantee.",
+  "coverage": "One question about one topic, a practical explanation or checklist, relevant sources, and one clarification of that answer requested within seven calendar days. No subscription, priority fee, or extra fee by category.",
+  "refundPolicy": "If your paid question cannot be answered within this service's scope, you receive a free referral and a full refund to the original payment method, not another question credit. You can also request a full refund before a substantive answer is published, including when the response target is missed. Bank processing time varies.",
+  "emergency": "If your pet may be sick, hurt, in pain, exposed to something harmful, having a sudden behavior change, or you are unsure whether care can wait, contact a licensed veterinarian or emergency veterinary hospital now. Do not pay or wait for this service. For possible poisoning in the U.S., ASPCA Animal Poison Control: (888) 426-4435; a consultation fee may apply.",
+  "privacyHint": "Enter one general question and only nonmedical context. Do not include names of other people, addresses, medical history, symptoms, medications, records, photos, payment information, or passwords. Your reply email is collected separately.",
+  "screening": [
+    {"id":"nonmedical","text":"This is a general education question, not about symptoms, injury, poisoning, recovery, behavior problems, medications, doses, products, diets, records, or whether care can wait."},
+    {"id":"understandsRole","text":"I understand I am contacting a veterinary assistant, not a veterinarian, and this service cannot assess an animal or replace veterinary care."},
+    {"id":"adult","text":"I am at least 18 and authorized to make this purchase."},
+    {"id":"terms","text":"I have read the Terms and Privacy Policy, the response target, the included clarification, and the refund policy."}
+  ],
+  "categories": [
+    {
+      "id":"grooming",
+      "title":"Brushing & grooming preparation",
+      "summary":"Understand routine grooming concepts and prepare questions for a hands-on professional.",
+      "prompt":"What would you like to understand about routine grooming or preparing for an appointment?",
+      "contextPrompt":"Which part is confusing: terminology, getting organized, or questions to ask the groomer?",
+      "examples":["What should I ask at a first routine grooming appointment?","Can you explain the idea of introducing brushing gradually?","How can I organize a grooming-appointment checklist?"],
+      "notIncluded":"No nail-cutting measurements, restraint instructions, mats against skin, bleeding nails, ear cleaning, dental procedures, skin concerns, product selection, or individualized grooming schedules.",
+      "answerGoal":"Explain the requested concept, supply a practical preparation checklist, and identify what to ask a groomer or veterinarian in person.",
+      "sources":["https://www.avma.org/resources-tools/pet-owners/petcare"]
+    },
+    {
+      "id":"home",
+      "title":"Bringing a pet home",
+      "summary":"Organize a quiet settling-in space and a simple household preparation checklist.",
+      "prompt":"What part of preparing your home for a new pet would you like explained?",
+      "contextPrompt":"Which nonmedical setup task are you organizing: spaces, supplies you already have, or household responsibilities?",
+      "examples":["What belongs on a new-pet home-setup checklist?","How can I organize a quiet settling-in area?","Can you explain the purpose of keeping a carrier familiar at home?"],
+      "notIncluded":"No pet-to-pet safety assessment, aggression, distress, resource guarding, confinement-duration rules, species-specific husbandry plans, or product recommendations.",
+      "answerGoal":"Give a nonmedical preparation sequence with a short checklist; do not evaluate whether a particular setup or animal interaction is safe.",
+      "sources":["https://catfriendly.com/be-a-cat-friendly-caregiver/getting-cat-veterinarian/","https://www.avma.org/resources-tools/pet-owners/petcare"]
+    },
+    {
+      "id":"routines",
+      "title":"Enrichment & everyday routines",
+      "summary":"Learn general enrichment concepts and organize everyday activities without a training or exercise prescription.",
+      "prompt":"What general enrichment or routine concept would you like help understanding?",
+      "contextPrompt":"Would a plain-language explanation, an activity-rotation organizer, or a household checklist be most useful?",
+      "examples":["What does enrichment mean in everyday pet care?","How can I keep an organized list of enrichment activities?","Can you explain what people mean by a predictable everyday routine?"],
+      "notIncluded":"No behavior assessment, separation anxiety, excessive barking, litter accidents, aggression, sudden changes, punishment, exercise intensity or duration, or individualized training plans.",
+      "answerGoal":"Explain the concept and offer an organizational example; avoid prescribing activities or exercise for an individual animal.",
+      "sources":["https://www.avma.org/resources-tools/animal-health-and-welfare/animal-welfare"]
+    },
+    {
+      "id":"visits",
+      "title":"Preparing for a routine vet visit",
+      "summary":"Understand staff roles, organize a question list, and plan routine appointment logistics.",
+      "prompt":"What would help you feel organized for a routine veterinary appointment?",
+      "contextPrompt":"Which part do you want explained: staff roles, the check-in process, or preparing your own question list?",
+      "examples":["Who does what: veterinarian, technician, and assistant?","How do I organize questions so I do not forget them at a routine visit?","What practical details should I confirm with the clinic before arriving?"],
+      "notIncluded":"No deciding whether to book or wait, interpreting estimates or medical recommendations, fasting or medication instructions, test results, vaccine schedules, or judging a veterinarian's advice.",
+      "answerGoal":"Explain the nonmedical process, provide a question-list structure, and direct clinic-specific instructions back to that clinic.",
+      "sources":["https://www.vmb.ca.gov/applicants/vet_office_staff.shtml"]
+    },
+    {
+      "id":"organization",
+      "title":"Sitters & household organization",
+      "summary":"Prepare a nonmedical handover, contact list, or routine-care record for family members and pet sitters.",
+      "prompt":"What pet-care information are you trying to organize or hand over?",
+      "contextPrompt":"Who is the checklist for: you, another household member, or a sitter? Do not enter their personal details.",
+      "examples":["What headings should I use in a nonmedical sitter handover?","How can I organize clinic and emergency contact information?","How can I make a shared care checklist without duplicating tasks?"],
+      "notIncluded":"No medication administration plans, clinical monitoring, travel fitness, airline or legal eligibility decisions, food portions, treatment schedules, or approving a caregiver's qualifications.",
+      "answerGoal":"Provide a reusable nonmedical checklist or log structure, keep private details out of the reply, and separate medical instructions supplied by the treating clinic.",
+      "sources":["https://www.avma.org/resources-tools/pet-owners/petcare"]
+    }
+  ],
+  "freeHelp": [
+    {"title":"Symptoms, injuries, medicines, food, or behavior concerns","answer":"Contact a licensed veterinarian. We cannot assess an animal, recommend a diet or product, calculate a dose, interpret a photo or record, or decide whether care can wait. Do not buy a question for these topics."},
+    {"title":"Finding a clinic or asking about costs","answer":"Ask clinics directly about availability, exam fees, written estimates, payment options, and local nonprofit resources. This information is free; do not purchase a question for a phone number, price quote, or referral."},
+    {"title":"Payments, receipts, privacy, or a missing reply","answer":"Contact info@bayareaapps.com with your question reference. Do not send card numbers or buy again to recover a paid question."},
+    {"title":"Unsure whether your question belongs here?","answer":"Ask free scope support at info@bayareaapps.com before paying. Give only the topic, not symptoms or records. A scope reply is not an assessment of your pet."}
+  ],
+  "answerChecklist": [
+    "I read the whole question and any context; no part requires clinical judgment or evaluation of an individual animal.",
+    "I answered the actual question in plain language, not with a generic disclaimer or copied template.",
+    "I included useful nonmedical steps, an example, or a checklist that matches the requested format.",
+    "I checked the linked authoritative sources and did not copy their unrelated medical or product advice.",
+    "I stated the relevant limit without diagnosis, reassurance, dosing, treatment, safety assessment, or claims of veterinarian supervision."
+  ]
+}

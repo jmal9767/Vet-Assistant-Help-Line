@@ -513,7 +513,7 @@ def create_app(config=None, gateway=None):
                 state = "queued" if action == "queued" else "pending"
             else:
                 abort(409,description="Resolve the existing email handoff before preparing another copy.")
-            c.execute("UPDATE questions SET mail_state=?,version=version+1 WHERE id=?",(state,question_id))
+            c.execute("UPDATE questions SET mail_state=?,updated=?,version=version+1 WHERE id=?",(state,now(),question_id))
             return jsonify(serialized(fetch_question(c,question_id,True),True))
 
     @app.cli.command("purge-expired")

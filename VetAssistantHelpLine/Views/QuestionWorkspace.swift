@@ -110,6 +110,14 @@ struct QuestionWorkspace: View {
         }
         .navigationTitle("Question workspace")
         .navigationBarTitleDisplayMode(.inline)
+        .onChange(of: inbox.unlocked) { _, unlocked in
+            if !unlocked {
+                clearDraft()
+                mailMessage = nil; handoffQuestion = nil; showingMail = false
+                confirmation = nil; error = nil
+            }
+        }
+        .onDisappear { clearDraft() }
         .confirmationDialog("Confirm action", isPresented: Binding(get: { confirmation != nil }, set: { if !$0 { confirmation = nil } }), titleVisibility: .visible) {
             if let action = confirmation, let q = question {
                 if action == "publish" {
@@ -157,8 +165,11 @@ struct QuestionWorkspace: View {
     private func publish(_ q: OperatorQuestion) {
         perform {
             _ = try await inbox.act(q, action: "answer", values: ["summary": summary, "practical": practical, "boundary": boundary, "sources": sources, "reviewed": ready])
-            summary = ""; practical = ""; boundary = ""; sourceText = ""; reviewed = []
+            clearDraft()
         }
+    }
+    private func clearDraft() {
+        summary = ""; practical = ""; boundary = ""; sourceText = ""; reviewed = []
     }
     private func beginMail(_ q: OperatorQuestion) {
         guard MFMailComposeViewController.canSendMail() else { return }

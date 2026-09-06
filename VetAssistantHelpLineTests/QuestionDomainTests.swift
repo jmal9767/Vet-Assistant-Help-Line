@@ -26,6 +26,14 @@ final class QuestionDomainTests: XCTestCase {
         XCTAssertEqual(value.baseURL.host, "example.com")
     }
 
+    func testClientCatalogCannotReplaceThePrivateOperatorGuide() throws {
+        let encoded = try JSONEncoder().encode(ServiceCatalog.bundled())
+        var client = try XCTUnwrap(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        client.removeValue(forKey: "answerChecklist")
+        let data = try JSONSerialization.data(withJSONObject: client)
+        XCTAssertThrowsError(try JSONDecoder().decode(ServiceCatalog.self, from: data))
+    }
+
     func testServerWireFormatAndReplyAreCompatible() throws {
         let question = try fixture()
         XCTAssertEqual(question.paymentIntent, "pi_test")

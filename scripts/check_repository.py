@@ -58,6 +58,12 @@ def main():
     manifest=plistlib.loads((ROOT/"VetAssistantHelpLine/PrivacyInfo.xcprivacy").read_bytes())
     assert not manifest["NSPrivacyTracking"]
     assert not manifest["NSPrivacyAccessedAPITypes"]
+    owner_client=(ROOT/"VetAssistantHelpLine/Services/PrivateInbox.swift").read_text()
+    assert 'request("api/admin/catalog")' in owner_client
+    assert '"api/catalog"' not in owner_client
+    public_text="\n".join((ROOT/name).read_text() for name in pages)
+    for internal in ("answerChecklist","answerGoal","Keychain","private device key","iPhone app is private","Private service note"):
+        assert internal not in public_text, ("internal content in client page",internal)
     for doc in ("README.md","SECURITY.md","docs/SOLO_WORKFLOW.md","docs/RESPONSE_TEMPLATES.md","docs/LEGAL_SCOPE.md","docs/PRODUCT_REVIEW.md"):
         assert (ROOT/doc).is_file(), doc
     subprocess.run(["git","diff","--check"],cwd=ROOT,check=True)

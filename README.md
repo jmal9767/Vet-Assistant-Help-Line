@@ -6,7 +6,18 @@ The source is prepared for configuration and review. A Stripe account alone does
 
 ## One service catalog
 
-`VetAssistantHelpLine/Resources/service-catalog.json` is bundled into the iPhone app and served to the website by `/api/catalog`. It owns the categories, fifteen starter questions, scope confirmations, response-quality checklist, price, and response deadlines. Do not create separate catalogs in HTML or Swift.
+`VetAssistantHelpLine/Resources/service-catalog.json` is the one source for categories, fifteen starter questions, scope confirmations, response-quality checklist, price, and response deadlines. It is bundled into the private iPhone app and available through authenticated `/api/admin/catalog`. The website’s `/api/catalog` returns only explicitly approved client fields; internal writing goals, research bookmarks and the operator checklist are excluded. Do not create separate catalogs in HTML or Swift.
+
+## Who sees what
+
+| Audience | Available information |
+|---|---|
+| Clients before purchase | Service description, professional role and limits, categories/examples, price, what is included, response target, refunds, privacy and support |
+| A client using their private question link | Their question, published answer and cited sources, clarification, payment/refund status and deadlines |
+| Authenticated operator | Internal response goals, research bookmarks, review checklist, service notes, payment references, reply handoff status and inbox controls |
+| Private repository/operating guides | Pricing rationale, business strategy, technical setup, security procedures and development decisions |
+
+Client responses are selected by an allowlist at the server, not filtered only in the browser. Adding a new internal catalog or stored-payload field therefore does not expose it automatically. Notes remain private; receipts receive a standard client notice derived from payment/refund status. Only the final published reply content and its citations are shown to that client. The private service guide is available after unlocking the iPhone app. Keep the repository private and never serve its root directory publicly.
 
 The five topics are brushing/grooming preparation, bringing a pet home, enrichment/everyday routines, routine vet-visit preparation, and sitter/household organization. The price is **$9.99 USD** for one topic, a practical answer with relevant sources, and one same-topic clarification. Medical concerns, referrals, scope questions and payment support are outside checkout. A referral-only or otherwise ineligible paid question receives a full refund.
 

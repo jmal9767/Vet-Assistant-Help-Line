@@ -17,7 +17,7 @@ from werkzeug.exceptions import HTTPException
 
 from server.domain import (CATALOG, ROOT, Invalid, clean, validate_question,
                            validate_answer, response_due, clarification_deadline,
-                           REVIEW_WORDS)
+                           REVIEW_WORDS, public_catalog)
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS questions (
@@ -165,17 +165,31 @@ def create_app(config=None, gateway=None):
             abort(409, description="This question changed. Refresh before trying again.")
 
     def serialized(q, private=False):
-        keys = ("id", "created", "paid_at", "due", "state", "version", "amount", "currency",
+        # Select client data explicitly. Internal notes and newly added payload
+        # fields must never become public merely because they exist in storage.
+        keys = ("id", "created", "paid_at", "due", "state", "amount", "currency",
                 "answer_at", "clarification", "clarification_at", "clarification_due",
-                "clarification_deadline", "note", "mail_state", "updated")
+                "clarification_deadline")
         result = {k: q[k] for k in keys}
-        result.update(json.loads(q["payload"]))
+        payload = json.loads(q["payload"])
+        result.update({key: payload[key] for key in (
+            "category", "question", "context", "email", "format", "catalogVersion"
+        )})
         for key in ("answer", "clarification_answer"):
-            result[key] = json.loads(q[key]) if q[key] else None
+            answer = json.loads(q[key]) if q[key] else None
+            result[key] = {field: answer[field] for field in (
+                "summary", "practical", "boundary", "sources"
+            )} if answer else None
         if private:
-            result["payment_intent"] = q["payment_intent"]
+            result.update({key: q[key] for key in (
+                "version", "note", "mail_state", "updated", "payment_intent"
+            )})
         else:
-            result.pop("mail_state")
+            result["notice"] = {
+                "refund_requested": "A full refund has been requested. Work is paused while the refund is processed or reviewed; bank timing varies.",
+                "refunded": "Stripe has processed your full refund to the original payment method. Your bank may take additional time to show it.",
+                "payment_hold": "Your payment needs review. Contact support with your reference; do not pay again."
+            }.get(q["state"], "")
         return result
 
     def payment_state(q):
@@ -265,7 +279,12 @@ def create_app(config=None, gateway=None):
     @app.get("/api/catalog")
     def catalog():
         with db() as c:
-            return jsonify(**CATALOG, accepting=accepting(c), live=app.config["LIVE"])
+            return jsonify(**public_catalog(), accepting=accepting(c), live=app.config["LIVE"])
+
+    @app.get("/api/admin/catalog")
+    def operator_catalog():
+        admin()
+        return jsonify(CATALOG)
 
     @app.post("/api/questions")
     def create_question():

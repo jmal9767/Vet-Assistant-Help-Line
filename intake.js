@@ -70,7 +70,7 @@ async function load() {
     catalog = await api("api/catalog");
     for (const [id,key] of [["scope","scope"],["coverage","coverage"],["promise","responsePromise"],["refund","refundPolicy"],["privacy-hint","privacyHint"]]) byId(id).textContent = catalog[key];
     byId("price").textContent = `${new Intl.NumberFormat("en-US",{style:"currency",currency:catalog.currency}).format(catalog.priceCents/100)} · one question`;
-    byId("availability").textContent = !catalog.live ? "Test environment—no real payments. Do not enter real customer information." : catalog.accepting ? "Accepting nonmedical questions. Review the scope before paying." : "New questions are paused or the queue is full. Free support remains available.";
+    byId("availability").textContent = !catalog.live ? "Test environment—no real payments. Do not enter real customer information." : catalog.accepting ? "Accepting nonmedical questions. Review the scope before paying." : "New questions are temporarily unavailable. Free support remains available.";
     for (const category of catalog.categories) {
       const label = element("label", "", "category-option");
       const radio = document.createElement("input"); radio.type="radio"; radio.name="category"; radio.value=category.id; radio.required=true;

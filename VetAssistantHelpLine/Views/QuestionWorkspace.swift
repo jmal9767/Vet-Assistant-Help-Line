@@ -39,7 +39,12 @@ struct QuestionWorkspace: View {
                         LabeledContent("Requested format", value: q.format)
                         Text("Reference: \(q.id)").font(.caption).textSelection(.enabled)
                         if let due = q.clarificationDue ?? q.due { Text("Response target: \(OperatorQuestion.pacificDate(due))") }
-                        if !q.note.isEmpty { Text(q.note) }
+                        if !q.note.isEmpty {
+                            VStack(alignment: .leading) {
+                                Text("Private service note").font(.caption.weight(.semibold))
+                                Text(q.note)
+                            }
+                        }
                     }
                     if let category = inbox.catalog?.categories.first(where: { $0.id == q.category }) {
                         Section("Response goal · " + category.title) {

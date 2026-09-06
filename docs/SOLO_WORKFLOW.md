@@ -2,6 +2,8 @@
 
 Jahmal uses the signed private iPhone app. Clients use the HTTPS website. The server must remain reachable while the phone is offline. Neither the public website nor the server is installed inside the phone, and no App Store listing is involved.
 
+This guide is private operating material. Keep pricing rationale, business planning, security/setup details, reply-writing checklists and service notes on the operator side. Clients need clear service, purchase and privacy information and their own published answer. The server filters client data before sending it: `/api/catalog` is a limited client view, while `/api/admin/catalog` requires the owner credential. The private guide is accessible after unlocking the app. A service note shown in the workspace stays private; clients see a standard refund/payment notice, never that note. Publishing the answer is the deliberate step that makes its text and cited sources available to the client.
+
 ## Configure the server
 
 Use a dedicated HTTPS origin at its root, Python 3.12, the hash-locked dependencies, a production WSGI process, and private persistent storage. Serve only routes in `server/app.py`; never expose the repository as a static directory. The built-in Flask development server is for local synthetic testing only. Do not put customer data into a development environment.

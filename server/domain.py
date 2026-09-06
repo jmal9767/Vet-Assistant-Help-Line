@@ -9,6 +9,23 @@ from zoneinfo import ZoneInfo
 ROOT = Path(__file__).resolve().parents[1]
 CATALOG = json.loads((ROOT / "VetAssistantHelpLine/Resources/service-catalog.json").read_text())
 CATEGORIES = {item["id"]: item for item in CATALOG["categories"]}
+
+
+def public_catalog():
+    """Explicit client fields from the one catalog; new owner fields stay private."""
+    result = {key: CATALOG[key] for key in (
+        "version", "serviceName", "operatorName", "businessName", "supportEmail",
+        "priceCents", "currency", "clarificationDays", "responseBusinessDays",
+        "scope", "responsePromise", "coverage", "refundPolicy", "emergency", "privacyHint"
+    )}
+    result["categories"] = [{key: category[key] for key in (
+        "id", "title", "summary", "prompt", "contextPrompt", "examples", "notIncluded"
+    )} for category in CATALOG["categories"]]
+    result["screening"] = [{key: item[key] for key in ("id", "text")} for item in CATALOG["screening"]]
+    result["freeHelp"] = [{key: item[key] for key in ("title", "answer")} for item in CATALOG["freeHelp"]]
+    return result
+
+
 PACIFIC = ZoneInfo("America/Los_Angeles")
 # Extra conservative routing, NOT a medical classifier. Absence of a match never
 # establishes eligibility. The customer attestations AND human review are required.

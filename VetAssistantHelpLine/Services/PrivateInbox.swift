@@ -98,7 +98,7 @@ final class PrivateInbox: ObservableObject {
             else if let saved { resolved = saved }
             else { throw InboxError.message("Enter your service URL and private device key to connect for the first time.") }
             credentials = resolved
-            let remote: ServiceCatalog = try await request("api/catalog", authorized: false)
+            let remote: ServiceCatalog = try await request("api/admin/catalog")
             let inbox: InboxResponse = try await request("api/admin/questions")
             guard attempt == generation else { return }
             try DeviceKeychain.save(resolved)
@@ -148,11 +148,11 @@ final class PrivateInbox: ObservableObject {
         return updated
     }
 
-    private func request<T: Decodable>(_ path: String, body: [String: Any]? = nil, authorized: Bool = true) async throws -> T {
+    private func request<T: Decodable>(_ path: String, body: [String: Any]? = nil) async throws -> T {
         guard let credentials else { throw InboxError.message("Connect your private inbox first.") }
         var request = URLRequest(url: credentials.baseURL.appendingPathComponent(path))
         request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
-        if authorized { request.setValue("Bearer \(credentials.token)", forHTTPHeaderField: "Authorization") }
+        request.setValue("Bearer \(credentials.token)", forHTTPHeaderField: "Authorization")
         if let body {
             request.httpMethod = "POST"
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")

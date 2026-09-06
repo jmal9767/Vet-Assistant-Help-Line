@@ -69,13 +69,16 @@ struct ContentView: View {
             }
             .navigationTitle("Help Line Inbox")
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) { Button("Service guide") { showGuide = true } }
                 if inbox.unlocked {
+                    ToolbarItem(placement: .topBarLeading) { Button("Private service guide") { showGuide = true } }
                     ToolbarItem(placement: .topBarTrailing) { Button("Lock", systemImage: "lock") { inbox.lock() } }
                     ToolbarItem(placement: .bottomBar) { Button("Refresh", systemImage: "arrow.clockwise") { Task { await inbox.refresh() } }.disabled(inbox.busy) }
                 }
             }
-            .sheet(isPresented: $showGuide) { ServiceGuideView() }
+            .sheet(isPresented: $showGuide) { if inbox.unlocked { ServiceGuideView() } }
+            .onChange(of: inbox.unlocked) { _, unlocked in
+                if !unlocked { showGuide = false; confirmOpen = false }
+            }
             .confirmationDialog("Open the paid question queue?", isPresented: $confirmOpen, titleVisibility: .visible) {
                 Button("Open queue") { Task { await inbox.setAvailability(true) } }
             } message: { Text("Confirm the website, Stripe webhooks, email, privacy controls, and your availability are ready. The server caps outstanding work at ten questions and checkout reservations.") }
@@ -89,7 +92,7 @@ struct ServiceGuideView: View {
     var body: some View {
         NavigationStack {
             List {
-                if let catalog = inbox.catalog {
+                if inbox.unlocked, let catalog = inbox.catalog {
                     Section(catalog.price + " · one question") {
                         Text(catalog.coverage); Text(catalog.responsePromise); Text(catalog.refundPolicy)
                     }
@@ -113,7 +116,7 @@ struct ServiceGuideView: View {
                     Text("Questions stay in memory while this app is unlocked. Backgrounding locks the inbox. Your device key is stored only in this iPhone’s Keychain; it is not a Stripe secret.")
                     Button("Remove saved connection", role: .destructive) { inbox.disconnect(); dismiss() }
                 }
-            }.navigationTitle("Service guide").toolbar { Button("Done") { dismiss() } }
+            }.navigationTitle("Private service guide").toolbar { Button("Done") { dismiss() } }
         }
     }
 }

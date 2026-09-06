@@ -14,6 +14,8 @@ The service should sell a useful human-written explanation or organizer within J
 | A follow-up could become another unnecessary purchase | One same-topic clarification on the original receipt with its own response target |
 | Email or checkout interruption could lead to duplicate payment/reply | Immutable draft and idempotent checkout, verified payment, durable Mail handoff state |
 | Repeated hard-coded policy lists could drift | One JSON catalog used by web/server/native app; cross-surface checks for fixed legal pages |
+| Shared data exposed owner writing guidance and service notes to client requests | Explicit client field allowlists; full guide requires owner authentication, private notes stay private, and customer receipts use status notices |
+| Client copy described the private iPhone setup and internal payment/email workflow | Customer pages now focus on service and purchase information; implementation and business decisions remain in private operator materials |
 
 ## Realistic question and response map
 

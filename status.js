@@ -3,7 +3,7 @@ const $ = id => document.getElementById(id);
 const [id,token] = location.hash.slice(1).split("/");
 const valid = /^[a-f0-9-]{36}$/.test(id || "") && /^[a-f0-9]{64}$/.test(token || "");
 let current;
-const labels={pending:"Awaiting verified payment",paid:"Paid · awaiting human review",answered:"Your answer is ready",clarification:"Clarification awaiting reply",closed:"Answer and clarification complete",refund_requested:"Refund requested · processing or review pending",refunded:"Refund processed by Stripe",payment_hold:"Payment needs reconciliation",expired:"Checkout expired"};
+const labels={pending:"Awaiting payment confirmation",paid:"Paid · awaiting your answer",answered:"Your answer is ready",clarification:"Clarification awaiting reply",closed:"Answer and clarification complete",refund_requested:"Refund requested · processing or review pending",refunded:"Refund processed by Stripe",payment_hold:"Payment under review",expired:"Checkout expired"};
 const date = value => new Intl.DateTimeFormat("en-US",{dateStyle:"medium",timeStyle:"short",timeZone:"America/Los_Angeles"}).format(new Date(value*1000))+" Pacific Time";
 async function api(suffix="",body) {
   if (!valid) throw new Error("Open your complete private question link. For a lost link, contact free support with your receipt reference.");
@@ -22,9 +22,9 @@ function renderAnswer(target,answer) {
 async function refresh() {
   $("refresh").disabled=true;$("error").textContent="";
   try {
-    current=await api();$("details").hidden=false;$("message").textContent="Status checked. Payment is verified by the server, not by this page.";
+    current=await api();$("details").hidden=false;$("message").textContent="Your latest question and payment status are shown below.";
     if(current.state!=="pending") { try { const saved=JSON.parse(sessionStorage.getItem("helpline-pending")); if(saved?.id===id) sessionStorage.removeItem("helpline-pending"); } catch { /* Optional tab storage. */ } }
-    $("state").textContent=labels[current.state] || "Contact support";$("reference").textContent=`Reference: ${current.id}`;$("question").textContent=current.question;$("note").textContent=current.note;
+    $("state").textContent=labels[current.state] || "Contact support";$("reference").textContent=`Reference: ${current.id}`;$("question").textContent=current.question;$("notice").textContent=current.notice;
     $("due").textContent=current.due ? `Response target: ${date(current.clarification_due || current.due)}` : "Payment may still be confirming. Do not create another purchase if you were charged.";
     $("checkout").hidden=current.state!=="pending";$("cancel").hidden=current.state!=="paid" || Boolean(current.answer);
     $("new-question").hidden=!["answered","closed","refunded","expired"].includes(current.state);

@@ -86,6 +86,9 @@ class ServiceTests(unittest.TestCase):
             json=body or {}, headers=ADMIN if admin else self.headers(data))
     def get(self, data):
         return self.client.get("/api/questions/"+data["id"], headers=self.headers(data)).get_json()
+    def operator_question(self, data):
+        rows=self.client.get("/api/admin/questions",headers=ADMIN).get_json()["questions"]
+        return next(row for row in rows if row["id"]==data["id"])
     def webhook(self, kind, obj, event_id=None, **changes):
         event = {"id": event_id or "evt_"+uuid.uuid4().hex, "object": "event", "created": int(time.time()),
                  "type": kind, "livemode": False, "data": {"object": obj}}
@@ -104,7 +107,7 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual(self.webhook("checkout.session.completed", {"id": key}).status_code, 200)
         return data
     def publish(self, data, **changes):
-        body = dict(ANSWER, version=self.get(data)["version"])
+        body = dict(ANSWER, version=self.operator_question(data)["version"])
         body.update(changes)
         return self.post(data,"/answer",body,admin=True)
 
@@ -141,7 +144,7 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual(self.client.get("/api/admin/questions", headers=self.headers(data)).status_code,401)
         self.assertEqual(self.client.get("/api/questions/"+data["id"],headers=ADMIN).status_code,404)
         public = self.get(data)
-        for secret in ("payment_intent", "token_hash", "mail_state", "fingerprint", "session"):
+        for secret in ("payment_intent", "token_hash", "mail_state", "fingerprint", "session", "note", "version", "updated"):
             self.assertNotIn(secret, public)
         self.assertEqual(self.post(data,"/answer",ANSWER).status_code,404)
 
@@ -150,10 +153,10 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual(self.client.post("/api/questions",json=data).status_code,200)
         other = dict(data,id=str(uuid.uuid4()),token=secrets.token_hex(32))
         self.assertEqual(self.client.post("/api/questions",json=other).status_code,409)
-        version = self.get(data)["version"]
+        version = self.operator_question(data)["version"]
         self.webhook("checkout.session.completed",{"id":"cs_test_"+data["id"]},event_id="evt_repeat")
         self.webhook("checkout.session.completed",{"id":"cs_test_"+data["id"]},event_id="evt_repeat")
-        self.assertEqual(self.get(data)["version"],version)
+        self.assertEqual(self.operator_question(data)["version"],version)
         body=dict(ANSWER,version=version)
         self.assertEqual(self.post(data,"/answer",body,admin=True).status_code,200)
         self.assertEqual(self.post(data,"/answer",body,admin=True).status_code,200)
@@ -180,7 +183,7 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual(self.get(data)["state"],"paid")
 
     def test_refund_request_wins_over_stale_answer(self):
-        data=self.paid();old=self.get(data)["version"]
+        data=self.paid();old=self.operator_question(data)["version"]
         self.assertEqual(self.post(data,"/refund-request").status_code,200)
         self.assertEqual(self.post(data,"/answer",dict(ANSWER,version=old),admin=True).status_code,409)
         self.assertIsNone(self.get(data)["answer"])
@@ -194,7 +197,7 @@ class ServiceTests(unittest.TestCase):
         body={"confirmed":True,"note":"Full refund for a cancelled question."}
         self.post(data,"/refund",body,admin=True)
         self.webhook("refund.updated",{"payment_intent":"pi_"+data["id"]})
-        q=self.get(data)
+        q=self.operator_question(data)
         result=self.post(data,"/reconcile",{"version":q["version"]},admin=True)
         self.assertEqual(result.get_json()["state"],"refund_requested")
         self.post(data,"/refund",body,admin=True)
@@ -211,8 +214,10 @@ class ServiceTests(unittest.TestCase):
     def test_one_clarification_is_included_and_idempotent(self):
         data=self.paid();self.assertEqual(self.publish(data).status_code,200)
         body={"text":"Can you explain how the check-in heading would look?","sameTopic":True}
-        first=self.post(data,"/clarification",body);second=self.post(data,"/clarification",body)
-        self.assertEqual(first.status_code,200);self.assertEqual(first.get_json()["version"],second.get_json()["version"])
+        first=self.post(data,"/clarification",body);version=self.operator_question(data)["version"]
+        second=self.post(data,"/clarification",body)
+        self.assertEqual(first.status_code,200);self.assertEqual(first.get_json(),second.get_json())
+        self.assertEqual(self.operator_question(data)["version"],version)
         self.assertEqual(self.post(data,"/clarification",dict(body,text="Could you explain a different heading too?")).status_code,409)
         result=self.publish(data,summary="The check-in heading can record an agreed time and a contact method.")
         self.assertEqual(result.status_code,200);self.assertEqual(result.get_json()["state"],"closed")
@@ -269,7 +274,7 @@ class ServiceTests(unittest.TestCase):
             self.assertEqual(c.execute("SELECT count(*) FROM questions").fetchone()[0],2)
 
     def test_cancellation_during_stripe_lookup_prevents_publication(self):
-        data=self.paid();body=dict(ANSWER,version=self.get(data)["version"])
+        data=self.paid();body=dict(ANSWER,version=self.operator_question(data)["version"])
         started=threading.Event();resume=threading.Event();results=[]
         original=self.gateway.payment
         def delayed(key):
@@ -309,6 +314,82 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual(self.post(data,"/checkout").status_code,409)
         retry=dict(data,id=str(uuid.uuid4()),token=secrets.token_hex(32))
         self.assertEqual(self.client.post("/api/questions",json=retry).status_code,201)
+
+    def test_client_catalog_contains_only_customer_information(self):
+        result=self.client.get("/api/catalog").get_json()
+        self.assertEqual(set(result), {"version","serviceName","operatorName","businessName","supportEmail",
+            "priceCents","currency","clarificationDays","responseBusinessDays","scope","responsePromise",
+            "coverage","refundPolicy","emergency","privacyHint","categories","screening","freeHelp","accepting","live"})
+        self.assertEqual(result["priceCents"],999)
+        for actual,category in zip(result["categories"],CATALOG["categories"]):
+            self.assertEqual(set(actual),{"id","title","summary","prompt","contextPrompt","examples","notIncluded"})
+            self.assertEqual(actual["examples"],category["examples"])
+            self.assertEqual(actual["notIncluded"],category["notIncluded"])
+        self.assertEqual(result["scope"],CATALOG["scope"])
+        self.assertEqual(result["refundPolicy"],CATALOG["refundPolicy"])
+
+    def test_internal_catalog_requires_owner_credentials(self):
+        client_token=self.payload()["token"]
+        for headers in ({}, {"X-Question-Token":client_token}, {"Authorization":"Bearer "+client_token}):
+            self.assertEqual(self.client.get("/api/admin/catalog",headers=headers).status_code,401)
+        response=self.client.get("/api/admin/catalog",headers=ADMIN)
+        self.assertEqual(response.status_code,200)
+        self.assertEqual(response.get_json(),CATALOG)
+        self.assertEqual(response.headers["Cache-Control"],"no-store")
+
+    def test_future_internal_catalog_fields_are_not_sent_to_clients(self):
+        marker="PRIVATE_BUSINESS_DISCUSSION_FIXTURE"
+        with patch.dict(CATALOG,{"internalStrategy":marker}), \
+             patch.dict(CATALOG["categories"][0],{"privateWritingNotes":marker}), \
+             patch.dict(CATALOG["screening"][0],{"operatorRationale":marker}), \
+             patch.dict(CATALOG["freeHelp"][0],{"internalEscalation":marker}):
+            public=self.client.get("/api/catalog").get_data(as_text=True)
+            self.assertNotIn(marker,public)
+            for internal in ("answerChecklist","answerGoal","sources","internalStrategy","operatorRationale"):
+                self.assertNotIn('"'+internal+'"',public)
+            self.assertEqual(self.client.get("/api/admin/catalog",headers=ADMIN).get_json()["internalStrategy"],marker)
+
+    def test_private_notes_stay_private_but_published_answer_is_available(self):
+        data=self.paid();self.publish(data)
+        marker="PRIVATE_OPERATOR_NOTE_FIXTURE"
+        with self.app.extensions["database"]() as c:
+            row=c.execute("SELECT payload,answer FROM questions WHERE id=?",(data["id"],)).fetchone()
+            payload=json.loads(row["payload"]);payload["privateDiscussion"]=marker
+            answer=json.loads(row["answer"]);answer["privateDraft"]=marker
+            c.execute("UPDATE questions SET note=?,payload=?,answer=? WHERE id=?",
+                (marker,json.dumps(payload),json.dumps(answer),data["id"]))
+        question=self.get(data)
+        self.assertNotIn(marker,json.dumps(question))
+        self.assertEqual(question["question"],data["question"])
+        self.assertEqual(question["answer"]["summary"],ANSWER["summary"])
+        self.assertEqual(question["answer"]["sources"],ANSWER["sources"])
+        for field in ("note","version","updated","mail_state","payment_intent","privateDiscussion"):
+            self.assertNotIn(field,question)
+        self.assertEqual(self.operator_question(data)["note"],marker)
+        response=self.post(data,"/clarification",{"text":"Please explain how to use those checklist headings.","sameTopic":True})
+        self.assertEqual(response.status_code,200)
+        self.assertNotIn(marker,response.get_data(as_text=True))
+        self.assertNotIn("note",response.get_json())
+
+    def test_refund_receipt_uses_customer_notice_without_internal_notes(self):
+        data=self.paid()
+        response=self.post(data,"/refund-request")
+        self.assertEqual(response.status_code,200)
+        self.assertIn("full refund",response.get_json()["notice"])
+        self.assertNotIn("note",response.get_json())
+        body={"confirmed":True,"note":"PRIVATE_REFUND_REVIEW_FIXTURE"}
+        self.assertEqual(self.post(data,"/refund",body,admin=True).status_code,200)
+        result=self.get(data)
+        self.assertEqual(result["state"],"refunded")
+        self.assertIn("original payment method",result["notice"])
+        self.assertNotIn(body["note"],json.dumps(result))
+
+    def test_client_cannot_fetch_internal_files_directly(self):
+        for path in ("/docs/PRODUCT_REVIEW.md","/docs/SOLO_WORKFLOW.md","/docs/RESPONSE_TEMPLATES.md",
+                     "/SECURITY.md","/service-catalog.json","/VetAssistantHelpLine/Resources/service-catalog.json",
+                     "/server/domain.py"):
+            with self.subTest(path=path):
+                self.assertEqual(self.client.get(path).status_code,404)
 
 
 class DeadlineTests(unittest.TestCase):

@@ -12,6 +12,9 @@ struct QuestionDetailView: View {
             Section("From") {
                 LabeledContent("Name", value: question.name)
                 LabeledContent("Email", value: question.email.isEmpty ? "Not given" : question.email)
+                if let phone = question.phone {
+                    LabeledContent("Phone (wants text reply)", value: phone)
+                }
                 LabeledContent("Received") {
                     Text(question.submittedAt, format: .dateTime.month().day().hour().minute())
                 }
@@ -29,6 +32,14 @@ struct QuestionDetailView: View {
             }
 
             Section {
+                if let url = textReplyURL {
+                    Button {
+                        openURL(url)
+                    } label: {
+                        Label("Reply by text", systemImage: "message.fill")
+                    }
+                }
+
                 Button {
                     if let url = replyURL {
                         openURL(url) { accepted in
@@ -68,6 +79,18 @@ struct QuestionDetailView: View {
         } message: {
             Text("No email app is set up on this device.")
         }
+    }
+
+    private var textReplyURL: URL? {
+        guard let phone = question.phone else { return nil }
+        let digits = phone.filter { $0.isNumber || $0 == "+" }
+        guard !digits.isEmpty else { return nil }
+        let greeting = "Hi \(question.name), this is the Vet Assistant Help Line replying about your \(question.species.lowercased()). "
+        var components = URLComponents()
+        components.scheme = "sms"
+        components.path = digits
+        components.queryItems = [URLQueryItem(name: "body", value: greeting)]
+        return components.url
     }
 
     private var replyURL: URL? {

@@ -13,7 +13,7 @@
  * See docs/CLOUDKIT_SETUP.md for the full setup walkthrough.
  */
 
-const MAX_LENGTHS = { name: 100, email: 200, species: 60, age: 60, category: 80, question: 4000 };
+const MAX_LENGTHS = { name: 100, email: 200, phone: 40, species: 60, age: 60, category: 80, question: 4000 };
 
 export default {
   async fetch(request, env) {
@@ -39,9 +39,9 @@ export default {
     }
 
     const fields = {};
-    for (const key of ["name", "email", "species", "age", "category", "question"]) {
+    for (const key of ["name", "email", "phone", "species", "age", "category", "question"]) {
       const value = String(body[key] ?? "").trim().slice(0, MAX_LENGTHS[key]);
-      if (!value && key !== "age") {
+      if (!value && key !== "age" && key !== "phone") {
         return json({ error: `Missing field: ${key}` }, 400, cors);
       }
       fields[key] = value;
@@ -56,6 +56,7 @@ export default {
             fields: {
               name: { value: fields.name },
               email: { value: fields.email },
+              phone: { value: fields.phone || "" },
               species: { value: fields.species },
               age: { value: fields.age || "Not given" },
               category: { value: fields.category },

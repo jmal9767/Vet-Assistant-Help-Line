@@ -183,6 +183,10 @@
       <label for="email">Your email (so I can reply)</label>
       <input type="email" id="email" required autocomplete="email">
 
+      <label for="phone">Phone number (optional)</label>
+      <input type="tel" id="phone" autocomplete="tel" placeholder="Add your number if you'd prefer your reply by text message">
+      <p class="note">Leave blank for an email reply. If you add your number, I'll text your answer instead.</p>
+
       <!-- Honeypot: humans never see or fill this. -->
       <div style="position:absolute; left:-9999px;" aria-hidden="true">
         <label for="website">Website</label>
@@ -259,6 +263,7 @@
     var payload = {
       name: document.getElementById("name").value.trim(),
       email: document.getElementById("email").value.trim(),
+      phone: document.getElementById("phone").value.trim(),
       species: document.getElementById("species").value,
       age: document.getElementById("age").value.trim() || "Not given",
       category: document.getElementById("category").value,
@@ -272,6 +277,7 @@
       var subject = "Help line question (" + payload.species + " · " + payload.category + ")";
       var body = "Name: " + payload.name +
         "\nReply-to email: " + payload.email +
+        (payload.phone ? "\nPhone (text reply requested): " + payload.phone : "") +
         "\nPet species: " + payload.species +
         "\nPet age: " + payload.age +
         "\nCategory: " + payload.category +

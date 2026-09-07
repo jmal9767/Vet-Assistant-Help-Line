@@ -18,6 +18,8 @@ struct ClientQuestion: Identifiable {
 
     var name: String { string(for: "name") ?? "Anonymous" }
     var email: String { string(for: "email") ?? "" }
+    /// Set only when the client asked for a text-message reply.
+    var phone: String? { string(for: "phone") }
     var species: String { string(for: "species") ?? "Unknown" }
     var age: String { string(for: "age") ?? "Not given" }
     var category: String { string(for: "category") ?? "Other" }

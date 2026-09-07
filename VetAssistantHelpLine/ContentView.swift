@@ -3,19 +3,24 @@ import SwiftUI
 struct ContentView: View {
     var body: some View {
         TabView {
-            EmergencyView()
+            InboxView()
                 .tabItem {
-                    Label("Emergency", systemImage: "exclamationmark.triangle.fill")
+                    Label("Inbox", systemImage: "tray.fill")
                 }
 
-            AskQuestionView()
+            TemplatesView()
                 .tabItem {
-                    Label("Ask", systemImage: "envelope.fill")
+                    Label("Templates", systemImage: "doc.on.doc.fill")
                 }
 
-            AboutView()
+            ShareView()
                 .tabItem {
-                    Label("About", systemImage: "pawprint.fill")
+                    Label("Share", systemImage: "qrcode")
+                }
+
+            ReferenceView()
+                .tabItem {
+                    Label("Reference", systemImage: "cross.case.fill")
                 }
         }
         .tint(Color("AccentColor"))
@@ -24,4 +29,5 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
+        .environment(QuestionStore())
 }

@@ -1,12 +1,12 @@
 {
   "name": "Vet Assistant Help Line",
   "short_name": "Vet Help",
-  "description": "Free general pet-care guidance from a veterinary assistant.",
+  "description": "General pet-care guidance from a veterinary assistant.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f6f9f9",
-  "theme_color": "#0e7c7b",
+  "theme_color": "#1f3a5f",
   "icons": [
     { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
     { "src": "icons/icon-180.png", "sizes": "180x180", "type": "image/png" }

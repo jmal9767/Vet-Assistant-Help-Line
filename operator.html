@@ -8,15 +8,15 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icons/icon-512.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
-<meta name="theme-color" content="#0e7c7b">
+<meta name="theme-color" content="#1f3a5f">
 <style>
   :root {
-    --teal: #0e7c7b;
-    --teal-dark: #095b5a;
+    --navy: #1f3a5f;
+    --navy-dark: #15294a;
     --red: #c0392b;
     --red-bg: #fdecea;
-    --ink: #22303a;
-    --muted: #5c6b78;
+    --ink: #14181c;
+    --muted: #3c4652;
     --bg: #f6f9f9;
     --card: #ffffff;
     --border: #dde5e8;
@@ -30,7 +30,7 @@
     line-height: 1.55;
   }
   header {
-    background: var(--teal);
+    background: var(--navy);
     color: #fff;
     padding: 1.25rem 1rem;
     text-align: center;
@@ -59,7 +59,7 @@
     text-align: center;
   }
   .btn-red { background: var(--red); color: #fff; flex: 1 1 45%; }
-  .btn-teal { background: var(--teal); color: #fff; }
+  .btn-navy { background: var(--navy); color: #fff; }
   .check-item { display: flex; gap: .6rem; align-items: flex-start; margin: .5rem 0; }
   .check-item input { margin-top: .3rem; transform: scale(1.2); }
   details {
@@ -86,8 +86,8 @@
     max-height: 220px;
     overflow-y: auto;
   }
-  .copy-btn { background: var(--teal); color: #fff; }
-  .copy-btn.copied { background: var(--teal-dark); }
+  .copy-btn { background: var(--navy); color: #fff; }
+  .copy-btn.copied { background: var(--navy-dark); }
   .flags { columns: 2; gap: 1.5rem; padding-left: 1.1rem; margin: .4rem 0 0; font-size: .92rem; }
   .flags li { margin-bottom: .3rem; break-inside: avoid; }
   @media (max-width: 480px) { .flags { columns: 1; } }
@@ -160,7 +160,7 @@
 </main>
 
 <script>
-  var DISCLAIMER = "\n---\nI'm a veterinary assistant, not a licensed veterinarian. This is general educational information only — not veterinary medical advice, diagnosis, or treatment, and not a substitute for an exam by a licensed veterinarian. If your pet is in distress, contact an emergency veterinary clinic immediately.";
+  var DISCLAIMER = "\n---\nI'm a veterinary assistant, not a licensed veterinarian. This is general educational information only — it does not replace or supersede the advice, diagnosis, or treatment of a licensed veterinarian. My replies are not immediate: if your pet may be experiencing a life-threatening emergency, don't wait for a reply — contact an emergency veterinary hospital immediately.";
 
   var TEMPLATES = [
     {

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Welcome — Vet Assistant Help Line</title>
+<link rel="icon" type="image/png" href="icons/icon-512.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="theme-color" content="#1f3a5f">
+<style>
+  :root {
+    --navy: #1f3a5f;
+    --navy-dark: #15294a;
+    --red: #c0392b;
+    --red-bg: #fdecea;
+    --ink: #14181c;
+    --muted: #3c4652;
+    --bg: #f6f9f9;
+    --card: #ffffff;
+    --border: #dde5e8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.6;
+  }
+  header {
+    background: var(--navy);
+    color: #fff;
+    padding: 2rem 1rem;
+    text-align: center;
+  }
+  header h1 { margin: 0 0 .25rem; font-size: 1.75rem; }
+  header p { margin: 0; opacity: .9; }
+  main { max-width: 720px; margin: 0 auto; padding: 1rem; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    margin: 1.25rem 0;
+  }
+  .emergency {
+    border: 2px solid var(--red);
+    background: var(--red-bg);
+  }
+  .emergency h2 { color: var(--red); margin-top: 0; }
+  .price-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: .75rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .price-row:last-child { border-bottom: none; }
+  .price-row .amount { font-weight: 700; color: var(--navy); white-space: nowrap; }
+  .price-row .detail { display: block; font-size: .9rem; color: var(--muted); font-weight: 400; }
+  .price-head { margin: 1rem 0 0; font-weight: 700; color: var(--navy-dark); }
+  .help-list { padding-left: 1.2rem; }
+  .help-list li { margin-bottom: .3rem; }
+  .cannot { color: var(--muted); font-size: .95rem; }
+  .btn {
+    display: block;
+    text-align: center;
+    padding: .9rem 1.1rem;
+    border-radius: 10px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    background: var(--navy);
+    color: #fff;
+    margin: 1.5rem 0;
+  }
+  .btn:hover { background: var(--navy-dark); }
+  .note { font-size: .9rem; color: var(--muted); margin-top: .5rem; }
+  footer {
+    max-width: 720px;
+    margin: 2rem auto;
+    padding: 0 1rem 2rem;
+    font-size: .85rem;
+    color: var(--muted);
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span aria-hidden="true">🐾</span> Vet Assistant Help Line</h1>
+  <p>Welcome! Here's how it works.</p>
+</header>
+
+<main>
+
+  <section class="card">
+    <h2>What this is</h2>
+    <p>Not sure whether your pet needs a vet — or the emergency room? This help line is run by a veterinary assistant with hands-on experience in <strong>both emergency and general practice</strong>, so you get a thorough, honest answer that helps you <strong>make the right call for your pet</strong> — plus help with everyday questions like feeding, grooming, and behavior. Replies come <strong>by email within 24–48 hours</strong>.</p>
+    <ul class="help-list">
+      <li>Helping you decide whether something is an emergency — or can wait for your regular vet</li>
+      <li>General pet care, feeding, and husbandry questions</li>
+      <li>Grooming, enrichment, and basic behavior tips</li>
+      <li>Home care &amp; recovery questions after a vet visit</li>
+      <li>Preparing for vet or emergency visits &amp; what to ask</li>
+      <li>New-pet, senior-pet, and routine-care basics (vaccine schedules, parasite prevention)</li>
+    </ul>
+    <p class="cannot"><strong>What I can't do:</strong> I'm a veterinary assistant, not a licensed veterinarian — no diagnoses, no medication or dosing advice, and no substitute for a vet exam.</p>
+  </section>
+
+  <section class="card">
+    <h2>How it works</h2>
+    <ol class="help-list">
+      <li>Tap <strong>Ask your question</strong> below and send in your question.</li>
+      <li>I confirm the price with you by email — you never pay before agreeing.</li>
+      <li>Your answer arrives in your chosen time frame — standard is email within 24–48 hours, with same-day, express, text, and phone options available.</li>
+    </ol>
+  </section>
+
+  <section class="card">
+    <h2>Pricing</h2>
+    <!-- ⚙️ SETUP: adjust these to your real prices (keep them in sync with index.html, poster.html, and the app's HelplineConfig). -->
+    <p class="price-head">Email answers — standard reply within 24–48 hours</p>
+    <div class="price-row">
+      <span><strong>Quick question</strong><span class="detail">One straightforward question — one email reply</span></span>
+      <span class="amount">$10</span>
+    </div>
+    <div class="price-row">
+      <span><strong>Detailed question</strong><span class="detail">Multi-part, behavior, or "should I see a vet?" questions — in-depth reply plus one follow-up</span></span>
+      <span class="amount">$20</span>
+    </div>
+    <p class="price-head">Need it faster? Add to any email answer</p>
+    <div class="price-row">
+      <span><strong>Same-day reply</strong><span class="detail">Your answer within 12 hours</span></span>
+      <span class="amount">+$10</span>
+    </div>
+    <div class="price-row">
+      <span><strong>Express reply</strong><span class="detail">Your answer within 2–4 hours — not for emergencies</span></span>
+      <span class="amount">+$20</span>
+    </div>
+    <p class="price-head">Talk it through — scheduled with you</p>
+    <div class="price-row">
+      <span><strong>Text chat · 15 minutes</strong><span class="detail">Back-and-forth by text message</span></span>
+      <span class="amount">$20</span>
+    </div>
+    <div class="price-row">
+      <span><strong>Phone call · 15 minutes</strong><span class="detail">Quick guidance call</span></span>
+      <span class="amount">$25</span>
+    </div>
+    <div class="price-row">
+      <span><strong>Phone call · 30 minutes</strong><span class="detail">General care guidance on any topic</span></span>
+      <span class="amount">$40</span>
+    </div>
+    <p class="note">Send your question first — I'll confirm the price with you by email before you pay anything.</p>
+  </section>
+
+  <section class="card emergency">
+    <h2><span aria-hidden="true">⚠️</span> Emergencies can't wait</h2>
+    <p>If your pet is having trouble breathing, seizing, bleeding, may have been poisoned, or anything else urgent — <strong>contact an emergency vet now</strong> instead of writing in. Poison Control: <a href="tel:8884264435">(888) 426-4435</a> (24/7, fee may apply).</p>
+  </section>
+
+  <a class="btn" href="index.html">Ask your question →</a>
+
+</main>
+
+<footer>
+  <p><strong>Disclaimer:</strong> This service is run by a veterinary assistant and provides general pet-care education only. It does not create a veterinarian–client–patient relationship, and it does not replace or supersede the advice, diagnosis, or treatment of a licensed veterinarian — always consult a licensed veterinarian for medical concerns about your pet. Responses are not immediate: if you believe your pet may be experiencing a life-threatening emergency, do not wait for a reply. Contact an emergency veterinary hospital right away, or ASPCA Poison Control at (888) 426-4435 (24/7).</p>
+</footer>
+
+</body>
+</html>

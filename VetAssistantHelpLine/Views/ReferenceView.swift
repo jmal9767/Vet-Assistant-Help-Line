@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct EmergencyView: View {
+struct ReferenceView: View {
     private let redFlags = [
         "Difficulty breathing",
         "Seizures or collapse",
@@ -20,7 +20,7 @@ struct EmergencyView: View {
         NavigationStack {
             List {
                 Section {
-                    Text("If your pet has any of these signs, contact an emergency veterinarian immediately — don't wait for a help-line reply.")
+                    Text("If a client's question mentions any of these, send them to an emergency vet right away — don't answer by email first.")
                         .font(.headline)
                         .foregroundStyle(.red)
                         .listRowBackground(Color.red.opacity(0.1))
@@ -33,9 +33,9 @@ struct EmergencyView: View {
                     }
                 }
 
-                Section("Get help now") {
+                Section("Resources to send clients") {
                     Link(destination: HelplineConfig.emergencyVetLocatorURL) {
-                        Label("Find an emergency vet near you", systemImage: "cross.case.fill")
+                        Label("Emergency vet locator", systemImage: "cross.case.fill")
                     }
                     Link(destination: URL(string: "tel:\(HelplineConfig.poisonControlNumber)")!) {
                         Label("Poison Control \(HelplineConfig.poisonControlDisplay)", systemImage: "phone.fill")
@@ -45,11 +45,11 @@ struct EmergencyView: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            .navigationTitle("Emergency?")
+            .navigationTitle("Reference")
         }
     }
 }
 
 #Preview {
-    EmergencyView()
+    ReferenceView()
 }

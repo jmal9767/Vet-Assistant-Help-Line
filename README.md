@@ -1,6 +1,6 @@
 # Vet Assistant Help Line
 
-A free, one-person pet-care help line run by a veterinary assistant. Pet owners
+A one-person pet-care help line run by a veterinary assistant. Pet owners
 submit general care questions through a simple web page; emergencies are
 redirected to emergency veterinary services *before* they ever reach the queue;
 everything else arrives by email as a structured request answered within
@@ -54,7 +54,13 @@ Publishing it once puts it on every customer's phone who opens your link.
    opens it is using the customer side of the app, and the page itself shows
    them how to add it to their home screen so it behaves like an installed app.
    `docs/share-qr.png` is a ready-made QR code pointing at the URL — print it
-   or show it on your phone and customers scan straight into the app.
+   or show it on your phone and customers scan straight into the app. For a
+   printable flyer that explains the service around the QR code (what it is,
+   pricing, emergency note), open `poster.html` and hit **Print this poster**.
+
+   > ⚠️ The QR code only works once this step is done: until GitHub Pages is
+   > enabled (and the repo is public), the URL inside the code returns a 404
+   > and scanning it leads nowhere.
 5. **Your side:** open `https://jmal9767.github.io/Vet-Assistant-Help-Line/operator.html`
    on your phone and add it to your home screen. Customer questions arrive in
    your help-line email inbox; you answer them from there using the toolkit's

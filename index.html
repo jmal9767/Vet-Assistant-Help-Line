@@ -7,15 +7,15 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icons/icon-512.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
-<meta name="theme-color" content="#0e7c7b">
+<meta name="theme-color" content="#1f3a5f">
 <style>
   :root {
-    --teal: #0e7c7b;
-    --teal-dark: #095b5a;
+    --navy: #1f3a5f;
+    --navy-dark: #15294a;
     --red: #c0392b;
     --red-bg: #fdecea;
-    --ink: #22303a;
-    --muted: #5c6b78;
+    --ink: #14181c;
+    --muted: #3c4652;
     --bg: #f6f9f9;
     --card: #ffffff;
     --border: #dde5e8;
@@ -29,7 +29,7 @@
     line-height: 1.6;
   }
   header {
-    background: var(--teal);
+    background: var(--navy);
     color: #fff;
     padding: 2rem 1rem;
     text-align: center;
@@ -64,8 +64,8 @@
     text-decoration: none;
   }
   .btn-red { background: var(--red); color: #fff; margin-right: .5rem; }
-  .btn-teal { background: var(--teal); color: #fff; }
-  .btn-teal:hover { background: var(--teal-dark); }
+  .btn-navy { background: var(--navy); color: #fff; }
+  .btn-navy:hover { background: var(--navy-dark); }
   label { display: block; font-weight: 600; margin-top: 1rem; margin-bottom: .25rem; }
   input[type="text"], input[type="email"], select, textarea {
     width: 100%;
@@ -104,7 +104,7 @@
 
 <header>
   <h1><span aria-hidden="true">🐾</span> Vet Assistant Help Line</h1>
-  <p>Free general pet-care guidance from a veterinary assistant — answered within 24–48 hours.</p>
+  <p>Is it really an emergency? Honest pet-care answers from a veterinary assistant — helping you make the right call for your pet, by email within 24–48 hours.</p>
 </header>
 
 <main>
@@ -138,23 +138,56 @@
   <section class="card">
     <h2>What I can help with</h2>
     <ul class="help-list">
+      <li>Helping you decide whether something is an emergency — or can wait for your regular vet</li>
       <li>General pet care, feeding, and husbandry questions</li>
       <li>Grooming, enrichment, and basic behavior tips</li>
-      <li>Preparing for vet visits &amp; what questions to ask your vet</li>
+      <li>Home care &amp; recovery questions after a vet visit</li>
+      <li>Preparing for vet or emergency visits &amp; what questions to ask</li>
       <li>Understanding routine care (vaccination schedules, parasite prevention basics)</li>
-      <li>Helping you decide <em>whether</em> something needs a veterinarian's attention</li>
       <li>Pointing you to trusted resources and local services</li>
     </ul>
-    <p class="cannot"><strong>What I can't do:</strong> I'm a veterinary assistant, not a licensed veterinarian. I cannot diagnose conditions, prescribe or recommend medication doses, or replace an exam by your vet. When in doubt, I'll always point you to a licensed veterinarian.</p>
+    <p class="cannot"><strong>What I can't do:</strong> I'm a veterinary assistant with experience in both emergency and general practice, but not a licensed veterinarian. I cannot diagnose conditions, prescribe or recommend medication doses, or replace an exam by your vet. When in doubt, I'll always point you to a licensed veterinarian.</p>
+  </section>
+
+  <!-- PRICING -->
+  <section class="card">
+    <h2>Pricing</h2>
+    <!-- ⚙️ SETUP: adjust these to your real prices (keep them in sync with welcome.html, poster.html, and the app's HelplineConfig). -->
+    <p><strong>Email answers</strong> — standard reply within 24–48 hours:</p>
+    <ul class="help-list">
+      <li><strong>Quick question — $10:</strong> one straightforward question, one email reply.</li>
+      <li><strong>Detailed question — $20:</strong> multi-part, behavior, or "should I see a vet about this?" questions. In-depth reply plus one follow-up.</li>
+    </ul>
+    <p><strong>Need it faster?</strong> Add to any email answer:</p>
+    <ul class="help-list">
+      <li><strong>Same-day reply — +$10:</strong> your answer within 12 hours.</li>
+      <li><strong>Express reply — +$20:</strong> your answer within 2–4 hours. Not for emergencies — those go straight to an ER vet.</li>
+    </ul>
+    <p><strong>Talk it through</strong> — scheduled with you:</p>
+    <ul class="help-list">
+      <li><strong>Text chat (15 minutes) — $20:</strong> back-and-forth by text message.</li>
+      <li><strong>Phone call (15 minutes) — $25:</strong> quick guidance call.</li>
+      <li><strong>Phone call (30 minutes) — $40:</strong> general care guidance on any topic.</li>
+    </ul>
+    <p class="note">Send your question first — I'll confirm the price with you by email before you pay anything.</p>
   </section>
 
   <!-- INTAKE FORM -->
-  <section class="card">
+  <section class="card" id="askSection">
     <h2>Ask your question</h2>
-    <p class="note">This form opens a pre-filled email in your mail app — nothing is stored on this page.</p>
+    <p class="note">Your question is sent straight to the help line — I'll reply to the email address you give below.</p>
     <form id="intakeForm">
       <label for="name">Your name</label>
       <input type="text" id="name" required autocomplete="name">
+
+      <label for="email">Your email (so I can reply)</label>
+      <input type="email" id="email" required autocomplete="email">
+
+      <!-- Honeypot: humans never see or fill this. -->
+      <div style="position:absolute; left:-9999px;" aria-hidden="true">
+        <label for="website">Website</label>
+        <input type="text" id="website" tabindex="-1" autocomplete="off">
+      </div>
 
       <label for="species">Pet species</label>
       <select id="species" required>
@@ -192,7 +225,7 @@
       </div>
 
       <p style="margin-top:1.25rem;">
-        <button type="submit" class="btn btn-teal">Send my question</button>
+        <button type="submit" class="btn btn-navy">Send my question</button>
       </p>
     </form>
   </section>
@@ -211,37 +244,76 @@
 </main>
 
 <footer>
-  <p><strong>Disclaimer:</strong> This service is run by a veterinary assistant and provides general pet-care education only. It does not create a veterinarian–client–patient relationship, and no diagnosis, prognosis, treatment, or prescription advice is offered. Always consult a licensed veterinarian for medical concerns about your pet. If your pet is in distress, contact an emergency veterinary clinic immediately.</p>
+  <p><strong>Disclaimer:</strong> This service is run by a veterinary assistant and provides general pet-care education only. It does not create a veterinarian–client–patient relationship, and it does not replace or supersede the advice, diagnosis, or treatment of a licensed veterinarian — always consult a licensed veterinarian for medical concerns about your pet. Responses are not immediate: if you believe your pet may be experiencing a life-threatening emergency, do not wait for a reply. Contact an emergency veterinary hospital right away, or ASPCA Poison Control at (888) 426-4435 (24/7).</p>
 </footer>
 
 <script>
-  // ⚙️ SETUP: replace this with the email address you want questions sent to.
-  var HELPLINE_EMAIL = "REPLACE_WITH_YOUR_HELPLINE_EMAIL@example.com";
+  // ⚙️ SETUP: replace with your deployed Cloudflare Worker URL (see docs/CLOUDKIT_SETUP.md).
+  // Until then, submissions fall back to a pre-filled email to HELPLINE_EMAIL.
+  var WORKER_URL = "REPLACE_WITH_YOUR_WORKER_URL";
+  var HELPLINE_EMAIL = "jahmal9767@gmail.com";
 
   document.getElementById("intakeForm").addEventListener("submit", function (e) {
     e.preventDefault();
-    if (HELPLINE_EMAIL.indexOf("REPLACE_WITH") === 0) {
-      alert("This help line isn't fully set up yet — the destination email address hasn't been configured. Please check back soon.");
+
+    var payload = {
+      name: document.getElementById("name").value.trim(),
+      email: document.getElementById("email").value.trim(),
+      species: document.getElementById("species").value,
+      age: document.getElementById("age").value.trim() || "Not given",
+      category: document.getElementById("category").value,
+      question: document.getElementById("question").value.trim(),
+      website: document.getElementById("website").value // honeypot
+    };
+    if (payload.website) return; // bots only — humans never see that field
+
+    if (WORKER_URL.indexOf("REPLACE_WITH") === 0) {
+      // Email mode: open the client's mail app with the question pre-filled.
+      var subject = "Help line question (" + payload.species + " · " + payload.category + ")";
+      var body = "Name: " + payload.name +
+        "\nReply-to email: " + payload.email +
+        "\nPet species: " + payload.species +
+        "\nPet age: " + payload.age +
+        "\nCategory: " + payload.category +
+        "\n\nQuestion:\n" + payload.question;
+      window.location.href = "mailto:" + HELPLINE_EMAIL +
+        "?subject=" + encodeURIComponent(subject) +
+        "&body=" + encodeURIComponent(body);
+      var note = document.getElementById("mailtoNote");
+      if (!note) {
+        note = document.createElement("p");
+        note.id = "mailtoNote";
+        note.className = "note";
+        e.target.appendChild(note);
+      }
+      note.innerHTML = "📧 Your email app should have opened with your question filled in — <strong>press send there</strong> and your question is on its way. If nothing opened, email it to <strong>" + HELPLINE_EMAIL + "</strong>.";
       return;
     }
-    var name = document.getElementById("name").value.trim();
-    var species = document.getElementById("species").value;
-    var age = document.getElementById("age").value.trim() || "Not given";
-    var category = document.getElementById("category").value;
-    var question = document.getElementById("question").value.trim();
 
-    var subject = "[Help Line] " + category + " — " + species;
-    var body =
-      "Name: " + name + "\n" +
-      "Species: " + species + "\n" +
-      "Age: " + age + "\n" +
-      "Category: " + category + "\n" +
-      "Acknowledged educational-only disclaimer: Yes\n" +
-      "\nQuestion:\n" + question + "\n";
+    var button = e.target.querySelector("button[type=submit]");
+    button.disabled = true;
+    button.textContent = "Sending…";
 
-    window.location.href = "mailto:" + HELPLINE_EMAIL +
-      "?subject=" + encodeURIComponent(subject) +
-      "&body=" + encodeURIComponent(body);
+    fetch(WORKER_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    }).then(function (response) {
+      if (!response.ok) throw new Error("Send failed: " + response.status);
+      document.getElementById("askSection").innerHTML =
+        "<h2>✅ Question sent!</h2><p>Thanks, " +
+        payload.name.replace(/[<>&]/g, "") +
+        " — you'll get a reply at <strong>" +
+        payload.email.replace(/[<>&]/g, "") +
+        "</strong> within 24–48 hours.</p>";
+    }).catch(function () {
+      button.disabled = false;
+      button.textContent = "Send my question";
+      var fallback = HELPLINE_EMAIL.indexOf("REPLACE_WITH") === 0
+        ? "Please try again in a few minutes."
+        : "Please try again in a few minutes, or email your question directly to " + HELPLINE_EMAIL + ".";
+      alert("Sorry — your question couldn't be sent. " + fallback);
+    });
   });
 
   if ("serviceWorker" in navigator && window.location.protocol === "https:") {

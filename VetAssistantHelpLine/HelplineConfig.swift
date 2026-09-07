@@ -15,8 +15,8 @@ enum HelplineConfig {
     // The three steps shown on the shareable card and welcome page.
     static let howItWorks = [
         "Scan the code & send your question",
-        "I confirm the price — you never pay first",
-        "Your answer arrives in your chosen time frame — standard is email within \(responseWindow)"
+        "I confirm the price and you pay by secure link — protected by a full satisfaction guarantee",
+        "Your answer arrives in your chosen time frame — not helped? Full refund"
     ]
 
     // Shown on the shareable card; keep in sync with the website pages.

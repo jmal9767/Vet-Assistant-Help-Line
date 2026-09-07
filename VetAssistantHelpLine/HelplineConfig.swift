@@ -45,7 +45,7 @@ enum HelplineConfig {
     // ⚙️ SETUP: adjust these to your real prices before sharing the QR card
     // (keep them in sync with index.html, welcome.html, and poster.html).
     static let priceMenu: [PriceSection] = [
-        PriceSection(title: "Email answers — standard reply within 24–48 hours", items: [
+        PriceSection(title: "📧 Email answers — reply within 24–48 hours", items: [
             ServicePrice(service: "Quick question",
                          price: "$10",
                          detail: "One straightforward question — one email reply"),
@@ -53,24 +53,29 @@ enum HelplineConfig {
                          price: "$20",
                          detail: "Multi-part, behavior, or \"should I see a vet?\" questions — in-depth reply plus one follow-up")
         ]),
-        PriceSection(title: "Need it faster? Add to any email answer", items: [
+        PriceSection(title: "💬 Text-message answers — reply within 24–48 hours", items: [
+            ServicePrice(service: "Quick question by text",
+                         price: "$15",
+                         detail: "One straightforward question — answered by text message"),
+            ServicePrice(service: "Live text chat · 15 min",
+                         price: "$25",
+                         detail: "Scheduled back-and-forth conversation by text")
+        ]),
+        PriceSection(title: "📞 Phone calls — scheduled with you", items: [
+            ServicePrice(service: "Quick call · 15 min",
+                         price: "$30",
+                         detail: "Talk one question through"),
+            ServicePrice(service: "Full consult · 30 min",
+                         price: "$45",
+                         detail: "General care guidance on any topic")
+        ]),
+        PriceSection(title: "⚡️ Need it faster? Add to any email or text answer", items: [
             ServicePrice(service: "Same-day reply",
                          price: "+$10",
                          detail: "Your answer within 12 hours"),
             ServicePrice(service: "Express reply",
                          price: "+$20",
                          detail: "Your answer within 2–4 hours — not for emergencies")
-        ]),
-        PriceSection(title: "Talk it through — scheduled with you", items: [
-            ServicePrice(service: "Text chat · 15 min",
-                         price: "$20",
-                         detail: "Back-and-forth by text message"),
-            ServicePrice(service: "Phone call · 15 min",
-                         price: "$25",
-                         detail: "Quick guidance call"),
-            ServicePrice(service: "Phone call · 30 min",
-                         price: "$40",
-                         detail: "General care guidance on any topic")
         ])
     ]
 

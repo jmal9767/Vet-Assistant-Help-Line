@@ -1,0 +1,16 @@
+.service-intro { color: var(--muted); }
+.service-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; }
+.service-option { border: 1px solid var(--border); border-radius: 10px; padding: 1rem; break-inside: avoid; }
+.service-top { display: flex; align-items: start; justify-content: space-between; gap: .8rem; }
+.service-top h3 { margin: 0; color: var(--navy); font-size: 1.05rem; }
+.service-amount { font-size: 1.5rem; line-height: 1.2; font-weight: 750; color: var(--navy); white-space: nowrap; }
+.service-option p { margin: .5rem 0 0; font-size: .9rem; }
+.service-delivery { font-weight: 650; }
+.service-option .service-timing { color: var(--navy); font-weight: 650; font-size: .85rem; }
+.service-included { margin: 1rem 0; padding: .9rem 1rem; background: #edf4f6; border-left: 3px solid var(--navy); border-radius: 4px; }
+.service-policy { font-size: .9rem; }
+.service-policy summary { color: var(--navy); font-weight: 700; cursor: pointer; padding: .65rem 0; }
+.service-policy p { margin: 0 0 .75rem; }
+.service-summary { font-size: .85rem; color: var(--muted); }
+@media (max-width: 540px) { .service-grid { grid-template-columns: 1fr; } }
+@media print { .service-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

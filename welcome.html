@@ -7,6 +7,7 @@
 <link rel="icon" type="image/png" href="icons/icon-512.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <meta name="theme-color" content="#1f3a5f">
+<link rel="stylesheet" href="service-menu.css">
 <style>
   :root {
     --navy: #1f3a5f;
@@ -98,14 +99,12 @@
 
   <section class="card">
     <h2>What this is</h2>
-    <p>Not sure whether your pet needs a vet — or the emergency room? This help line is run by a veterinary assistant with hands-on experience in <strong>both emergency and general practice</strong>, so you get a thorough, honest answer that helps you <strong>make the right call for your pet</strong> — plus help with everyday questions like feeding, grooming, and behavior. Replies come <strong>by email within 24–48 hours</strong>.</p>
+    <p><strong>Feel more confident caring for your pet.</strong> Personal help from Jahmal, a veterinary assistant with emergency and general-practice experience. Turn an everyday pet-care question into clear, practical steps you can use at home.</p>
     <ul class="help-list">
-      <li>Helping you decide whether something is an emergency — or can wait for your regular vet</li>
-      <li>General pet care, feeding, and husbandry questions</li>
-      <li>Grooming, enrichment, and basic behavior tips</li>
-      <li>Home care &amp; recovery questions after a vet visit</li>
-      <li>Preparing for vet or emergency visits &amp; what to ask</li>
-      <li>New-pet, senior-pet, and routine-care basics (vaccine schedules, parasite prevention)</li>
+      <li>Set up a practical new-pet routine</li>
+      <li>Choose enrichment and everyday grooming supplies</li>
+      <li>Organize feeding and household care routines</li>
+      <li>Prepare a checklist and questions for a vet visit</li>
     </ul>
     <p class="cannot"><strong>What I can't do:</strong> I'm a veterinary assistant, not a licensed veterinarian — no diagnoses, no medication or dosing advice, and no substitute for a vet exam.</p>
   </section>
@@ -113,52 +112,55 @@
   <section class="card">
     <h2>How it works</h2>
     <ol class="help-list">
-      <li>Tap <strong>Ask your question</strong> below and send in your question — add your phone number if you'd prefer your reply by text message.</li>
-      <li>I confirm the price with you by email and send a secure payment link — you never pay before agreeing.</li>
-      <li>Your answer arrives in your chosen time frame — standard is email within 24–48 hours, with same-day, express, text, and phone options available. <strong>Satisfaction guarantee:</strong> if you don't feel your question was answered, you get a full refund.</li>
+      <li>Send your everyday care question and choose an option — no payment to submit.</li>
+      <li>Receive confirmation of what is included, the full price and an exact deadline or appointment before you pay.</li>
+      <li>Get practical steps, a written answer or recap, and one included clarification within 7 days.</li>
     </ol>
   </section>
 
-  <section class="card">
-    <h2>Pricing</h2>
-    <!-- ⚙️ SETUP: adjust these to your real prices (keep them in sync with index.html, poster.html, and the app's HelplineConfig). -->
-    <p class="price-head">📧 Email answers — reply within 24–48 hours</p>
-    <div class="price-row">
-      <span><strong>Quick question</strong><span class="detail">One straightforward question — one email reply</span></span>
-      <span class="amount">$10</span>
-    </div>
-    <div class="price-row">
-      <span><strong>Detailed question</strong><span class="detail">Multi-part, behavior, or "should I see a vet?" questions — in-depth reply plus one follow-up</span></span>
-      <span class="amount">$20</span>
-    </div>
-    <p class="price-head">💬 Text-message answers — reply within 24–48 hours</p>
-    <div class="price-row">
-      <span><strong>Quick question by text</strong><span class="detail">One straightforward question — answered by text message</span></span>
-      <span class="amount">$15</span>
-    </div>
-    <div class="price-row">
-      <span><strong>Live text chat · 15 minutes</strong><span class="detail">Scheduled back-and-forth conversation by text</span></span>
-      <span class="amount">$25</span>
-    </div>
-    <p class="price-head">📞 Phone calls — scheduled with you</p>
-    <div class="price-row">
-      <span><strong>Quick call · 15 minutes</strong><span class="detail">Talk one question through</span></span>
-      <span class="amount">$30</span>
-    </div>
-    <div class="price-row">
-      <span><strong>Full consult · 30 minutes</strong><span class="detail">General care guidance on any topic</span></span>
-      <span class="amount">$45</span>
-    </div>
-    <p class="price-head">⚡️ Need it faster? Add to any email or text answer</p>
-    <div class="price-row">
-      <span><strong>Same-day reply</strong><span class="detail">Your answer within 12 hours</span></span>
-      <span class="amount">+$10</span>
-    </div>
-    <div class="price-row">
-      <span><strong>Express reply</strong><span class="detail">Your answer within 2–4 hours — not for emergencies</span></span>
-      <span class="amount">+$20</span>
-    </div>
-    <p class="note">Send your question first — I'll confirm the price with you by email before you pay anything. Every answer is backed by a full satisfaction guarantee: if you don't feel your question was answered, you get a full refund.</p>
+  <section class="card" id="pricing">
+    <h2>Choose the help that fits your question</h2>
+    <!-- BEGIN SERVICE MENU -->
+<p class="service-intro">One-time prices in USD. One pet, one nonmedical care topic. No subscription.</p>
+<div class="service-grid">
+<article class="service-option" data-service-id="written-answer">
+  <div class="service-top"><h3>Focused written answer</h3><span class="service-amount">$10</span></div>
+  <p class="service-delivery">Email or text — same price</p>
+  <p>One straightforward care question, with a personal explanation and practical next steps.</p>
+  <p class="service-timing">Within 1 business day after confirmation and payment</p>
+</article>
+<article class="service-option" data-service-id="written-guide">
+  <div class="service-top"><h3>Detailed written guide</h3><span class="service-amount">$20</span></div>
+  <p class="service-delivery">Email</p>
+  <p>Related questions on one care topic, organized into a step-by-step guide, checklist and useful resources.</p>
+  <p class="service-timing">Within 2 business days after confirmation and payment</p>
+</article>
+<article class="service-option" data-service-id="text-session">
+  <div class="service-top"><h3>Live text session</h3><span class="service-amount">$25</span></div>
+  <p class="service-delivery">20 minutes of scheduled text conversation</p>
+  <p>Work through one care topic together, ask questions as you go, and receive an emailed recap.</p>
+  <p class="service-timing">At your confirmed appointment time</p>
+</article>
+<article class="service-option" data-service-id="phone-session">
+  <div class="service-top"><h3>Phone support session</h3><span class="service-amount">$35</span></div>
+  <p class="service-delivery">30 minutes of scheduled phone conversation</p>
+  <p>Talk through one care topic at a comfortable pace, with time for questions and an emailed recap.</p>
+  <p class="service-timing">At your confirmed appointment time</p>
+</article>
+</div>
+<p class="service-included">Every option includes practical next steps, a written answer or recap to keep, and one written clarification on the same topic requested within 7 calendar days of your answer or session.</p>
+<p>Allow up to 2 business days for a request review and quote. Submitting the form does not start a paid service or reserve an appointment.</p>
+<details class="service-policy"><summary>When will I hear back?</summary>
+<p>Written-answer deadlines start after your request is accepted and payment is completed. Any needed details are collected first. Your confirmation gives the exact due date and time before you pay. Business days are Monday–Friday, excluding U.S. federal holidays, in Pacific Time.</p>
+<p>Text and phone sessions start at the appointment time agreed before payment. The minutes shown are conversation time, not a wait for a reply. Your recap arrives within 1 business day after the session. Sessions depend on availability; this is not an on-demand line.</p>
+</details>
+<details class="service-policy"><summary>How does the included clarification work?</summary>
+<p>Send your included clarification by replying to your answer or recap within 7 calendar days. It receives one written reply within 2 business days. A new topic or another pet needs a separate quote; there are no automatic extra charges.</p>
+</details>
+<details class="service-policy"><summary>Price confirmation and refunds</summary>
+<p>No charge to submit a request. The service, full price and deadline are confirmed before payment. If your question cannot be answered within this service, you will not be charged; if already paid, you receive a full refund. If you do not feel your question was answered, reply to request a full refund. You may also request a full refund if the agreed deadline is missed or you cancel before the answer is sent or the session begins.</p>
+</details>
+<!-- END SERVICE MENU -->
   </section>
 
   <section class="card emergency">

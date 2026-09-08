@@ -1,10 +1,11 @@
 # Solo Workflow — Running the Help Line Alone
 
-Built around one principle: **asynchronous by default.** No live phone line, no
-chat widget, no promise of instant answers. A solo live line means missed calls,
-pressure to answer fast (where scope mistakes happen), and burnout. Email intake
-with a 24–48 hour promise means you answer on your schedule, with time to check
-`LEGAL_SCOPE.md` before every send.
+Built around **asynchronous intake and confirmed appointments**. No walk-in live
+line or instant-answer promise. Review each request within two business days,
+check `LEGAL_SCOPE.md`, and confirm the service, full price and exact deadline
+or appointment before sending a payment link. Only accept work you can deliver
+on time. See [SERVICE_DELIVERY.md](SERVICE_DELIVERY.md) for the menu and delivery
+requirements.
 
 ## One-time setup (about an hour)
 
@@ -24,7 +25,7 @@ with a 24–48 hour promise means you answer on your schedule, with time to chec
    page to get the "app" without any App Store.
 6. **Read `docs/LEGAL_SCOPE.md` fully once**, and skim it again monthly.
 
-## Daily routine (15–30 minutes, once or twice a day)
+## Daily intake review (allow separate time for paid work)
 
 1. **Open the inbox and scan for emergencies first.** Anything describing an
    emergency symptom gets Template 1 (emergency redirect) *immediately*, before
@@ -32,7 +33,9 @@ with a 24–48 hour promise means you answer on your schedule, with time to chec
 2. **Triage the rest:**
    - Needs a vet → Template 2, label `Referred to Vet`.
    - Medication/dosing ask → Template 4 (always refuse the dose).
-   - General care question → Template 3, write the educational answer.
+   - Eligible general care question → confirm the requested service and price,
+     collect needed context, agree the deadline, and then send the payment link.
+     After payment, personalize the educational answer using Template 3.
    - Money worries → Template 5.
 3. **Before hitting send on every reply, run the 3-question check:**
    - Did I diagnose, dose, treat, or predict an outcome? → rewrite or refer out.
@@ -51,14 +54,16 @@ with a 24–48 hour promise means you answer on your schedule, with time to chec
 
 ## Boundaries that keep this sustainable
 
-- **Response window is 24–48 hours.** It's printed on the site; don't privately
-  hold yourself to faster.
-- **No live calls, no texting, no DMs.** If people find your number, reply once:
-  "I handle all questions through the form at [site link] so I can give each one
-  proper attention."
+- **Honor the confirmed deadline.** Focused written answers are due within one
+  business day after confirmation and payment; detailed guides within two.
+  Business days are Monday–Friday, excluding U.S. federal holidays, Pacific Time.
+- **Calls and live text are appointments only.** Reserve 20 minutes for a text
+  session or 30 minutes for a phone session, plus time for the emailed recap.
+  An added phone number is not permission to change the selected service.
 - **It's okay to say "that's outside what I can help with."** Template 2 exists
   for exactly this.
-- **Take days off.** An async queue waits; that's the point.
+- **Plan days off around existing commitments.** Do not accept payment for a
+  deadline you cannot meet; offer another appointment or decline before payment.
 
 ## Growing later (not now)
 

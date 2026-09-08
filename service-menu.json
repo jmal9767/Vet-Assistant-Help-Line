@@ -1,0 +1,65 @@
+{
+  "currency": "USD",
+  "headline": "Feel more confident caring for your pet.",
+  "purpose": "Personal help from Jahmal, a veterinary assistant with emergency and general-practice experience. Turn an everyday pet-care question into clear, practical steps you can use at home.",
+  "scope": "General pet-care education for one pet and one nonmedical topic per purchase. Symptoms, medication questions and decisions about whether care can wait belong with a licensed veterinarian.",
+  "included": "Every option includes practical next steps, a written answer or recap to keep, and one written clarification on the same topic requested within 7 calendar days of your answer or session.",
+  "timing": "Written-answer deadlines start after your request is accepted and payment is completed. Any needed details are collected first. Your confirmation gives the exact due date and time before you pay. Business days are Monday–Friday, excluding U.S. federal holidays, in Pacific Time.",
+  "booking": "Text and phone sessions start at the appointment time agreed before payment. The minutes shown are conversation time, not a wait for a reply. Your recap arrives within 1 business day after the session. Sessions depend on availability; this is not an on-demand line.",
+  "followUp": "Send your included clarification by replying to your answer or recap within 7 calendar days. It receives one written reply within 2 business days. A new topic or another pet needs a separate quote; there are no automatic extra charges.",
+  "guarantee": "No charge to submit a request. The service, full price and deadline are confirmed before payment. If your question cannot be answered within this service, you will not be charged; if already paid, you receive a full refund. If you do not feel your question was answered, reply to request a full refund. You may also request a full refund if the agreed deadline is missed or you cancel before the answer is sent or the session begins.",
+  "requestTiming": "Allow up to 2 business days for a request review and quote. Submitting the form does not start a paid service or reserve an appointment.",
+  "howItWorks": [
+    "Send your everyday care question and choose an option — no payment to submit.",
+    "Receive confirmation of what is included, the full price and an exact deadline or appointment before you pay.",
+    "Get practical steps, a written answer or recap, and one included clarification within 7 days."
+  ],
+  "examples": [
+    "Set up a practical new-pet routine",
+    "Choose enrichment and everyday grooming supplies",
+    "Organize feeding and household care routines",
+    "Prepare a checklist and questions for a vet visit"
+  ],
+  "services": [
+    {
+      "id": "written-answer",
+      "name": "Focused written answer",
+      "amount": 10,
+      "channel": "email-or-text",
+      "delivery": "Email or text — same price",
+      "detail": "One straightforward care question, with a personal explanation and practical next steps.",
+      "timing": "Within 1 business day after confirmation and payment",
+      "group": "Written help"
+    },
+    {
+      "id": "written-guide",
+      "name": "Detailed written guide",
+      "amount": 20,
+      "channel": "email",
+      "delivery": "Email",
+      "detail": "Related questions on one care topic, organized into a step-by-step guide, checklist and useful resources.",
+      "timing": "Within 2 business days after confirmation and payment",
+      "group": "Written help"
+    },
+    {
+      "id": "text-session",
+      "name": "Live text session",
+      "amount": 25,
+      "channel": "text",
+      "delivery": "20 minutes of scheduled text conversation",
+      "detail": "Work through one care topic together, ask questions as you go, and receive an emailed recap.",
+      "timing": "At your confirmed appointment time",
+      "group": "Scheduled conversations"
+    },
+    {
+      "id": "phone-session",
+      "name": "Phone support session",
+      "amount": 35,
+      "channel": "phone",
+      "delivery": "30 minutes of scheduled phone conversation",
+      "detail": "Talk through one care topic at a comfortable pace, with time for questions and an emailed recap.",
+      "timing": "At your confirmed appointment time",
+      "group": "Scheduled conversations"
+    }
+  ]
+}

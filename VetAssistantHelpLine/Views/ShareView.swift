@@ -63,6 +63,10 @@ private struct ShareCard: View {
             }
             .foregroundStyle(Color("AccentColor"))
 
+            Text(HelplineConfig.headline)
+                .font(.title2.bold())
+                .foregroundStyle(ink)
+
             Text(HelplineConfig.purpose)
                 .font(.footnote)
                 .foregroundStyle(ink)
@@ -125,6 +129,14 @@ private struct ShareCard: View {
             .padding(12)
             .background(Color("AccentColor").opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
 
+            Text(HelplineConfig.included)
+                .font(.caption)
+                .foregroundStyle(ink)
+
+            Text("One-time prices in USD. One pet, one nonmedical topic. No subscription.")
+                .font(.caption2)
+                .foregroundStyle(mutedInk)
+
             HStack(spacing: 14) {
                 if let qr = Self.qrImage(for: HelplineConfig.siteURL) {
                     Image(uiImage: qr)
@@ -140,11 +152,19 @@ private struct ShareCard: View {
                     Text(HelplineConfig.siteURL.absoluteString)
                         .font(.caption2)
                         .foregroundStyle(mutedInk)
-                    Text("Standard replies within \(HelplineConfig.responseWindow) — faster options above. No app download needed.")
+                    Text("See full timing and refund terms online. No app download needed.")
                         .font(.caption2)
                         .foregroundStyle(mutedInk)
                 }
             }
+
+            Text("Exact deadline or appointment confirmed before payment. Business days: Mon–Fri, excluding U.S. federal holidays, Pacific Time. Allow up to 2 business days for your quote. Session recap: 1 business day; clarification reply: 2 business days.")
+                .font(.caption2)
+                .foregroundStyle(mutedInk)
+
+            Text("No charge to submit. If you do not feel your question was answered, reply to request a full refund.")
+                .font(.caption)
+                .foregroundStyle(ink)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("⚠️ Emergencies can't wait for email")

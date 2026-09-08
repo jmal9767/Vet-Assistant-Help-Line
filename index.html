@@ -8,6 +8,7 @@
 <link rel="icon" type="image/png" href="icons/icon-512.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <meta name="theme-color" content="#1f3a5f">
+<link rel="stylesheet" href="service-menu.css">
 <style>
   :root {
     --navy: #1f3a5f;
@@ -67,7 +68,7 @@
   .btn-navy { background: var(--navy); color: #fff; }
   .btn-navy:hover { background: var(--navy-dark); }
   label { display: block; font-weight: 600; margin-top: 1rem; margin-bottom: .25rem; }
-  input[type="text"], input[type="email"], select, textarea {
+  input[type="text"], input[type="email"], input[type="tel"], select, textarea {
     width: 100%;
     padding: .6rem .7rem;
     border: 1px solid var(--border);
@@ -104,7 +105,7 @@
 
 <header>
   <h1><span aria-hidden="true">🐾</span> Vet Assistant Help Line</h1>
-  <p>Is it really an emergency? Honest pet-care answers from a veterinary assistant — helping you make the right call for your pet, by email within 24–48 hours.</p>
+  <p>Feel more confident caring for your pet. Personal answers, practical steps and a written takeaway — from $10.</p>
 </header>
 
 <main>
@@ -137,49 +138,66 @@
   <!-- WHAT I CAN HELP WITH -->
   <section class="card">
     <h2>What I can help with</h2>
+    <p>Personal help from Jahmal, a veterinary assistant with emergency and general-practice experience. Turn an everyday pet-care question into clear, practical steps you can use at home.</p>
     <ul class="help-list">
-      <li>Helping you decide whether something is an emergency — or can wait for your regular vet</li>
-      <li>General pet care, feeding, and husbandry questions</li>
-      <li>Grooming, enrichment, and basic behavior tips</li>
-      <li>Home care &amp; recovery questions after a vet visit</li>
-      <li>Preparing for vet or emergency visits &amp; what questions to ask</li>
-      <li>Understanding routine care (vaccination schedules, parasite prevention basics)</li>
-      <li>Pointing you to trusted resources and local services</li>
+      <li>Set up a practical new-pet routine</li>
+      <li>Choose enrichment and everyday grooming supplies</li>
+      <li>Organize feeding and household care routines</li>
+      <li>Prepare a checklist and questions for a vet visit</li>
     </ul>
     <p class="cannot"><strong>What I can't do:</strong> I'm a veterinary assistant with experience in both emergency and general practice, but not a licensed veterinarian. I cannot diagnose conditions, prescribe or recommend medication doses, or replace an exam by your vet. When in doubt, I'll always point you to a licensed veterinarian.</p>
   </section>
 
   <!-- PRICING -->
-  <section class="card">
-    <h2>Pricing</h2>
-    <!-- ⚙️ SETUP: adjust these to your real prices (keep them in sync with welcome.html, poster.html, and the app's HelplineConfig). -->
-    <p><strong>📧 Email answers</strong> — reply within 24–48 hours:</p>
-    <ul class="help-list">
-      <li><strong>Quick question — $10:</strong> one straightforward question, one email reply.</li>
-      <li><strong>Detailed question — $20:</strong> multi-part, behavior, or "should I see a vet about this?" questions. In-depth reply plus one follow-up.</li>
-    </ul>
-    <p><strong>💬 Text-message answers</strong> — reply within 24–48 hours:</p>
-    <ul class="help-list">
-      <li><strong>Quick question by text — $15:</strong> one straightforward question, answered by text message.</li>
-      <li><strong>Live text chat (15 minutes) — $25:</strong> scheduled back-and-forth conversation by text.</li>
-    </ul>
-    <p><strong>📞 Phone calls</strong> — scheduled with you:</p>
-    <ul class="help-list">
-      <li><strong>Quick call (15 minutes) — $30:</strong> talk one question through.</li>
-      <li><strong>Full consult (30 minutes) — $45:</strong> general care guidance on any topic.</li>
-    </ul>
-    <p><strong>⚡️ Need it faster?</strong> Add to any email or text answer:</p>
-    <ul class="help-list">
-      <li><strong>Same-day reply — +$10:</strong> your answer within 12 hours.</li>
-      <li><strong>Express reply — +$20:</strong> your answer within 2–4 hours. Not for emergencies — those go straight to an ER vet.</li>
-    </ul>
-    <p class="note">Send your question first — I'll confirm the price with you by email before you pay anything. Every answer is backed by a full satisfaction guarantee: if you don't feel your question was answered, you get a full refund.</p>
+  <section class="card" id="pricing">
+    <h2>Choose the help that fits your question</h2>
+    <!-- BEGIN SERVICE MENU -->
+<p class="service-intro">One-time prices in USD. One pet, one nonmedical care topic. No subscription.</p>
+<div class="service-grid">
+<article class="service-option" data-service-id="written-answer">
+  <div class="service-top"><h3>Focused written answer</h3><span class="service-amount">$10</span></div>
+  <p class="service-delivery">Email or text — same price</p>
+  <p>One straightforward care question, with a personal explanation and practical next steps.</p>
+  <p class="service-timing">Within 1 business day after confirmation and payment</p>
+</article>
+<article class="service-option" data-service-id="written-guide">
+  <div class="service-top"><h3>Detailed written guide</h3><span class="service-amount">$20</span></div>
+  <p class="service-delivery">Email</p>
+  <p>Related questions on one care topic, organized into a step-by-step guide, checklist and useful resources.</p>
+  <p class="service-timing">Within 2 business days after confirmation and payment</p>
+</article>
+<article class="service-option" data-service-id="text-session">
+  <div class="service-top"><h3>Live text session</h3><span class="service-amount">$25</span></div>
+  <p class="service-delivery">20 minutes of scheduled text conversation</p>
+  <p>Work through one care topic together, ask questions as you go, and receive an emailed recap.</p>
+  <p class="service-timing">At your confirmed appointment time</p>
+</article>
+<article class="service-option" data-service-id="phone-session">
+  <div class="service-top"><h3>Phone support session</h3><span class="service-amount">$35</span></div>
+  <p class="service-delivery">30 minutes of scheduled phone conversation</p>
+  <p>Talk through one care topic at a comfortable pace, with time for questions and an emailed recap.</p>
+  <p class="service-timing">At your confirmed appointment time</p>
+</article>
+</div>
+<p class="service-included">Every option includes practical next steps, a written answer or recap to keep, and one written clarification on the same topic requested within 7 calendar days of your answer or session.</p>
+<p>Allow up to 2 business days for a request review and quote. Submitting the form does not start a paid service or reserve an appointment.</p>
+<details class="service-policy"><summary>When will I hear back?</summary>
+<p>Written-answer deadlines start after your request is accepted and payment is completed. Any needed details are collected first. Your confirmation gives the exact due date and time before you pay. Business days are Monday–Friday, excluding U.S. federal holidays, in Pacific Time.</p>
+<p>Text and phone sessions start at the appointment time agreed before payment. The minutes shown are conversation time, not a wait for a reply. Your recap arrives within 1 business day after the session. Sessions depend on availability; this is not an on-demand line.</p>
+</details>
+<details class="service-policy"><summary>How does the included clarification work?</summary>
+<p>Send your included clarification by replying to your answer or recap within 7 calendar days. It receives one written reply within 2 business days. A new topic or another pet needs a separate quote; there are no automatic extra charges.</p>
+</details>
+<details class="service-policy"><summary>Price confirmation and refunds</summary>
+<p>No charge to submit a request. The service, full price and deadline are confirmed before payment. If your question cannot be answered within this service, you will not be charged; if already paid, you receive a full refund. If you do not feel your question was answered, reply to request a full refund. You may also request a full refund if the agreed deadline is missed or you cancel before the answer is sent or the session begins.</p>
+</details>
+<!-- END SERVICE MENU -->
   </section>
 
   <!-- INTAKE FORM -->
   <section class="card" id="askSection">
     <h2>Ask your question</h2>
-    <p class="note">Your question is sent straight to the help line — I'll reply to the email address you give below.</p>
+    <p class="note">Send your request for a free scope check and quote. Allow up to 2 business days for confirmation by email; your paid-answer deadline or appointment will be agreed before payment.</p>
     <form id="intakeForm">
       <label for="name">Your name</label>
       <input type="text" id="name" required autocomplete="name">
@@ -187,9 +205,27 @@
       <label for="email">Your email (so I can reply)</label>
       <input type="email" id="email" required autocomplete="email">
 
-      <label for="phone">Phone number (optional)</label>
-      <input type="tel" id="phone" autocomplete="tel" placeholder="Add your number if you'd prefer your reply by text message">
-      <p class="note">Leave blank for an email reply. If you add your number, I'll text your answer instead.</p>
+      <label for="service">Choose your service</label>
+      <select id="service" required>
+        <!-- BEGIN SERVICE OPTIONS -->
+<option value="">Choose an option…</option>
+<option value="written-answer" data-channel="email-or-text">Focused written answer — $10</option>
+<option value="written-guide" data-channel="email">Detailed written guide — $20</option>
+<option value="text-session" data-channel="text">Live text session — $25</option>
+<option value="phone-session" data-channel="phone">Phone support session — $35</option>
+<!-- END SERVICE OPTIONS -->
+      </select>
+
+      <div id="deliveryRow" hidden>
+        <label for="delivery">Send my focused answer by</label>
+        <select id="delivery">
+          <option value="email">Email</option>
+          <option value="text">Text message</option>
+        </select>
+      </div>
+      <label for="phone">Phone number <span id="phoneRequirement">(optional)</span></label>
+      <input type="tel" id="phone" autocomplete="tel" aria-describedby="phoneNote">
+      <p class="note" id="phoneNote">Required for text or phone service. Confirmations and session recaps arrive by email. Adding a number does not change your chosen service.</p>
 
       <!-- Honeypot: humans never see or fill this. -->
       <div style="position:absolute; left:-9999px;" aria-hidden="true">
@@ -218,20 +254,20 @@
         <option>Feeding &amp; nutrition (general)</option>
         <option>Grooming &amp; general care</option>
         <option>Behavior &amp; training basics</option>
-        <option>Should I see a vet about this?</option>
         <option>Preparing for a vet visit</option>
         <option>New pet questions</option>
         <option>Other</option>
       </select>
 
       <label for="question">Your question</label>
-      <textarea id="question" required placeholder="Describe what's going on. Include how long it's been happening and anything you've already tried."></textarea>
+      <textarea id="question" required maxlength="3500" placeholder="Describe one everyday care topic, what you want help with and what you have already tried. For symptoms or medication questions, contact your veterinarian."></textarea>
 
       <div class="checkbox-row">
         <input type="checkbox" id="ack" required>
         <label for="ack" style="font-weight:400; margin:0;">I understand this help line provides <strong>general educational information only</strong>, not veterinary medical advice, diagnosis, or treatment, and is not a substitute for care from a licensed veterinarian. For emergencies I will contact an emergency vet directly.</label>
       </div>
 
+      <p class="note">This is a request, not a purchase. Review the price, reply timing, included clarification and refund terms above before submitting.</p>
       <p style="margin-top:1.25rem;">
         <button type="submit" class="btn btn-navy">Send my question</button>
       </p>
@@ -261,9 +297,34 @@
   var WORKER_URL = "REPLACE_WITH_YOUR_WORKER_URL";
   var HELPLINE_EMAIL = "jahmal9767@gmail.com";
 
+  var serviceSelect = document.getElementById("service");
+  var deliverySelect = document.getElementById("delivery");
+  var phoneInput = document.getElementById("phone");
+
+  function selectedChannel() {
+    var option = serviceSelect.options[serviceSelect.selectedIndex];
+    var channel = option.dataset.channel || "email";
+    return channel === "email-or-text" ? deliverySelect.value : channel;
+  }
+
+  function updateDelivery() {
+    document.getElementById("deliveryRow").hidden = serviceSelect.value !== "written-answer";
+    var needsPhone = ["text", "phone"].indexOf(selectedChannel()) !== -1;
+    phoneInput.required = needsPhone;
+    document.getElementById("phoneRequirement").textContent = needsPhone ? "(required)" : "(optional)";
+  }
+  serviceSelect.addEventListener("change", updateDelivery);
+  deliverySelect.addEventListener("change", updateDelivery);
+  window.addEventListener("pageshow", updateDelivery);
+  updateDelivery();
+
   document.getElementById("intakeForm").addEventListener("submit", function (e) {
     e.preventDefault();
 
+    updateDelivery();
+    if (!e.target.reportValidity()) return;
+    var serviceLabel = serviceSelect.options[serviceSelect.selectedIndex].textContent;
+    var requestDetails = "Requested service: " + serviceLabel + "\nDelivery: " + selectedChannel() + "\n\n";
     var payload = {
       name: document.getElementById("name").value.trim(),
       email: document.getElementById("email").value.trim(),
@@ -271,7 +332,7 @@
       species: document.getElementById("species").value,
       age: document.getElementById("age").value.trim() || "Not given",
       category: document.getElementById("category").value,
-      question: document.getElementById("question").value.trim(),
+      question: requestDetails + document.getElementById("question").value.trim(),
       website: document.getElementById("website").value // honeypot
     };
     if (payload.website) return; // bots only — humans never see that field
@@ -281,7 +342,7 @@
       var subject = "Help line question (" + payload.species + " · " + payload.category + ")";
       var body = "Name: " + payload.name +
         "\nReply-to email: " + payload.email +
-        (payload.phone ? "\nPhone (text reply requested): " + payload.phone : "") +
+        (payload.phone ? "\nContact phone: " + payload.phone : "") +
         "\nPet species: " + payload.species +
         "\nPet age: " + payload.age +
         "\nCategory: " + payload.category +
@@ -313,9 +374,9 @@
       document.getElementById("askSection").innerHTML =
         "<h2>✅ Question sent!</h2><p>Thanks, " +
         payload.name.replace(/[<>&]/g, "") +
-        " — you'll get a reply at <strong>" +
+        " — your request will be reviewed and a quote sent to <strong>" +
         payload.email.replace(/[<>&]/g, "") +
-        "</strong> within 24–48 hours.</p>";
+        "</strong> within 2 business days. No payment has been taken. Your exact answer deadline or appointment will be confirmed before payment.</p>";
     }).catch(function () {
       button.disabled = false;
       button.textContent = "Send my question";

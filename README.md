@@ -3,8 +3,9 @@
 A one-person pet-care help line run by a veterinary assistant. Pet owners
 submit general care questions through a simple web page; emergencies are
 redirected to emergency veterinary services *before* they ever reach the queue;
-everything else arrives by email as a structured request answered within
-24–48 hours using pre-vetted templates.
+eligible everyday care requests arrive through the intake form or email.
+Clients receive a free scope check and quote within two business days. The
+written-answer deadline or scheduled session is confirmed before payment.
 
 **Designed for a solo operator:** no backend, no server costs, no live phone
 line, and legal scope-of-practice guardrails built into every step.
@@ -18,13 +19,34 @@ Pet owner visits the page
         │
         └─ General question ────► Structured email lands in your help-line inbox
                                           │
-                                  You reply within 24–48h
+                                  Confirm scope, price and deadline
                                   using response templates
                                   (educational info only,
                                    refer-to-vet by default)
 ```
 
 ## What's in this repo
+
+### Client service menu
+
+| Service | One-time price (USD) | Delivery after confirmation and payment |
+|---|---:|---|
+| Focused written answer | $10 | Email or text, within 1 business day |
+| Detailed written guide | $20 | Email, within 2 business days |
+| Live text session | $25 | 20-minute appointment |
+| Phone support session | $35 | 30-minute appointment |
+
+Each purchase covers one pet and one nonmedical care topic, practical steps,
+a written answer or session recap, and one same-topic written clarification
+requested within seven calendar days. See the public menu for full timing and
+refund terms. These are manually delivered services; the form does not book a
+session, collect payment or start a response timer.
+
+`service-menu.json` is the shared source for prices, deliverables and terms.
+After editing it, run `python3 scripts/sync_service_menu.py`; this updates the
+static menus on all three public pages, intake options and native share-card
+configuration. Run `python3 scripts/sync_service_menu.py --check` to detect drift.
+No browser JavaScript is needed to read the prices or print the poster.
 
 | File | Purpose |
 |---|---|

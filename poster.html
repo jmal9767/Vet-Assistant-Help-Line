@@ -7,202 +7,101 @@
 <title>Printable Poster — Vet Assistant Help Line</title>
 <link rel="icon" type="image/png" href="icons/icon-512.png">
 <meta name="theme-color" content="#1f3a5f">
+<link rel="stylesheet" href="service-menu.css">
 <style>
-  :root {
-    --navy: #1f3a5f;
-    --navy-dark: #15294a;
-    --red: #c0392b;
-    --red-bg: #fdecea;
-    --ink: #14181c;
-    --muted: #3c4652;
-    --bg: #f6f9f9;
-    --card: #ffffff;
-    --border: #dde5e8;
-  }
+  :root { --navy: #1f3a5f; --ink: #14181c; --muted: #3c4652; --border: #d4e1e5; }
   * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background: var(--bg);
-    color: var(--ink);
-    line-height: 1.5;
-  }
-  .toolbar {
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 1rem;
-    display: flex;
-    gap: .75rem;
-    align-items: center;
-  }
-  .toolbar .note { font-size: .9rem; color: var(--muted); }
-  .print-btn {
-    background: var(--navy);
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    padding: .7rem 1.2rem;
-    font-size: 1rem;
-    font-weight: 700;
-    cursor: pointer;
-  }
-  .print-btn:hover { background: var(--navy-dark); }
-
-  .poster {
-    max-width: 720px;
-    margin: 0 auto 2rem;
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 2rem 2.25rem;
-  }
-  .poster-header { text-align: center; margin-bottom: 1.25rem; }
-  .poster-header h1 { margin: 0; font-size: 2rem; color: var(--navy); }
-  .poster-header .tagline { margin: .35rem 0 0; font-size: 1.1rem; color: var(--muted); }
-
-  .intro { font-size: 1.05rem; text-align: center; margin: 0 0 1.25rem; }
-
-  .columns { display: flex; gap: 1.5rem; margin-bottom: 1.25rem; }
-  .col { flex: 1; }
-  .col h2 { font-size: 1.05rem; margin: 0 0 .5rem; color: var(--navy-dark); }
-  .col ul { margin: 0; padding-left: 1.15rem; font-size: .95rem; }
-  .col li { margin-bottom: .3rem; }
-
-  .pricing { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
-  .price-row {
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: .55rem .9rem;
-    border-bottom: 1px solid var(--border);
-    font-size: .95rem;
-  }
-  .price-row:last-child { border-bottom: none; }
-  .price-row .amount { font-weight: 700; color: var(--navy); white-space: nowrap; }
-  .price-row .detail { display: block; font-size: .82rem; color: var(--muted); font-weight: 400; }
-
-  .qr-block {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    background: var(--bg);
-    border: 2px solid var(--navy);
-    border-radius: 12px;
-    padding: 1.1rem 1.4rem;
-    margin-bottom: 1.25rem;
-  }
-  .qr-block img { width: 170px; height: 170px; flex-shrink: 0; }
-  .qr-text h2 { margin: 0 0 .35rem; font-size: 1.3rem; color: var(--navy-dark); }
-  .qr-text p { margin: .2rem 0; font-size: .95rem; }
-  .qr-text .url { font-size: .85rem; color: var(--muted); word-break: break-all; }
-
-  .emergency {
-    border: 2px solid var(--red);
-    background: var(--red-bg);
-    border-radius: 10px;
-    padding: .8rem 1.1rem;
-    font-size: .92rem;
-    margin-bottom: 1rem;
-  }
-  .emergency strong { color: var(--red); }
-
-  .disclaimer { font-size: .78rem; color: var(--muted); margin: 0; text-align: center; }
-
-  @media (max-width: 560px) {
-    .columns { flex-direction: column; }
+  body { margin: 0; background: #edf2f4; color: var(--ink); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; line-height: 1.45; }
+  .toolbar { max-width: 816px; margin: auto; padding: 1rem; display: flex; align-items: center; gap: 1rem; }
+  button { border: 0; border-radius: 8px; background: var(--navy); color: white; font: inherit; font-weight: 700; padding: .8rem 1rem; cursor: pointer; }
+  .toolbar span { color: var(--muted); font-size: .9rem; }
+  .poster { max-width: 816px; margin: 0 auto 2rem; padding: 2rem 2.4rem; background: white; border-top: 8px solid var(--navy); }
+  .brand { margin: 0 0 .7rem; font-size: .85rem; letter-spacing: .08em; font-weight: 750; text-transform: uppercase; color: var(--navy); }
+  h1 { font-size: 2.35rem; line-height: 1.1; margin: 0 0 .7rem; color: var(--navy); max-width: 600px; }
+  .intro { margin: 0; color: var(--muted); font-size: 1rem; }
+  .examples { display: flex; flex-wrap: wrap; gap: .45rem 1.1rem; margin: .85rem 0 1.1rem; padding: 0; list-style: none; font-size: .85rem; font-weight: 650; color: var(--navy); }
+  .examples li::before { content: "✓ "; }
+  h2 { margin: 0; font-size: 1.1rem; color: var(--navy); }
+  .service-intro { margin: .25rem 0 .7rem; font-size: .82rem; }
+  .service-option { padding: .8rem; }
+  .service-top h3 { font-size: .98rem; }
+  .service-option p { font-size: .81rem; margin-top: .35rem; }
+  .service-option .service-timing { font-size: .78rem; }
+  .service-included { font-size: .82rem; padding: .65rem .8rem; margin: .75rem 0; }
+  .service-summary { font-size: .72rem; margin: .5rem 0 .9rem; }
+  .qr-block { display: flex; gap: 1.1rem; align-items: center; border: 1px solid var(--border); padding: .8rem; border-radius: 10px; }
+  .qr-block img { width: 116px; height: 116px; flex-shrink: 0; }
+  .qr-block p { font-size: .82rem; margin: .35rem 0; }
+  .qr-block a { color: var(--navy); overflow-wrap: anywhere; font-size: .72rem; }
+  .emergency { border-left: 3px solid #a52a20; background: #fff1ee; font-size: .8rem; padding: .7rem .8rem; margin: .9rem 0 .6rem; }
+  .emergency strong { color: #8e241b; }
+  .scope { font-size: .72rem; color: var(--muted); margin: 0; }
+  @media (max-width: 540px) {
+    .poster { padding: 1.4rem; }
+    h1 { font-size: 2rem; }
+    .toolbar { flex-wrap: wrap; }
     .qr-block { flex-direction: column; text-align: center; }
+    .qr-block img { width: 150px; height: 150px; }
   }
-
+  @page { size: letter; margin: .35in; }
   @media print {
-    body { background: #fff; }
+    html { font-size: 14px; }
+    body { background: white; }
     .toolbar { display: none; }
-    .poster {
-      max-width: none;
-      margin: 0;
-      border: none;
-      border-radius: 0;
-      padding: .5in;
-    }
-    .qr-block { break-inside: avoid; }
+    .poster { margin: 0; max-width: none; padding: .18in .18in 0; }
+    .service-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .qr-block { flex-direction: row; text-align: left; break-inside: avoid; }
+    .qr-block img { width: 112px; height: 112px; }
+    h1 { font-size: 2.2rem; }
   }
 </style>
 </head>
 <body>
-
-<div class="toolbar">
-  <button class="print-btn" onclick="window.print()">🖨 Print this poster</button>
-  <span class="note">Prints on one letter-size page. Post it at clinics, pet stores, or community boards.</span>
+<div class="toolbar"><button onclick="window.print()">Print this poster</button><span>Letter-size poster · choose 100% scale and turn off browser headers and footers.</span></div>
+<main class="poster">
+  <p class="brand">Vet Assistant Help Line</p>
+  <h1>Feel more confident<br>caring for your pet.</h1>
+  <p class="intro">Personal help from Jahmal, a veterinary assistant with emergency and general-practice experience. Turn an everyday care question into clear, practical steps you can use at home.</p>
+  <ul class="examples"><li>New-pet routines</li><li>Grooming &amp; enrichment</li><li>Feeding routines</li><li>Vet-visit preparation</li></ul>
+  <section aria-labelledby="prices"><h2 id="prices">Choose the help that fits your question</h2>
+<!-- BEGIN SERVICE MENU -->
+<p class="service-intro">One-time prices in USD. One pet, one nonmedical care topic. No subscription.</p>
+<div class="service-grid">
+<article class="service-option" data-service-id="written-answer">
+  <div class="service-top"><h3>Focused written answer</h3><span class="service-amount">$10</span></div>
+  <p class="service-delivery">Email or text — same price</p>
+  <p>One straightforward care question, with a personal explanation and practical next steps.</p>
+  <p class="service-timing">Within 1 business day after confirmation and payment</p>
+</article>
+<article class="service-option" data-service-id="written-guide">
+  <div class="service-top"><h3>Detailed written guide</h3><span class="service-amount">$20</span></div>
+  <p class="service-delivery">Email</p>
+  <p>Related questions on one care topic, organized into a step-by-step guide, checklist and useful resources.</p>
+  <p class="service-timing">Within 2 business days after confirmation and payment</p>
+</article>
+<article class="service-option" data-service-id="text-session">
+  <div class="service-top"><h3>Live text session</h3><span class="service-amount">$25</span></div>
+  <p class="service-delivery">20 minutes of scheduled text conversation</p>
+  <p>Work through one care topic together, ask questions as you go, and receive an emailed recap.</p>
+  <p class="service-timing">At your confirmed appointment time</p>
+</article>
+<article class="service-option" data-service-id="phone-session">
+  <div class="service-top"><h3>Phone support session</h3><span class="service-amount">$35</span></div>
+  <p class="service-delivery">30 minutes of scheduled phone conversation</p>
+  <p>Talk through one care topic at a comfortable pace, with time for questions and an emailed recap.</p>
+  <p class="service-timing">At your confirmed appointment time</p>
+</article>
 </div>
-
-<div class="poster">
-
-  <div class="poster-header">
-    <h1><span aria-hidden="true">🐾</span> Vet Assistant Help Line</h1>
-    <p class="tagline">Pet-care questions, answered by a veterinary assistant with emergency &amp; general-practice experience</p>
-  </div>
-
-  <p class="intro">Not sure whether your pet needs a vet — or the emergency room?
-  Get a thorough, honest answer that helps you <strong>make the right call for your
-  pet</strong>, plus everyday feeding, grooming, and behavior help. Scan the code below,
-  send your question, and get a personal reply <strong>by email within 24–48 hours</strong>.</p>
-
-  <div class="columns">
-    <div class="col">
-      <h2>What you can ask</h2>
-      <ul>
-        <li>"Is this an emergency — or can it wait?"</li>
-        <li>Feeding, grooming &amp; behavior help</li>
-        <li>Home care &amp; recovery after a vet visit</li>
-        <li>Vet-visit prep, new pets &amp; routine care</li>
-      </ul>
-    </div>
-    <div class="col">
-      <h2>Pricing</h2>
-      <!-- ⚙️ SETUP: keep these in sync with welcome.html, index.html, and the app's HelplineConfig. -->
-      <div class="pricing">
-        <div class="price-row">
-          <span><strong>📧 Email answer</strong><span class="detail">Quick / detailed — within 24–48 h</span></span>
-          <span class="amount">$10 / $20</span>
-        </div>
-        <div class="price-row">
-          <span><strong>💬 Text answer</strong><span class="detail">Quick / live 15-min chat</span></span>
-          <span class="amount">$15 / $25</span>
-        </div>
-        <div class="price-row">
-          <span><strong>📞 Phone call</strong><span class="detail">15 min / 30 min, scheduled</span></span>
-          <span class="amount">$30 / $45</span>
-        </div>
-        <div class="price-row">
-          <span><strong>⚡️ Faster reply add-on</strong><span class="detail">Same-day / express (2–4 h)</span></span>
-          <span class="amount">+$10 / +$20</span>
-        </div>
-      </div>
-    </div>
-  </div>
-
+<p class="service-included">Every option includes practical next steps, a written answer or recap to keep, and one written clarification on the same topic requested within 7 calendar days of your answer or session.</p>
+<p class="service-summary">Exact deadline or appointment confirmed before payment. Business days: Mon–Fri, excluding U.S. federal holidays, Pacific Time. Session recap: within 1 business day; clarification reply: within 2 business days. Allow up to 2 business days for your initial quote. No charge to submit. Full refund if you do not feel your question was answered. Scan for full terms.</p>
+<!-- END SERVICE MENU -->
+  </section>
   <div class="qr-block">
-    <img src="docs/share-qr.png" alt="QR code linking to the Vet Assistant Help Line website">
-    <div class="qr-text">
-      <h2>Scan to ask your question</h2>
-      <p>Point your phone's camera at the code — it opens the help-line page where
-      you can read how it works and send your question. No app download needed.
-      Every answer is backed by a <strong>full satisfaction guarantee</strong>.</p>
-      <p class="url">https://jmal9767.github.io/Vet-Assistant-Help-Line/</p>
-    </div>
+    <img src="docs/share-qr.png" alt="Scan to open the Vet Assistant Help Line website" width="116" height="116">
+    <div><h2>Scan to choose your service</h2><p>Tell me what you need help with. Get the full price and an exact deadline or appointment before you pay. No app download needed.</p><a href="https://jmal9767.github.io/Vet-Assistant-Help-Line/">jmal9767.github.io/Vet-Assistant-Help-Line/</a></div>
   </div>
-
-  <div class="emergency">
-    <strong>⚠️ Emergencies can't wait for email.</strong> If your pet is having trouble
-    breathing, seizing, bleeding, or may have been poisoned, contact an emergency vet
-    now. Poison Control: <strong>(888) 426-4435</strong> (24/7, fee may apply).
-  </div>
-
-  <p class="disclaimer">Disclaimer: Run by a veterinary assistant — general pet-care
-  education only. This service does not replace or supersede the advice, diagnosis, or
-  treatment of a licensed veterinarian. Responses are not immediate — if this could be
-  a life-threatening emergency, do not wait for a reply; contact an emergency vet now.</p>
-
-</div>
-
+  <p class="emergency"><strong>Worried your pet is sick or injured? Contact a veterinarian.</strong> Do not wait for this service to decide whether care can wait. Trouble breathing, seizures, uncontrolled bleeding or possible poisoning: contact an emergency vet now. Poison Control: <strong>(888) 426-4435</strong> (24/7; fee may apply).</p>
+  <p class="scope">General pet-care education only, provided by a veterinary assistant. No diagnosis, treatment or medication advice. This service does not replace a licensed veterinarian or provide emergency care.</p>
+</main>
 </body>
 </html>

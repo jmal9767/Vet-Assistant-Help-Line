@@ -1,5 +1,11 @@
 # Payments Setup — pre-authorize, capture on approval (or after 24h)
 
+**Timing correction:** the existing worker measures its 24-hour auto-capture
+delay from payment-intent creation, not answer delivery. It does not track
+delivery or the service deadline. A payment may therefore be captured before
+the answer or appointment; do not advertise "charged only after delivery".
+Refunds and cancellations are manual. See [SERVICE_DELIVERY.md](SERVICE_DELIVERY.md).
+
 How money moves:
 
 ```
@@ -11,9 +17,10 @@ You confirm the price  →  client taps your payment link  →  card AUTHORIZED 
                                 └──────────► payment CAPTURED (money reaches your account)
 ```
 
-The client's money is never taken before they get their answer, and you never
-go unpaid because someone ignored the approval link. Card authorizations last
-7 days, so the 24-hour auto-capture is comfortably inside the limit.
+The card is initially authorized. It can then be captured by the approval link
+or by the scheduled worker, even if an answer has not yet been sent. Check each
+authorization's actual expiry in Stripe; do not assume every card hold lasts
+seven days.
 
 Everything below is one-time setup, roughly 20–30 minutes.
 

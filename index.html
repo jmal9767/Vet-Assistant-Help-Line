@@ -123,6 +123,37 @@
   }
   .status-error { color: #9f2f24; }
   .status-success { color: #17633b; }
+  .or-divider {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    margin: 1.15rem 0;
+    color: var(--muted);
+    font-size: .85rem;
+    font-weight: 700;
+  }
+  .or-divider::before, .or-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+  .free-access-box {
+    border: 1px dashed #aebdc8;
+    border-radius: 10px;
+    padding: .85rem 1rem 1rem;
+    background: #fbfcfd;
+  }
+  .free-code-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: .65rem;
+    align-items: end;
+  }
+  .free-code-row label { margin-top: 0; }
+  @media (max-width: 540px) {
+    .free-code-row { grid-template-columns: 1fr; }
+  }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -231,6 +262,20 @@
     <p class="payment-total" id="paymentTotal">Total: $10</p>
     <button type="button" class="btn btn-navy" id="checkoutButton">Continue to secure payment</button>
     <p class="note" id="checkoutStatus" aria-live="polite"></p>
+
+    <div class="or-divider">OR</div>
+
+    <div class="free-access-box">
+      <div class="free-code-row">
+        <div>
+          <label for="freeCode">Free-use code</label>
+          <input type="text" id="freeCode" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="COMP-XXXXXX">
+        </div>
+        <button type="button" class="btn btn-navy" id="redeemCodeButton">Use code</button>
+      </div>
+      <p class="note">If you were given a complimentary one-time code, choose the service it was issued for and enter the code here.</p>
+      <p class="note" id="freeCodeStatus" aria-live="polite"></p>
+    </div>
   </section>
 
   <section class="card" id="askSection" hidden>
@@ -353,6 +398,14 @@
 
   var verifiedPayment = null;
 
+  function currentSelection() {
+    var service = document.getElementById("serviceChoice").value;
+    var speed = allowsSpeed(service)
+      ? document.getElementById("speedChoice").value
+      : "standard";
+    return { service: service, speed: speed };
+  }
+
   function paymentWorkerConfigured() {
     return PAYMENT_WORKER_URL &&
       PAYMENT_WORKER_URL.indexOf("REPLACE_WITH") !== 0;
@@ -394,16 +447,66 @@
       return;
     }
 
-    var service = document.getElementById("serviceChoice").value;
-    var speed = allowsSpeed(service)
-      ? document.getElementById("speedChoice").value
-      : "standard";
+    var selection = currentSelection();
 
     var url = PAYMENT_WORKER_URL.replace(/\/$/, "") +
-      "/checkout?service=" + encodeURIComponent(service) +
-      "&speed=" + encodeURIComponent(speed);
+      "/checkout?service=" + encodeURIComponent(selection.service) +
+      "&speed=" + encodeURIComponent(selection.speed);
 
     window.location.href = url;
+  });
+
+  document.getElementById("redeemCodeButton").addEventListener("click", function () {
+    var status = document.getElementById("freeCodeStatus");
+    var button = document.getElementById("redeemCodeButton");
+    var code = document.getElementById("freeCode").value.trim().toUpperCase();
+    var selection = currentSelection();
+
+    status.className = "note";
+
+    if (!code) {
+      status.className = "note status-error";
+      status.textContent = "Enter the free-use code you were given.";
+      return;
+    }
+
+    if (!paymentWorkerConfigured()) {
+      status.className = "note status-error";
+      status.textContent = "Free-use code verification is not connected yet.";
+      return;
+    }
+
+    button.disabled = true;
+    button.textContent = "Checking…";
+
+    fetch(PAYMENT_WORKER_URL.replace(/\/$/, "") + "/comp/redeem", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        code: code,
+        service: selection.service,
+        speed: selection.speed
+      })
+    })
+      .then(function (response) {
+        return response.json().then(function (body) {
+          if (!response.ok || !body.paid || !body.comp) {
+            throw new Error(body.error || "Code could not be verified.");
+          }
+          return body;
+        });
+      })
+      .then(function (access) {
+        status.className = "note status-success";
+        status.textContent = "Free access confirmed.";
+        unlockQuestionnaire(access);
+      })
+      .catch(function (error) {
+        button.disabled = false;
+        button.textContent = "Use code";
+        status.className = "note status-error";
+        status.textContent = error.message || "That free-use code could not be verified.";
+      });
   });
 
   function configurePhoneField(service) {
@@ -428,12 +531,16 @@
     document.getElementById("paymentSection").hidden = true;
     document.getElementById("askSection").hidden = false;
     document.getElementById("paidSummary").innerHTML =
-      "<strong>Payment confirmed:</strong> " +
+      (payment.comp
+        ? "<strong>Free access confirmed:</strong> "
+        : "<strong>Payment confirmed:</strong> ") +
       escapeHtml(payment.serviceLabel) +
       (payment.speed !== "standard"
         ? " · " + escapeHtml(payment.speedLabel)
         : "") +
-      " · <strong>$" + Number(payment.amount).toFixed(2) + "</strong>";
+      (payment.comp
+        ? " · <strong>Complimentary</strong>"
+        : " · <strong>$" + Number(payment.amount).toFixed(2) + "</strong>");
     configurePhoneField(payment.service);
     document.getElementById("askSection").scrollIntoView({ behavior: "smooth", block: "start" });
   }
@@ -510,18 +617,23 @@
       paidServiceLabel: verifiedPayment.serviceLabel,
       paidSpeed: verifiedPayment.speed,
       paidSpeedLabel: verifiedPayment.speedLabel,
-      paidAmount: verifiedPayment.amount
+      paidAmount: verifiedPayment.amount,
+      complimentary: !!verifiedPayment.comp,
+      freeCode: verifiedPayment.freeCode || ""
     };
 
     if (payload.website) return;
 
     if (WORKER_URL.indexOf("REPLACE_WITH") === 0) {
-      var subject = "PAID help line question (" + payload.species + " · " + payload.category + ")";
-      var body = "PAYMENT VERIFIED" +
-        "\nStripe session: " + payload.paymentSession +
-        "\nPaid service: " + payload.paidServiceLabel +
+      var subject = (payload.complimentary ? "COMPLIMENTARY" : "PAID") +
+        " help line question (" + payload.species + " · " + payload.category + ")";
+      var body = (payload.complimentary ? "FREE ACCESS VERIFIED" : "PAYMENT VERIFIED") +
+        "\nAccess ID: " + payload.paymentSession +
+        "\nService: " + payload.paidServiceLabel +
         (payload.paidSpeed !== "standard" ? " · " + payload.paidSpeedLabel : "") +
-        "\nPaid amount: $" + Number(payload.paidAmount).toFixed(2) +
+        (payload.complimentary
+          ? "\nAmount: $0.00"
+          : "\nPaid amount: $" + Number(payload.paidAmount).toFixed(2)) +
         "\n\nName: " + payload.name +
         "\nReply-to email: " + payload.email +
         (payload.phone ? "\nPhone: " + payload.phone : "") +
@@ -559,7 +671,7 @@
         document.getElementById("askSection").innerHTML =
           "<h2>✅ Questionnaire sent!</h2><p>Thanks, " +
           escapeHtml(payload.name) +
-          " — your paid request has been submitted. I'll reply using the service you purchased.</p>";
+          " — your request has been submitted. I'll reply using the service selected for this access.</p>";
       })
       .catch(function () {
         button.disabled = false;

@@ -13,6 +13,11 @@ struct ContentView: View {
                     Label("Templates", systemImage: "doc.on.doc.fill")
                 }
 
+            CompCodeView()
+                .tabItem {
+                    Label("Free Codes", systemImage: "ticket.fill")
+                }
+
             ShareView()
                 .tabItem {
                     Label("Share", systemImage: "qrcode")

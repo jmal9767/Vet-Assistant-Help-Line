@@ -7,6 +7,11 @@
  *   3. Stripe returns the client to the website after payment.
  *   4. The website calls /verify before the questionnaire is unlocked.
  *
+ * Free-access flow:
+ *   1. Operator creates a neutral one-time code with POST /comp/new.
+ *   2. Client chooses a service and enters that code on the public website.
+ *   3. POST /comp/redeem validates and consumes the code, then unlocks intake.
+ *
  * Legacy operator flow remains available at /new and /approve for manually
  * authorized/captured payments.
  *
@@ -16,8 +21,9 @@
  *   SITE_URL           https://jmal9767.github.io/Vet-Assistant-Help-Line/
  *   ALLOWED_ORIGIN     https://jmal9767.github.io
  *
- * Required binding for the legacy hold/capture flow:
- *   PAYMENTS           Cloudflare KV namespace
+ * Required bindings:
+ *   FREE_CODES         Cloudflare KV namespace for one-time complimentary codes
+ *   PAYMENTS           Cloudflare KV namespace for the legacy hold/capture flow
  */
 
 const AUTO_CAPTURE_HOURS = 24;
@@ -78,6 +84,12 @@ export default {
     }
     if (url.pathname === "/verify" && request.method === "GET") {
       return handleVerify(url, env);
+    }
+    if (url.pathname === "/comp/new" && request.method === "POST") {
+      return handleCreateCompCode(request, env);
+    }
+    if (url.pathname === "/comp/redeem" && request.method === "POST") {
+      return handleRedeemCompCode(request, env);
     }
 
     // Legacy operator-only flow.
@@ -211,6 +223,200 @@ async function handleVerify(url, env) {
     200,
     env
   );
+}
+
+
+async function handleCreateCompCode(request, env) {
+  if (!env.FREE_CODES) {
+    return json({ error: "Free-code storage is not configured." }, 503, env);
+  }
+
+  const auth = request.headers.get("Authorization") || "";
+  if (auth !== "Bearer " + env.OPERATOR_KEY) {
+    return json({ error: "Unauthorized" }, 401, env);
+  }
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: "Invalid JSON." }, 400, env);
+  }
+
+  const serviceId = String(body.service || "quick-email");
+  const speedId = String(body.speed || "standard");
+  const expiresDays = Math.min(90, Math.max(1, Number(body.expiresDays || 30)));
+
+  if (serviceId !== "any" && !SERVICES[serviceId]) {
+    return json({ error: "Invalid service." }, 400, env);
+  }
+  if (speedId !== "any" && !SPEEDS[speedId]) {
+    return json({ error: "Invalid reply speed." }, 400, env);
+  }
+  if (
+    serviceId !== "any" &&
+    !SERVICES[serviceId].allowsSpeed &&
+    speedId !== "standard"
+  ) {
+    return json(
+      { error: "That service does not support a reply-speed add-on." },
+      400,
+      env
+    );
+  }
+
+  const code = await uniqueCompCode(env);
+  const now = Date.now();
+  const expiresAt = now + expiresDays * 86400000;
+  const record = {
+    code,
+    service: serviceId,
+    speed: speedId,
+    createdAt: now,
+    expiresAt,
+    used: false,
+  };
+
+  await env.FREE_CODES.put("comp:" + code, JSON.stringify(record), {
+    expirationTtl: Math.ceil(expiresDays * 86400) + 86400,
+  });
+
+  return json(
+    {
+      ok: true,
+      code,
+      service: serviceId,
+      serviceLabel:
+        serviceId === "any" ? "Any service" : SERVICES[serviceId].label,
+      speed: speedId,
+      speedLabel:
+        speedId === "any" ? "Any available speed" : SPEEDS[speedId].label,
+      expiresAt,
+      oneTimeUse: true,
+    },
+    200,
+    env
+  );
+}
+
+async function handleRedeemCompCode(request, env) {
+  if (!env.FREE_CODES) {
+    return json({ paid: false, error: "Free-code access is not configured." }, 503, env);
+  }
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ paid: false, error: "Invalid request." }, 400, env);
+  }
+
+  const code = normalizeCompCode(body.code);
+  const serviceId = String(body.service || "");
+  const speedId = String(body.speed || "standard");
+  const service = SERVICES[serviceId];
+  const speed = SPEEDS[speedId];
+
+  if (!code || !service || !speed) {
+    return json({ paid: false, error: "Invalid code or service selection." }, 400, env);
+  }
+  if (!service.allowsSpeed && speedId !== "standard") {
+    return json({ paid: false, error: "Invalid reply-speed selection." }, 400, env);
+  }
+
+  const key = "comp:" + code;
+  const raw = await env.FREE_CODES.get(key);
+  if (!raw) {
+    return json({ paid: false, error: "That free-use code is not valid." }, 404, env);
+  }
+
+  let record;
+  try {
+    record = JSON.parse(raw);
+  } catch {
+    return json({ paid: false, error: "That free-use code is not valid." }, 404, env);
+  }
+
+  if (record.used) {
+    return json({ paid: false, error: "That free-use code has already been used." }, 409, env);
+  }
+  if (Number(record.expiresAt || 0) < Date.now()) {
+    return json({ paid: false, error: "That free-use code has expired." }, 410, env);
+  }
+  if (record.service !== "any" && record.service !== serviceId) {
+    return json(
+      {
+        paid: false,
+        error: "That code is for " + SERVICES[record.service].label + ".",
+      },
+      409,
+      env
+    );
+  }
+  if (record.speed !== "any" && record.speed !== speedId) {
+    return json(
+      {
+        paid: false,
+        error:
+          "That code is for " +
+          (record.speed === "standard" ? "standard reply speed" : SPEEDS[record.speed].label) +
+          ".",
+      },
+      409,
+      env
+    );
+  }
+
+  record.used = true;
+  record.usedAt = Date.now();
+  record.redeemedService = serviceId;
+  record.redeemedSpeed = speedId;
+
+  await env.FREE_CODES.put(key, JSON.stringify(record), {
+    expirationTtl: 60 * 60 * 24 * 90,
+  });
+
+  return json(
+    {
+      paid: true,
+      comp: true,
+      sessionId: "comp:" + code,
+      service: serviceId,
+      serviceLabel: service.label,
+      speed: speedId,
+      speedLabel: speed.label,
+      amount: 0,
+      freeCode: code,
+    },
+    200,
+    env
+  );
+}
+
+async function uniqueCompCode(env) {
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const code = generateCompCode();
+    const exists = await env.FREE_CODES.get("comp:" + code);
+    if (!exists) return code;
+  }
+  throw new Error("Could not generate a unique free-use code.");
+}
+
+function generateCompCode() {
+  const alphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const bytes = crypto.getRandomValues(new Uint8Array(6));
+  let suffix = "";
+  for (const byte of bytes) {
+    suffix += alphabet[byte % alphabet.length];
+  }
+  return "COMP-" + suffix;
+}
+
+function normalizeCompCode(value) {
+  return String(value || "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, "");
 }
 
 /** Legacy operator flow: /new?key=…&amount=20&desc=Detailed+question */
@@ -417,8 +623,8 @@ function normalizedSiteUrl(siteUrl) {
 function corsHeaders(env) {
   return {
     "Access-Control-Allow-Origin": env.ALLOWED_ORIGIN || "*",
-    "Access-Control-Allow-Methods": "GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Cache-Control": "no-store",
   };
 }

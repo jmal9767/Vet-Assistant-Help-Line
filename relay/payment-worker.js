@@ -85,6 +85,9 @@ export default {
     if (url.pathname === "/verify" && request.method === "GET") {
       return handleVerify(url, env);
     }
+    if (url.pathname === "/access/verify" && request.method === "GET") {
+      return handleAccessVerify(url, env);
+    }
     if (url.pathname === "/comp/new" && request.method === "POST") {
       return handleCreateCompCode(request, env);
     }
@@ -376,21 +379,101 @@ async function handleRedeemCompCode(request, env) {
     expirationTtl: 60 * 60 * 24 * 90,
   });
 
-  return json(
-    {
-      paid: true,
-      comp: true,
-      sessionId: "comp:" + code,
-      service: serviceId,
-      serviceLabel: service.label,
-      speed: speedId,
-      speedLabel: speed.label,
-      amount: 0,
-      freeCode: code,
-    },
-    200,
-    env
-  );
+  const accessId = "ca_" + randomToken(24);
+  const access = {
+    paid: true,
+    comp: true,
+    sessionId: accessId,
+    service: serviceId,
+    serviceLabel: service.label,
+    speed: speedId,
+    speedLabel: speed.label,
+    amount: 0,
+    freeCode: code,
+    issuedAt: Date.now(),
+  };
+
+  await env.FREE_CODES.put("access:" + accessId, JSON.stringify(access), {
+    expirationTtl: 60 * 60 * 4,
+  });
+
+  return json(access, 200, env);
+}
+
+
+async function handleAccessVerify(url, env) {
+  const id = url.searchParams.get("id") || "";
+
+  if (id.startsWith("cs_")) {
+    const session = await stripe(
+      env,
+      "GET",
+      "/v1/checkout/sessions/" + encodeURIComponent(id)
+    );
+
+    if (session.error) {
+      return json({ paid: false, error: "Access could not be verified." }, 404, env);
+    }
+
+    const serviceId = session.metadata?.service || "";
+    const speedId = session.metadata?.speed || "standard";
+    const service = SERVICES[serviceId];
+    const speed = SPEEDS[speedId];
+    if (!service || !speed) {
+      return json({ paid: false, error: "Access details are invalid." }, 409, env);
+    }
+
+    const expectedAmount =
+      (service.amount + (service.allowsSpeed ? speed.amount : 0)) * 100;
+
+    if (
+      session.payment_status !== "paid" ||
+      Number(session.amount_total) !== expectedAmount
+    ) {
+      return json({ paid: false, error: "Payment is not complete." }, 402, env);
+    }
+
+    return json(
+      {
+        paid: true,
+        comp: false,
+        sessionId: id,
+        service: serviceId,
+        serviceLabel: service.label,
+        speed: speedId,
+        speedLabel: speed.label,
+        amount: expectedAmount / 100,
+      },
+      200,
+      env
+    );
+  }
+
+  if (id.startsWith("ca_") && env.FREE_CODES) {
+    const raw = await env.FREE_CODES.get("access:" + id);
+    if (!raw) {
+      return json({ paid: false, error: "Free access has expired." }, 404, env);
+    }
+
+    try {
+      const access = JSON.parse(raw);
+      return json(access, 200, env);
+    } catch {
+      return json({ paid: false, error: "Free access could not be verified." }, 409, env);
+    }
+  }
+
+  return json({ paid: false, error: "Invalid access ID." }, 400, env);
+}
+
+function randomToken(length) {
+  const alphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+  const bytes = crypto.getRandomValues(new Uint8Array(length));
+  let value = "";
+  for (const byte of bytes) {
+    value += alphabet[byte % alphabet.length];
+  }
+  return value;
 }
 
 async function uniqueCompCode(env) {

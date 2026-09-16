@@ -9,6 +9,7 @@
  *   CLOUDKIT_KEY_ID      the key ID shown in CloudKit Console → Tokens & Keys
  *   CLOUDKIT_PRIVATE_KEY the PKCS#8 private key PEM (contents of eckey-pkcs8.pem)
  *   ALLOWED_ORIGIN       e.g. "https://jmal9767.github.io" (or "*" while testing)
+ *   PAYMENT_WORKER_URL    deployed payment-worker base URL
  *
  * See docs/CLOUDKIT_SETUP.md for the full setup walkthrough.
  */
@@ -36,6 +37,16 @@ export default {
     // Honeypot field filled in → almost certainly a bot. Pretend success.
     if (body.website) {
       return json({ ok: true }, 200, cors);
+    }
+
+    const accessId = String(body.paymentSession || "").trim().slice(0, 220);
+    if (!accessId) {
+      return json({ error: "Verified payment or free access is required." }, 402, cors);
+    }
+
+    const access = await verifyAccess(accessId, env);
+    if (!access.ok) {
+      return json({ error: "Payment or free access could not be verified." }, 402, cors);
     }
 
     const fields = {};
@@ -93,6 +104,33 @@ export default {
     return json({ ok: true }, 200, cors);
   },
 };
+
+async function verifyAccess(accessId, env) {
+  const base = String(env.PAYMENT_WORKER_URL || "").replace(/\/$/, "");
+  if (!base) {
+    console.error("PAYMENT_WORKER_URL is not configured");
+    return { ok: false };
+  }
+
+  try {
+    const response = await fetch(
+      base + "/access/verify?id=" + encodeURIComponent(accessId),
+      { method: "GET", headers: { "Accept": "application/json" } }
+    );
+    if (!response.ok) return { ok: false };
+
+    const body = await response.json();
+    return {
+      ok: body.paid === true,
+      service: body.service || "",
+      speed: body.speed || "standard",
+      comp: body.comp === true,
+    };
+  } catch (error) {
+    console.error("Access verification failed", error);
+    return { ok: false };
+  }
+}
 
 function corsHeaders(env) {
   return {

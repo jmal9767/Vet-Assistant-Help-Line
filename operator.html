@@ -92,6 +92,32 @@
   .flags li { margin-bottom: .3rem; break-inside: avoid; }
   @media (max-width: 480px) { .flags { columns: 1; } }
   .note { font-size: .85rem; color: var(--muted); }
+  label { display: block; font-weight: 600; margin: .7rem 0 .25rem; }
+  input[type="text"], input[type="password"], input[type="number"], select {
+    width: 100%;
+    padding: .6rem .7rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: .95rem;
+    font-family: inherit;
+    background: #fff;
+    color: var(--ink);
+  }
+  .code-result {
+    margin-top: .8rem;
+    padding: .8rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #f8fbfd;
+  }
+  .code-value {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+  }
+  .status-error { color: #9f2f24; }
+  .status-success { color: #17633b; }
   .reset-btn { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 8px; padding: .4rem .8rem; cursor: pointer; font-size: .85rem; }
 </style>
 </head>
@@ -109,6 +135,51 @@
     <div class="quick">
       <a class="btn btn-red" href="tel:8884264435">☎️ Poison Control</a>
       <a class="btn btn-red" href="https://vetlocator.com/" target="_blank" rel="noopener noreferrer">🏥 ER Vet Locator</a>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Create a free-use code</h2>
+    <p class="note">Creates a neutral randomized one-time code. The code is tied to the service and reply speed you choose.</p>
+
+    <label for="compOperatorKey">Operator key</label>
+    <input type="password" id="compOperatorKey" autocomplete="current-password" placeholder="Private operator key">
+
+    <label for="compService">Service</label>
+    <select id="compService">
+      <option value="quick-email">Quick question — email</option>
+      <option value="detailed-email">Detailed question — email</option>
+      <option value="quick-text">Quick question — text</option>
+      <option value="live-text">Live text chat — 15 minutes</option>
+      <option value="quick-call">Quick call — 15 minutes</option>
+      <option value="full-consult">Full consult — 30 minutes</option>
+    </select>
+
+    <div id="compSpeedWrap">
+      <label for="compSpeed">Reply speed</label>
+      <select id="compSpeed">
+        <option value="standard">Standard</option>
+        <option value="same-day">Same-day reply</option>
+        <option value="express">Express reply (2–4 hours)</option>
+      </select>
+    </div>
+
+    <label for="compDays">Expires after</label>
+    <select id="compDays">
+      <option value="1">1 day</option>
+      <option value="7">7 days</option>
+      <option value="30" selected>30 days</option>
+      <option value="60">60 days</option>
+      <option value="90">90 days</option>
+    </select>
+
+    <p><button type="button" class="btn btn-navy" id="createCompCode">Generate one-time code</button></p>
+    <p class="note" id="compStatus" aria-live="polite"></p>
+
+    <div class="code-result" id="compResult" hidden>
+      <div class="code-value" id="compCodeValue"></div>
+      <p class="note" id="compCodeDetails"></p>
+      <button type="button" class="btn btn-navy" id="copyCompCode">Copy code</button>
     </div>
   </section>
 
@@ -160,6 +231,8 @@
 </main>
 
 <script>
+  var PAYMENT_WORKER_URL = "REPLACE_WITH_YOUR_PAYMENT_WORKER_URL";
+
   var DISCLAIMER = "\n---\nI'm a veterinary assistant, not a licensed veterinarian. This is general educational information only — it does not replace or supersede the advice, diagnosis, or treatment of a licensed veterinarian. My replies are not immediate: if your pet may be experiencing a life-threatening emergency, don't wait for a reply — contact an emergency veterinary hospital immediately.";
 
   var TEMPLATES = [
@@ -188,6 +261,109 @@
       body: "Hi [name] — I'm not able to weigh in on your veterinarian's advice; they've examined [pet's name] and know the full picture, which I don't. If something about the plan doesn't sit right or wasn't clear, the best move is to call the clinic and ask — vets expect follow-up questions, and you're also always entitled to a second opinion from another licensed veterinarian."
     }
   ];
+
+  function compAllowsSpeed(service) {
+    return service === "quick-email" ||
+      service === "detailed-email" ||
+      service === "quick-text";
+  }
+
+  function updateCompSpeed() {
+    var service = document.getElementById("compService").value;
+    var wrap = document.getElementById("compSpeedWrap");
+    var speed = document.getElementById("compSpeed");
+
+    if (compAllowsSpeed(service)) {
+      wrap.hidden = false;
+    } else {
+      speed.value = "standard";
+      wrap.hidden = true;
+    }
+  }
+
+  document.getElementById("compService").addEventListener("change", updateCompSpeed);
+  updateCompSpeed();
+
+  document.getElementById("createCompCode").addEventListener("click", function () {
+    var status = document.getElementById("compStatus");
+    var result = document.getElementById("compResult");
+    var button = document.getElementById("createCompCode");
+    var key = document.getElementById("compOperatorKey").value.trim();
+    var service = document.getElementById("compService").value;
+    var speed = compAllowsSpeed(service)
+      ? document.getElementById("compSpeed").value
+      : "standard";
+    var expiresDays = Number(document.getElementById("compDays").value);
+
+    status.className = "note";
+    result.hidden = true;
+
+    if (!key) {
+      status.className = "note status-error";
+      status.textContent = "Enter your operator key.";
+      return;
+    }
+
+    if (!PAYMENT_WORKER_URL || PAYMENT_WORKER_URL.indexOf("REPLACE_WITH") === 0) {
+      status.className = "note status-error";
+      status.textContent = "The payment worker URL is not connected yet.";
+      return;
+    }
+
+    button.disabled = true;
+    button.textContent = "Generating…";
+
+    fetch(PAYMENT_WORKER_URL.replace(/\/$/, "") + "/comp/new", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + key
+      },
+      body: JSON.stringify({
+        service: service,
+        speed: speed,
+        expiresDays: expiresDays
+      })
+    })
+      .then(function (response) {
+        return response.json().then(function (body) {
+          if (!response.ok || !body.ok) {
+            throw new Error(body.error || "Code could not be created.");
+          }
+          return body;
+        });
+      })
+      .then(function (body) {
+        document.getElementById("compCodeValue").textContent = body.code;
+        document.getElementById("compCodeDetails").textContent =
+          body.serviceLabel + " · " + body.speedLabel +
+          " · one use · expires " + new Date(body.expiresAt).toLocaleDateString();
+        result.hidden = false;
+        status.className = "note status-success";
+        status.textContent = "Code created.";
+      })
+      .catch(function (error) {
+        status.className = "note status-error";
+        status.textContent = error.message || "Code could not be created.";
+      })
+      .finally(function () {
+        button.disabled = false;
+        button.textContent = "Generate one-time code";
+      });
+  });
+
+  document.getElementById("copyCompCode").addEventListener("click", function () {
+    var value = document.getElementById("compCodeValue").textContent;
+    if (!value) return;
+    var button = this;
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(value).then(function () {
+        button.textContent = "Copied ✓";
+        setTimeout(function () { button.textContent = "Copy code"; }, 1500);
+      });
+    }
+  });
 
   var container = document.getElementById("templates");
   TEMPLATES.forEach(function (t, i) {

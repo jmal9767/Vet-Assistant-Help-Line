@@ -5,6 +5,18 @@ enum HelplineConfig {
     /// poster (docs/share-qr.png), so every QR code lands in the same place.
     static let siteURL = URL(string: "https://jmal9767.github.io/Vet-Assistant-Help-Line/")!
 
+    // Set this to the deployed Cloudflare payment Worker before using
+    // payment checkout or complimentary-code generation.
+    private static let paymentWorkerURLString = "REPLACE_WITH_YOUR_PAYMENT_WORKER_URL"
+
+    static var paymentWorkerURL: URL? {
+        guard !paymentWorkerURLString.contains("REPLACE_WITH"),
+              let url = URL(string: paymentWorkerURLString) else {
+            return nil
+        }
+        return url
+    }
+
     static let purpose = """
     Not sure whether your pet needs a vet — or the emergency room? Get a \
     thorough, honest answer from a veterinary assistant with hands-on \
@@ -14,9 +26,9 @@ enum HelplineConfig {
 
     // The three steps shown on the shareable card and welcome page.
     static let howItWorks = [
-        "Scan the code & send your question",
-        "I confirm the price and you pay by secure link — protected by a full satisfaction guarantee",
-        "Your answer arrives in your chosen time frame — not helped? Full refund"
+        "Choose the service you want",
+        "Pay securely first — or use a valid one-time complimentary code",
+        "The questionnaire unlocks, then your answer arrives in the selected time frame"
     ]
 
     // Shown on the shareable card; keep in sync with the website pages.

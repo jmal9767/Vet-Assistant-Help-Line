@@ -1,4 +1,4 @@
-const CACHE = "vahl-v1";
+const CACHE = "vahl-v3";
 const ASSETS = [
   "./",
   "./index.html",

@@ -67,7 +67,7 @@
   .btn-navy { background: var(--navy); color: #fff; }
   .btn-navy:hover { background: var(--navy-dark); }
   label { display: block; font-weight: 600; margin-top: 1rem; margin-bottom: .25rem; }
-  input[type="text"], input[type="email"], select, textarea {
+  input[type="text"], input[type="email"], input[type="tel"], select, textarea {
     width: 100%;
     padding: .6rem .7rem;
     border: 1px solid var(--border);
@@ -98,6 +98,63 @@
     text-align: center;
   }
   .note { font-size: .9rem; color: var(--muted); margin-top: .5rem; }
+  .step-badge {
+    display: inline-block;
+    background: var(--navy);
+    color: #fff;
+    border-radius: 999px;
+    padding: .2rem .65rem;
+    font-size: .8rem;
+    font-weight: 700;
+    margin-bottom: .45rem;
+  }
+  .payment-summary {
+    background: #eef5fb;
+    border: 1px solid #c9d9e8;
+    border-radius: 10px;
+    padding: .85rem 1rem;
+    margin: 1rem 0;
+  }
+  .payment-total {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--navy-dark);
+    margin: .85rem 0;
+  }
+  .status-error { color: #9f2f24; }
+  .status-success { color: #17633b; }
+  .or-divider {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    margin: 1.15rem 0;
+    color: var(--muted);
+    font-size: .85rem;
+    font-weight: 700;
+  }
+  .or-divider::before, .or-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+  .free-access-box {
+    border: 1px dashed #aebdc8;
+    border-radius: 10px;
+    padding: .85rem 1rem 1rem;
+    background: #fbfcfd;
+  }
+  .free-code-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: .65rem;
+    align-items: end;
+  }
+  .free-code-row label { margin-top: 0; }
+  @media (max-width: 540px) {
+    .free-code-row { grid-template-columns: 1fr; }
+  }
+  [hidden] { display: none !important; }
 </style>
 </head>
 <body>
@@ -173,13 +230,60 @@
       <li><strong>Same-day reply — +$10:</strong> your answer within 12 hours.</li>
       <li><strong>Express reply — +$20:</strong> your answer within 2–4 hours. Not for emergencies — those go straight to an ER vet.</li>
     </ul>
-    <p class="note">Send your question first — I'll confirm the price with you by email before you pay anything. Every answer is backed by a full satisfaction guarantee: if you don't feel your question was answered, you get a full refund.</p>
+    <p class="note">Choose the service you want and complete secure payment first. The questionnaire unlocks only after payment is verified. Every answer is backed by a full satisfaction guarantee: if you don't feel your question was answered, you get a full refund.</p>
   </section>
 
-  <!-- INTAKE FORM -->
-  <section class="card" id="askSection">
-    <h2>Ask your question</h2>
-    <p class="note">Your question is sent straight to the help line — I'll reply to the email address you give below.</p>
+  <!-- PAYMENT-FIRST INTAKE -->
+  <section class="card" id="paymentSection">
+    <span class="step-badge">STEP 1</span>
+    <h2>Choose your service and pay</h2>
+    <p class="note">No questionnaire or message is sent before payment. After Stripe confirms payment, this page unlocks the pet questionnaire.</p>
+
+    <label for="serviceChoice">Service</label>
+    <select id="serviceChoice" required>
+      <option value="quick-email">Quick question — email · $10</option>
+      <option value="detailed-email">Detailed question — email · $20</option>
+      <option value="quick-text">Quick question — text · $15</option>
+      <option value="live-text">Live text chat · 15 minutes · $25</option>
+      <option value="quick-call">Quick call · 15 minutes · $30</option>
+      <option value="full-consult">Full consult · 30 minutes · $45</option>
+    </select>
+
+    <div id="speedWrap">
+      <label for="speedChoice">Reply speed</label>
+      <select id="speedChoice">
+        <option value="standard">Standard · included</option>
+        <option value="same-day">Same-day reply · +$10</option>
+        <option value="express">Express reply (2–4 hours) · +$20</option>
+      </select>
+      <p class="note">Faster-reply add-ons apply to email and quick text answers only.</p>
+    </div>
+
+    <p class="payment-total" id="paymentTotal">Total: $10</p>
+    <button type="button" class="btn btn-navy" id="checkoutButton">Continue to secure payment</button>
+    <p class="note" id="checkoutStatus" aria-live="polite"></p>
+
+    <div class="or-divider">OR</div>
+
+    <div class="free-access-box">
+      <div class="free-code-row">
+        <div>
+          <label for="freeCode">Free-use code</label>
+          <input type="text" id="freeCode" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="COMP-XXXXXX">
+        </div>
+        <button type="button" class="btn btn-navy" id="redeemCodeButton">Use code</button>
+      </div>
+      <p class="note">If you were given a complimentary one-time code, choose the service it was issued for and enter the code here.</p>
+      <p class="note" id="freeCodeStatus" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <section class="card" id="askSection" hidden>
+    <span class="step-badge">STEP 2</span>
+    <h2>Tell me about your pet</h2>
+    <div class="payment-summary" id="paidSummary"></div>
+    <p class="note">Payment has been verified. Now complete the questionnaire so I can respond to the service you purchased.</p>
+
     <form id="intakeForm">
       <label for="name">Your name</label>
       <input type="text" id="name" required autocomplete="name">
@@ -187,11 +291,10 @@
       <label for="email">Your email (so I can reply)</label>
       <input type="email" id="email" required autocomplete="email">
 
-      <label for="phone">Phone number (optional)</label>
+      <label for="phone" id="phoneLabel">Phone number (optional)</label>
       <input type="tel" id="phone" autocomplete="tel" placeholder="Add your number if you'd prefer your reply by text message">
-      <p class="note">Leave blank for an email reply. If you add your number, I'll text your answer instead.</p>
+      <p class="note" id="phoneNote">Leave blank for an email reply unless your paid service uses text or phone.</p>
 
-      <!-- Honeypot: humans never see or fill this. -->
       <div style="position:absolute; left:-9999px;" aria-hidden="true">
         <label for="website">Website</label>
         <input type="text" id="website" tabindex="-1" autocomplete="off">
@@ -233,7 +336,7 @@
       </div>
 
       <p style="margin-top:1.25rem;">
-        <button type="submit" class="btn btn-navy">Send my question</button>
+        <button type="submit" class="btn btn-navy">Send my questionnaire</button>
       </p>
     </form>
   </section>
@@ -256,13 +359,249 @@
 </footer>
 
 <script>
-  // ⚙️ SETUP: replace with your deployed Cloudflare Worker URL (see docs/CLOUDKIT_SETUP.md).
-  // Until then, submissions fall back to a pre-filled email to HELPLINE_EMAIL.
+  // Question relay. Until configured, paid questionnaires fall back to a pre-filled email.
   var WORKER_URL = "REPLACE_WITH_YOUR_WORKER_URL";
   var HELPLINE_EMAIL = "jahmal9767@gmail.com";
 
+  // Stripe payment Worker. This must be the deployed relay/payment-worker.js URL.
+  var PAYMENT_WORKER_URL = "REPLACE_WITH_YOUR_PAYMENT_WORKER_URL";
+
+  var SERVICE_PRICES = {
+    "quick-email": 10,
+    "detailed-email": 20,
+    "quick-text": 15,
+    "live-text": 25,
+    "quick-call": 30,
+    "full-consult": 45
+  };
+
+  var SERVICE_LABELS = {
+    "quick-email": "Quick question — email",
+    "detailed-email": "Detailed question — email",
+    "quick-text": "Quick question — text",
+    "live-text": "Live text chat — 15 minutes",
+    "quick-call": "Quick call — 15 minutes",
+    "full-consult": "Full consult — 30 minutes"
+  };
+
+  var SPEED_PRICES = {
+    "standard": 0,
+    "same-day": 10,
+    "express": 20
+  };
+
+  var SPEED_LABELS = {
+    "standard": "Standard",
+    "same-day": "Same-day reply",
+    "express": "Express reply (2–4 hours)"
+  };
+
+  var verifiedPayment = null;
+
+  function currentSelection() {
+    var service = document.getElementById("serviceChoice").value;
+    var speed = allowsSpeed(service)
+      ? document.getElementById("speedChoice").value
+      : "standard";
+    return { service: service, speed: speed };
+  }
+
+  function paymentWorkerConfigured() {
+    return PAYMENT_WORKER_URL &&
+      PAYMENT_WORKER_URL.indexOf("REPLACE_WITH") !== 0;
+  }
+
+  function allowsSpeed(service) {
+    return service === "quick-email" ||
+      service === "detailed-email" ||
+      service === "quick-text";
+  }
+
+  function updatePaymentOptions() {
+    var service = document.getElementById("serviceChoice").value;
+    var speedWrap = document.getElementById("speedWrap");
+    var speedChoice = document.getElementById("speedChoice");
+
+    if (allowsSpeed(service)) {
+      speedWrap.hidden = false;
+    } else {
+      speedChoice.value = "standard";
+      speedWrap.hidden = true;
+    }
+
+    var total = SERVICE_PRICES[service] + SPEED_PRICES[speedChoice.value];
+    document.getElementById("paymentTotal").textContent = "Total: $" + total;
+  }
+
+  document.getElementById("serviceChoice").addEventListener("change", updatePaymentOptions);
+  document.getElementById("speedChoice").addEventListener("change", updatePaymentOptions);
+  updatePaymentOptions();
+
+  document.getElementById("checkoutButton").addEventListener("click", function () {
+    var status = document.getElementById("checkoutStatus");
+    status.className = "note";
+
+    if (!paymentWorkerConfigured()) {
+      status.className = "note status-error";
+      status.textContent = "Secure checkout is not connected yet.";
+      return;
+    }
+
+    var selection = currentSelection();
+
+    var url = PAYMENT_WORKER_URL.replace(/\/$/, "") +
+      "/checkout?service=" + encodeURIComponent(selection.service) +
+      "&speed=" + encodeURIComponent(selection.speed);
+
+    window.location.href = url;
+  });
+
+  document.getElementById("redeemCodeButton").addEventListener("click", function () {
+    var status = document.getElementById("freeCodeStatus");
+    var button = document.getElementById("redeemCodeButton");
+    var code = document.getElementById("freeCode").value.trim().toUpperCase();
+    var selection = currentSelection();
+
+    status.className = "note";
+
+    if (!code) {
+      status.className = "note status-error";
+      status.textContent = "Enter the free-use code you were given.";
+      return;
+    }
+
+    if (!paymentWorkerConfigured()) {
+      status.className = "note status-error";
+      status.textContent = "Free-use code verification is not connected yet.";
+      return;
+    }
+
+    button.disabled = true;
+    button.textContent = "Checking…";
+
+    fetch(PAYMENT_WORKER_URL.replace(/\/$/, "") + "/comp/redeem", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        code: code,
+        service: selection.service,
+        speed: selection.speed
+      })
+    })
+      .then(function (response) {
+        return response.json().then(function (body) {
+          if (!response.ok || !body.paid || !body.comp) {
+            throw new Error(body.error || "Code could not be verified.");
+          }
+          return body;
+        });
+      })
+      .then(function (access) {
+        status.className = "note status-success";
+        status.textContent = "Free access confirmed.";
+        unlockQuestionnaire(access);
+      })
+      .catch(function (error) {
+        button.disabled = false;
+        button.textContent = "Use code";
+        status.className = "note status-error";
+        status.textContent = error.message || "That free-use code could not be verified.";
+      });
+  });
+
+  function configurePhoneField(service) {
+    var needsPhone = service === "quick-text" ||
+      service === "live-text" ||
+      service === "quick-call" ||
+      service === "full-consult";
+
+    var input = document.getElementById("phone");
+    var label = document.getElementById("phoneLabel");
+    var note = document.getElementById("phoneNote");
+
+    input.required = needsPhone;
+    label.textContent = needsPhone ? "Phone number" : "Phone number (optional)";
+    note.textContent = needsPhone
+      ? "Required for the text or phone service you purchased."
+      : "Optional. Add it only if you want me to have a backup way to reach you.";
+  }
+
+  function unlockQuestionnaire(payment) {
+    verifiedPayment = payment;
+    document.getElementById("paymentSection").hidden = true;
+    document.getElementById("askSection").hidden = false;
+    document.getElementById("paidSummary").innerHTML =
+      (payment.comp
+        ? "<strong>Free access confirmed:</strong> "
+        : "<strong>Payment confirmed:</strong> ") +
+      escapeHtml(payment.serviceLabel) +
+      (payment.speed !== "standard"
+        ? " · " + escapeHtml(payment.speedLabel)
+        : "") +
+      (payment.comp
+        ? " · <strong>Complimentary</strong>"
+        : " · <strong>$" + Number(payment.amount).toFixed(2) + "</strong>");
+    configurePhoneField(payment.service);
+    document.getElementById("askSection").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function escapeHtml(value) {
+    return String(value).replace(/[<>&"]/g, function (c) {
+      return { "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c];
+    });
+  }
+
+  function verifyReturnedPayment() {
+    var params = new URLSearchParams(window.location.search);
+    var checkout = params.get("checkout");
+    var sessionId = params.get("session_id");
+    var status = document.getElementById("checkoutStatus");
+
+    if (checkout === "canceled") {
+      status.className = "note status-error";
+      status.textContent = "Payment was canceled. No questionnaire was sent.";
+      return;
+    }
+
+    if (checkout !== "success" || !sessionId) return;
+
+    if (!paymentWorkerConfigured()) {
+      status.className = "note status-error";
+      status.textContent = "Payment returned successfully, but verification is not connected.";
+      return;
+    }
+
+    status.textContent = "Verifying payment…";
+
+    fetch(
+      PAYMENT_WORKER_URL.replace(/\/$/, "") +
+      "/verify?id=" + encodeURIComponent(sessionId),
+      { cache: "no-store" }
+    )
+      .then(function (response) {
+        return response.json().then(function (body) {
+          if (!response.ok || !body.paid) throw new Error("Payment not verified");
+          return body;
+        });
+      })
+      .then(function (payment) {
+        unlockQuestionnaire(payment);
+      })
+      .catch(function () {
+        status.className = "note status-error";
+        status.textContent = "I couldn't verify that payment. The questionnaire is still locked.";
+      });
+  }
+
+  verifyReturnedPayment();
+
   document.getElementById("intakeForm").addEventListener("submit", function (e) {
     e.preventDefault();
+
+    if (!verifiedPayment || !verifiedPayment.paid) {
+      alert("Payment must be verified before the questionnaire can be sent.");
+      return;
+    }
 
     var payload = {
       name: document.getElementById("name").value.trim(),
@@ -272,23 +611,41 @@
       age: document.getElementById("age").value.trim() || "Not given",
       category: document.getElementById("category").value,
       question: document.getElementById("question").value.trim(),
-      website: document.getElementById("website").value // honeypot
+      website: document.getElementById("website").value,
+      paymentSession: verifiedPayment.sessionId,
+      paidService: verifiedPayment.service,
+      paidServiceLabel: verifiedPayment.serviceLabel,
+      paidSpeed: verifiedPayment.speed,
+      paidSpeedLabel: verifiedPayment.speedLabel,
+      paidAmount: verifiedPayment.amount,
+      complimentary: !!verifiedPayment.comp,
+      freeCode: verifiedPayment.freeCode || ""
     };
-    if (payload.website) return; // bots only — humans never see that field
+
+    if (payload.website) return;
 
     if (WORKER_URL.indexOf("REPLACE_WITH") === 0) {
-      // Email mode: open the client's mail app with the question pre-filled.
-      var subject = "Help line question (" + payload.species + " · " + payload.category + ")";
-      var body = "Name: " + payload.name +
+      var subject = (payload.complimentary ? "COMPLIMENTARY" : "PAID") +
+        " help line question (" + payload.species + " · " + payload.category + ")";
+      var body = (payload.complimentary ? "FREE ACCESS VERIFIED" : "PAYMENT VERIFIED") +
+        "\nAccess ID: " + payload.paymentSession +
+        "\nService: " + payload.paidServiceLabel +
+        (payload.paidSpeed !== "standard" ? " · " + payload.paidSpeedLabel : "") +
+        (payload.complimentary
+          ? "\nAmount: $0.00"
+          : "\nPaid amount: $" + Number(payload.paidAmount).toFixed(2)) +
+        "\n\nName: " + payload.name +
         "\nReply-to email: " + payload.email +
-        (payload.phone ? "\nPhone (text reply requested): " + payload.phone : "") +
+        (payload.phone ? "\nPhone: " + payload.phone : "") +
         "\nPet species: " + payload.species +
         "\nPet age: " + payload.age +
         "\nCategory: " + payload.category +
         "\n\nQuestion:\n" + payload.question;
+
       window.location.href = "mailto:" + HELPLINE_EMAIL +
         "?subject=" + encodeURIComponent(subject) +
         "&body=" + encodeURIComponent(body);
+
       var note = document.getElementById("mailtoNote");
       if (!note) {
         note = document.createElement("p");
@@ -296,7 +653,7 @@
         note.className = "note";
         e.target.appendChild(note);
       }
-      note.innerHTML = "📧 Your email app should have opened with your question filled in — <strong>press send there</strong> and your question is on its way. If nothing opened, email it to <strong>" + HELPLINE_EMAIL + "</strong>.";
+      note.innerHTML = "Your email app should have opened with the paid questionnaire filled in. <strong>Press send there</strong> to finish submitting it.";
       return;
     }
 
@@ -308,22 +665,19 @@
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
-    }).then(function (response) {
-      if (!response.ok) throw new Error("Send failed: " + response.status);
-      document.getElementById("askSection").innerHTML =
-        "<h2>✅ Question sent!</h2><p>Thanks, " +
-        payload.name.replace(/[<>&]/g, "") +
-        " — you'll get a reply at <strong>" +
-        payload.email.replace(/[<>&]/g, "") +
-        "</strong> within 24–48 hours.</p>";
-    }).catch(function () {
-      button.disabled = false;
-      button.textContent = "Send my question";
-      var fallback = HELPLINE_EMAIL.indexOf("REPLACE_WITH") === 0
-        ? "Please try again in a few minutes."
-        : "Please try again in a few minutes, or email your question directly to " + HELPLINE_EMAIL + ".";
-      alert("Sorry — your question couldn't be sent. " + fallback);
-    });
+    })
+      .then(function (response) {
+        if (!response.ok) throw new Error("Send failed: " + response.status);
+        document.getElementById("askSection").innerHTML =
+          "<h2>✅ Questionnaire sent!</h2><p>Thanks, " +
+          escapeHtml(payload.name) +
+          " — your request has been submitted. I'll reply using the service selected for this access.</p>";
+      })
+      .catch(function () {
+        button.disabled = false;
+        button.textContent = "Send my questionnaire";
+        alert("Sorry — your questionnaire couldn't be sent. Please try again in a few minutes.");
+      });
   });
 
   if ("serviceWorker" in navigator && window.location.protocol === "https:") {

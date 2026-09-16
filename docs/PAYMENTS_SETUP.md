@@ -1,21 +1,22 @@
 # Payments Setup — payment-first intake and complimentary codes
 
-How money moves:
+How the public flow works:
 
 ```
-You confirm the price  →  client taps your payment link  →  card AUTHORIZED (held, not charged)
-                                                                    │
-                 you send the answer with an approval link          │
-                                                                    ▼
-        client taps "complete payment"  ──── OR ────  24 hours pass with no response
-                                └──────────► payment CAPTURED (money reaches your account)
+Client chooses service
+        ↓
+Stripe payment succeeds
+        ↓
+Payment is verified
+        ↓
+Questionnaire unlocks
+        ↓
+Client submits the request
 ```
 
-The client's money is never taken before they get their answer, and you never
-go unpaid because someone ignored the approval link. Card authorizations last
-7 days, so the 24-hour auto-capture is comfortably inside the limit.
-
-Everything below is one-time setup, roughly 20–30 minutes.
+A valid one-time complimentary code takes the place of Stripe payment for the
+specific service and reply speed assigned to that code. The code is consumed
+when redeemed and a short-lived verified access token unlocks the questionnaire.
 
 ## 1. Stripe account (~10 min)
 
@@ -79,8 +80,6 @@ the questionnaire unlocks after the code is verified.
 
 ## 5. Legacy manual payment links
 
-## 5. Daily use (no setup, this is the routine)
-
 Bookmark this on your phone (fill in your own worker URL and operator key):
 
 ```
@@ -96,12 +95,12 @@ Change `amount` and `desc` per request. The page gives you two links:
    - Client taps it → payment completes.
    - Client doesn't → it completes automatically after 24 hours.
 
-## Refunds
+## 6. Refunds
 
 If someone is unhappy after auto-capture, refund from the Stripe dashboard
 (**Payments → ⋯ → Refund**) — that honors the satisfaction guarantee on the site.
 
-## Test before going live
+## 7. Test before going live
 
 Use the `sk_test_…` key first: create a $1 payment, pay with card
 `4242 4242 4242 4242`, tap the approval link, and confirm the payment shows

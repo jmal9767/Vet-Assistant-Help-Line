@@ -1,4 +1,4 @@
-# Payments Setup — pre-authorize, capture on approval (or after 24h)
+# Payments Setup — payment-first intake and complimentary codes
 
 How money moves:
 
@@ -29,25 +29,57 @@ Stripe's fee is about 2.9% + 30¢ per charge; payouts land in your bank in ~2 da
 
 ## 2. Deploy the payment Worker (~10 min)
 
+The public intake now uses Stripe checkout before showing the questionnaire. The same Worker also creates and verifies neutral one-time complimentary codes.
+
 In your Cloudflare dashboard (same account as the question relay):
 
 1. **Workers & Pages → Create Worker**, name it e.g. `vet-helpline-payments`,
    paste in [`relay/payment-worker.js`](../relay/payment-worker.js), deploy.
-2. **Storage & Databases → KV → Create namespace** named `PAYMENTS`, then in the
-   Worker's **Settings → Bindings** add a KV binding: variable name `PAYMENTS`,
-   pick that namespace.
-3. **Settings → Variables and Secrets**:
+2. **Storage & Databases → KV → Create namespace** named `FREE_CODES`, then add
+   it to the Worker as a KV binding named `FREE_CODES`. This stores one-time
+   complimentary codes and their short-lived access tokens.
+3. If you still use the older manual authorize/capture flow, also create the
+   `PAYMENTS` KV namespace and bind it as `PAYMENTS`.
+4. **Settings → Variables and Secrets**:
 
    | Name | Value |
    |------|-------|
    | `STRIPE_SECRET_KEY` | your Stripe secret key (mark as **Secret**) |
    | `OPERATOR_KEY` | a long random password only you know (mark as **Secret**) — generate one with `openssl rand -hex 24` |
    | `SITE_URL` | `https://jmal9767.github.io/Vet-Assistant-Help-Line/` |
+   | `ALLOWED_ORIGIN` | `https://jmal9767.github.io` |
 
-4. **Settings → Triggers → Cron Triggers → Add**: `0 * * * *` (hourly).
-   This is what auto-captures payments older than 24 hours.
+5. The hourly cron trigger is needed only for the older manual
+   authorize/capture flow.
 
-## 3. Daily use (no setup, this is the routine)
+## 3. Connect the public questionnaire
+
+In `index.html` and `operator.html`, set `PAYMENT_WORKER_URL` to the deployed
+payment Worker URL.
+
+In the question relay Worker, set `PAYMENT_WORKER_URL` to that same URL. The
+relay now verifies the Stripe checkout session or complimentary access token
+before it saves a questionnaire.
+
+## 4. Complimentary one-time codes
+
+Open `operator.html`, choose the service and reply speed, enter the private
+operator key, and generate a code. Codes use a neutral randomized format such as
+`COMP-7F3K9Q`; they contain no names or personal identifiers.
+
+Each code:
+- works once;
+- is tied to the selected service and reply speed;
+- has an expiration date;
+- bypasses Stripe only after server verification;
+- unlocks the same questionnaire as a paid checkout.
+
+The client selects the matching service on the public page, enters the code, and
+the questionnaire unlocks after the code is verified.
+
+## 5. Legacy manual payment links
+
+## 5. Daily use (no setup, this is the routine)
 
 Bookmark this on your phone (fill in your own worker URL and operator key):
 

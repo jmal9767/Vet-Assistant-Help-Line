@@ -22,7 +22,7 @@ struct ContentView: View {
                 .tag(3)
 
             SettingsView()
-                .tabItem { Label("More", systemImage: "ellipsis.circle.fill") }
+                .tabItem { Label("Settings", systemImage: "gearshape.fill") }
                 .tag(4)
         }
         .tint(AppPalette.brand)

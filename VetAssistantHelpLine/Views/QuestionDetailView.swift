@@ -50,7 +50,6 @@ struct QuestionDetailView: View {
     @Environment(QuestionStore.self) private var store
     @Environment(\.openURL) private var openURL
     @AppStorage("setup.helplineEmail") private var helplineEmail = ""
-    @AppStorage("setup.checkoutBaseURL") private var checkoutBaseURL = "https://vet-helpline-development.dkjmmz6whh.workers.dev"
     @AppStorage("setup.cashAppLink") private var cashAppLink = ""
 
     let question: ClientQuestion
@@ -221,7 +220,7 @@ struct QuestionDetailView: View {
             if selectedOffer.requiresPayment {
                 CompactLabel(
                     title: selectedPayment.rawValue,
-                    value: selectedPaymentLink.isEmpty ? "Finish this payment option in More before sending the offer." : selectedPaymentLink,
+                    value: selectedPaymentLink.isEmpty ? "Add your Cash App for Business link in Settings before sending the offer." : selectedPaymentLink,
                     icon: "link.circle.fill"
                 )
             } else {
@@ -364,9 +363,7 @@ struct QuestionDetailView: View {
     private var selectedPaymentLink: String {
         switch selectedPayment {
         case .paypal:
-            let base = checkoutBaseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/ "))
-            guard !base.isEmpty else { return "" }
-            var components = URLComponents(string: base + "/pay")
+            var components = URLComponents(url: HelplineConfig.checkoutBaseURL.appending(path: "pay"), resolvingAgainstBaseURL: false)
             components?.queryItems = [URLQueryItem(name: "question", value: question.id.recordName)]
             return components?.url?.absoluteString ?? ""
         case .cashApp:

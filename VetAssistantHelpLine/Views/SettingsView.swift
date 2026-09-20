@@ -5,7 +5,6 @@ import UserNotifications
 struct SettingsView: View {
     @Environment(\.openURL) private var openURL
     @AppStorage("setup.helplineEmail") private var helplineEmail = ""
-    @AppStorage("setup.checkoutBaseURL") private var checkoutBaseURL = "https://vet-helpline-development.dkjmmz6whh.workers.dev"
     @AppStorage("setup.cashAppLink") private var cashAppLink = ""
     @State private var notificationStatus = "Checking…"
 
@@ -13,20 +12,14 @@ struct SettingsView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 16) {
-                    HeroPanel(icon: "ellipsis.circle.fill", title: "More", subtitle: "Your reply settings, payment links, templates, references, and policies.") {
-                        HStack(spacing: 10) {
-                            MetricPill(title: "Questions", value: "CloudKit", icon: "icloud.fill", tint: AppPalette.clinicGreen)
-                            MetricPill(title: "Files", value: "Private", icon: "lock.fill", tint: AppPalette.brand)
-                        }
-                    }
-
                     InfoTile {
-                        SectionHeader("Reply email", subtitle: "Use a help-line address that clients are allowed to see.")
+                        SectionHeader("Contact", subtitle: "These are the only details you may need to change.")
                         TextField("Public help-line email", text: $helplineEmail)
                             .keyboardType(.emailAddress)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
                             .textFieldStyle(.roundedBorder)
+                        settingsField("Cash App for Business link", text: $cashAppLink)
                     }
 
                     InfoTile {
@@ -42,44 +35,22 @@ struct SettingsView: View {
                     }
 
                     InfoTile {
-                        SectionHeader("Payments", subtitle: "PayPal and Apple Pay confirm automatically. Confirm Cash App payments yourself after they arrive.")
-                        settingsField("Secure checkout address", text: $checkoutBaseURL)
-                        settingsField("Cash App for Business link", text: $cashAppLink)
-                        Button { openURL(URL(string: "https://developer.paypal.com/dashboard/applications/live")!) } label: {
-                            settingsRow("Open PayPal Business Setup", icon: "safari.fill")
-                        }
-                        Button { openURL(URL(string: "https://cash.app/account/settings")!) } label: {
-                            settingsRow("Open Cash App Settings", icon: "dollarsign.circle.fill")
-                        }
-                    }
-
-                    InfoTile {
-                        SectionHeader("Tools")
+                        SectionHeader("Help-line tools")
                         NavigationLink { TemplatesView() } label: {
                             settingsRow("Reply Templates", icon: "text.badge.checkmark")
                         }
                         NavigationLink { ReferenceView() } label: {
                             settingsRow("Emergency Reference", icon: "cross.case.fill")
                         }
-                    }
-
-                    InfoTile {
-                        SectionHeader("Client pages")
                         Button { openURL(HelplineConfig.siteURL) } label: {
                             settingsRow("Open Client Website", icon: "safari.fill")
-                        }
-                        Button { openURL(URL(string: "https://jmal9767.github.io/Vet-Assistant-Help-Line/privacy.html")!) } label: {
-                            settingsRow("Privacy Notice", icon: "hand.raised.fill")
-                        }
-                        Button { openURL(URL(string: "https://jmal9767.github.io/Vet-Assistant-Help-Line/terms.html")!) } label: {
-                            settingsRow("Service and Refund Terms", icon: "doc.text.fill")
                         }
                     }
                 }
                 .padding(16)
             }
             .background(AppPalette.appBackground.ignoresSafeArea())
-            .navigationTitle("More")
+            .navigationTitle("Settings")
             .task { await updateNotificationStatus() }
         }
     }

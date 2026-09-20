@@ -5,6 +5,7 @@ enum HelplineConfig {
     /// poster (docs/share-qr.png), so every QR code lands in the same place.
     static let siteURL = URL(string: "https://jmal9767.github.io/Vet-Assistant-Help-Line/")!
     static let siteDisplayName = "Vet Assistant Help Line intake page"
+    static let checkoutBaseURL = URL(string: "https://vet-helpline-development.dkjmmz6whh.workers.dev")!
 
     static let purpose = """
     Worried about your pet and not sure what to do next? Send the details, \

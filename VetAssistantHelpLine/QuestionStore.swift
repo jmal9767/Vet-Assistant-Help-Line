@@ -29,7 +29,7 @@ final class QuestionStore {
             var records: [CKRecord] = []
             var (matches, cursor) = try await database.records(matching: query, resultsLimit: 100)
             while true {
-                for result in matches.values {
+                for (_, result) in matches {
                     if case let .success(record) = result { records.append(record) }
                 }
                 guard let next = cursor else { break }

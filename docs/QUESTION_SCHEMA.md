@@ -33,27 +33,25 @@ The server-side intake path and phone notifications are working. PayPal live cre
 
 The connected iPhone is running iOS 27 beta, while the installed Xcode 26.6 cannot mount its developer disk image. A compatible Xcode version is required to install and debug this build directly on that phone.
 
-## Required fields for the current app
+## Fields used by the current app
 
 All fields below are String except submittedAt, which is Date/Time (Web Services TIMESTAMP):
 
-| Existing in Development | Still required by the newer app |
-| --- | --- |
-| name | preferredReply |
-| email | requestedService |
-| phone | petName |
-| species | urgency |
-| age | attachmentSummary |
-| category | sourceChannel |
-| question | conversationStatus |
-| status | paymentStatus |
-| submittedAt (Date/Time) | paymentMethod |
-| | paymentAmount |
-| | paymentLink |
-| | signedConsentName |
-| | signedConsentAt |
+| Client and service | Dog or cat profile | Current condition | System and payment |
+| --- | --- | --- | --- |
+| name | petName | symptomOnset | sourceChannel |
+| email | species | symptomTrend | conversationStatus |
+| phone | age | appetite | paymentStatus |
+| preferredReply | breed | drinking | paymentMethod |
+| requestedService | sex | urination | paymentAmount |
+| category | reproductiveStatus | stool | paymentLink |
+| question | weight | energy | signedConsentName |
+| attachmentSummary | urgency | vomiting | signedConsentAt |
+| | | medicalHistory | status |
+| | | currentMedications | submittedAt (Date/Time) |
+| | | actionsTaken | |
 
-signedConsentAt is a String containing an ISO timestamp; it is not a Date/Time field in the current app. The relay sets status to new and submittedAt to the current time. New submissions always start with paymentStatus Unpaid.
+signedConsentAt is a String containing an ISO timestamp; it is not a Date/Time field. The relay sets status to new and submittedAt to the current time. Website submissions start with paymentStatus Payment requested.
 
 The reference in ../cloudkit/Question.ckdb describes the target Question schema only. It is not a complete container export and has not been imported or validated using cktool. Merge with a complete schema export before any import; do not replace the container schema with this partial file.
 

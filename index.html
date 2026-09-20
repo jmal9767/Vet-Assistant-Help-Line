@@ -301,6 +301,29 @@
       <label for="age">Dog or cat's age (approximate)</label>
       <input type="text" id="age" placeholder="e.g., 3 years">
 
+      <label for="breed">Breed or mix (optional)</label>
+      <input type="text" id="breed" placeholder="e.g., Labrador mix or domestic shorthair">
+
+      <label for="sex">Sex</label>
+      <select id="sex" required>
+        <option value="">Select…</option>
+        <option>Female</option>
+        <option>Male</option>
+        <option>Unknown</option>
+      </select>
+
+      <label for="reproductiveStatus">Spayed or neutered?</label>
+      <select id="reproductiveStatus" required>
+        <option value="">Select…</option>
+        <option>Spayed</option>
+        <option>Neutered</option>
+        <option>Not spayed or neutered</option>
+        <option>Unknown</option>
+      </select>
+
+      <label for="weight">Current weight (optional)</label>
+      <input type="text" id="weight" placeholder="e.g., 12 lb or 24 kg">
+
       <label for="category">Question category</label>
       <select id="category" required>
         <option value="">Select…</option>
@@ -320,6 +343,50 @@
         <option>Very worried — I plan to contact a veterinarian</option>
         <option>I may need an emergency vet</option>
       </select>
+
+      <h3>Current condition</h3>
+      <p class="note">These details help me understand the situation and recognize when a veterinarian may be needed.</p>
+
+      <label for="symptomOnset">When did this concern start?</label>
+      <input type="text" id="symptomOnset" required placeholder="e.g., This morning, 3 days ago, or ongoing for 2 months">
+
+      <label for="symptomTrend">How is it changing?</label>
+      <select id="symptomTrend" required>
+        <option value="">Select…</option>
+        <option>Started suddenly</option>
+        <option>Getting worse</option>
+        <option>About the same</option>
+        <option>Improving</option>
+        <option>Comes and goes</option>
+        <option>Not applicable / general question</option>
+      </select>
+
+      <label for="appetite">Eating</label>
+      <select id="appetite" required><option value="">Select…</option><option>Normal</option><option>Eating less</option><option>Not eating</option><option>Eating more</option><option>Not sure / not applicable</option></select>
+
+      <label for="drinking">Drinking</label>
+      <select id="drinking" required><option value="">Select…</option><option>Normal</option><option>Drinking less</option><option>Not drinking</option><option>Drinking more</option><option>Not sure / not applicable</option></select>
+
+      <label for="urination">Urination</label>
+      <select id="urination" required><option value="">Select…</option><option>Normal</option><option>Urinating less</option><option>Not urinating</option><option>Urinating more</option><option>Straining or uncomfortable</option><option>Not sure / not applicable</option></select>
+
+      <label for="stool">Stool</label>
+      <select id="stool" required><option value="">Select…</option><option>Normal</option><option>Diarrhea or loose stool</option><option>Constipated or straining</option><option>Blood noticed</option><option>No stool</option><option>Not sure / not applicable</option></select>
+
+      <label for="energy">Energy and behavior</label>
+      <select id="energy" required><option value="">Select…</option><option>Normal</option><option>A little quieter than usual</option><option>Very tired, weak, or hiding</option><option>Restless or uncomfortable</option><option>Not sure / not applicable</option></select>
+
+      <label for="vomiting">Vomiting</label>
+      <select id="vomiting" required><option value="">Select…</option><option>None</option><option>Once</option><option>More than once</option><option>Repeated retching with little or nothing coming up</option><option>Not sure / not applicable</option></select>
+
+      <label for="medicalHistory">Known medical conditions, allergies, or recent procedures (optional)</label>
+      <textarea id="medicalHistory" placeholder="Include ongoing conditions, allergies, surgeries, or recent veterinary care."></textarea>
+
+      <label for="currentMedications">Current medications and supplements (optional)</label>
+      <textarea id="currentMedications" placeholder="Names only are enough. Do not change or stop medication based on this service."></textarea>
+
+      <label for="actionsTaken">What have you tried, and has a veterinarian already been contacted? (optional)</label>
+      <textarea id="actionsTaken" placeholder="Include home care already tried, advice received, or when your dog or cat was last examined."></textarea>
 
       <label for="question">Your question</label>
       <textarea id="question" required placeholder="Describe what's going on. Include how long it's been happening and anything you've already tried."></textarea>
@@ -378,8 +445,23 @@
       petName: document.getElementById("petName").value.trim(),
       species: document.getElementById("species").value,
       age: document.getElementById("age").value.trim() || "Not given",
+      breed: document.getElementById("breed").value.trim() || "Not given",
+      sex: document.getElementById("sex").value,
+      reproductiveStatus: document.getElementById("reproductiveStatus").value,
+      weight: document.getElementById("weight").value.trim() || "Not given",
       category: document.getElementById("category").value,
       urgency: document.getElementById("urgency").value,
+      symptomOnset: document.getElementById("symptomOnset").value.trim(),
+      symptomTrend: document.getElementById("symptomTrend").value,
+      appetite: document.getElementById("appetite").value,
+      drinking: document.getElementById("drinking").value,
+      urination: document.getElementById("urination").value,
+      stool: document.getElementById("stool").value,
+      energy: document.getElementById("energy").value,
+      vomiting: document.getElementById("vomiting").value,
+      medicalHistory: document.getElementById("medicalHistory").value.trim() || "None reported",
+      currentMedications: document.getElementById("currentMedications").value.trim() || "None reported",
+      actionsTaken: document.getElementById("actionsTaken").value.trim() || "None reported",
       question: document.getElementById("question").value.trim(),
       sourceChannel: "Website",
       conversationStatus: "Needs response",
@@ -425,6 +507,10 @@
       alert("Please contact an emergency veterinarian now instead of submitting a paid request.");
       return;
     }
+    if (payload.urination === "Not urinating" || payload.vomiting === "Repeated retching with little or nothing coming up") {
+      alert("This may be an emergency. Please contact an emergency veterinarian now instead of submitting a paid request.");
+      return;
+    }
 
     if (WORKER_URL.indexOf("REPLACE_WITH") === 0) {
       // Email mode: open the client's mail app with the question pre-filled.
@@ -441,8 +527,23 @@
         (payload.petName ? "\nPet name: " + payload.petName : "") +
         "\nPet species: " + payload.species +
         "\nPet age: " + payload.age +
+        "\nBreed: " + payload.breed +
+        "\nSex: " + payload.sex +
+        "\nSpay/neuter status: " + payload.reproductiveStatus +
+        "\nWeight: " + payload.weight +
         "\nCategory: " + payload.category +
         "\nUrgency: " + payload.urgency +
+        "\nStarted: " + payload.symptomOnset +
+        "\nTrend: " + payload.symptomTrend +
+        "\nEating: " + payload.appetite +
+        "\nDrinking: " + payload.drinking +
+        "\nUrination: " + payload.urination +
+        "\nStool: " + payload.stool +
+        "\nEnergy/behavior: " + payload.energy +
+        "\nVomiting: " + payload.vomiting +
+        "\nMedical history: " + payload.medicalHistory +
+        "\nMedications/supplements: " + payload.currentMedications +
+        "\nAlready tried/contacted vet: " + payload.actionsTaken +
         (payload.attachmentSummary ? "\n\nFiles selected:\n" + payload.attachmentSummary + "\n\nPlease attach these files to this email before sending." : "") +
         "\n\nQuestion:\n" + payload.question;
       window.location.href = "mailto:" + HELPLINE_EMAIL +

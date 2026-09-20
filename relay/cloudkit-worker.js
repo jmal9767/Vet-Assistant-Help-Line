@@ -8,7 +8,10 @@ import applePayDomainAssociation from "./apple-developer-merchantid-domain-assoc
 
 const MAX_LENGTHS = {
   name: 100, email: 200, phone: 40, preferredReply: 40, requestedService: 120,
-  petName: 100, species: 60, age: 60, category: 80, urgency: 80, question: 4000,
+  petName: 100, species: 60, age: 60, breed: 100, sex: 20, reproductiveStatus: 40,
+  weight: 40, category: 80, urgency: 80, symptomOnset: 120, symptomTrend: 60,
+  appetite: 60, drinking: 60, urination: 80, stool: 80, energy: 80, vomiting: 100,
+  medicalHistory: 1500, currentMedications: 1500, actionsTaken: 1500, question: 4000,
   attachmentSummary: 4000, sourceChannel: 80, conversationStatus: 80,
   paymentStatus: 40, paymentMethod: 80, paymentAmount: 40, paymentLink: 500,
   signedConsentName: 100, signedConsentAt: 80,
@@ -116,7 +119,7 @@ export default {
 
 function validatedFields(body) {
   const fields = {};
-  const optional = new Set(["age", "phone", "preferredReply", "requestedService", "petName", "urgency", "attachmentSummary", "paymentMethod", "paymentAmount", "paymentLink", "signedConsentName", "signedConsentAt"]);
+  const optional = new Set(["age", "breed", "weight", "medicalHistory", "currentMedications", "actionsTaken", "phone", "preferredReply", "requestedService", "petName", "urgency", "attachmentSummary", "paymentMethod", "paymentAmount", "paymentLink", "signedConsentName", "signedConsentAt"]);
   for (const key of Object.keys(MAX_LENGTHS)) {
     const value = String(body[key] ?? "").trim().slice(0, MAX_LENGTHS[key]);
     if (!value && !optional.has(key) && !["sourceChannel", "conversationStatus", "paymentStatus"].includes(key)) {
@@ -126,6 +129,10 @@ function validatedFields(body) {
   }
   if (!/^\S+@\S+\.\S+$/.test(fields.email)) return { error: "Please enter a valid email address." };
   if (!["Dog", "Cat"].includes(fields.species)) return { error: "This service accepts questions about dogs and cats only." };
+  if (!["Female", "Male", "Unknown"].includes(fields.sex)) return { error: "Please select the dog or cat's sex." };
+  if (!["Spayed", "Neutered", "Not spayed or neutered", "Unknown"].includes(fields.reproductiveStatus)) {
+    return { error: "Please select the spay or neuter status." };
+  }
   const services = {
     "Quick email response · $10": { reply: "Email", amount: "$10" },
     "Quick text response · $10": { reply: "Text message", amount: "$10" },
@@ -143,6 +150,9 @@ function validatedFields(body) {
   fields.urgency ||= "Not specified";
   if (fields.urgency === "I may need an emergency vet") {
     return { error: "Please contact an emergency veterinarian now instead of submitting a paid request." };
+  }
+  if (fields.urination === "Not urinating" || fields.vomiting === "Repeated retching with little or nothing coming up") {
+    return { error: "This answer may describe an emergency. Please contact an emergency veterinarian now instead of submitting a paid request." };
   }
   fields.sourceChannel = "Website";
   fields.conversationStatus = "Needs response";
@@ -236,7 +246,11 @@ function baseCommunicationFields(overrides) {
   return {
     name: "", email: "", phone: "", preferredReply: "Email",
     requestedService: "Email response", petName: "", species: "Unknown",
-    age: "Not given", category: "Other", urgency: "Not specified", question: "",
+    age: "Not given", breed: "Not given", sex: "Unknown", reproductiveStatus: "Unknown", weight: "Not given",
+    category: "Other", urgency: "Not specified", symptomOnset: "Not given", symptomTrend: "Not applicable / general question",
+    appetite: "Not sure / not applicable", drinking: "Not sure / not applicable", urination: "Not sure / not applicable",
+    stool: "Not sure / not applicable", energy: "Not sure / not applicable", vomiting: "Not sure / not applicable",
+    medicalHistory: "None reported", currentMedications: "None reported", actionsTaken: "None reported", question: "",
     attachmentSummary: "", sourceChannel: "Website", conversationStatus: "Needs response",
     paymentStatus: "Reviewing", paymentMethod: "Client has no preference",
     paymentAmount: amountFromService(overrides.requestedService || ""), paymentLink: "",
@@ -249,7 +263,15 @@ function cloudKitCreateBody(fields) {
     name: { value: fields.name }, email: { value: fields.email }, phone: { value: fields.phone || "" },
     preferredReply: { value: fields.preferredReply }, requestedService: { value: fields.requestedService },
     petName: { value: fields.petName || "" }, species: { value: fields.species }, age: { value: fields.age || "Not given" },
-    category: { value: fields.category }, urgency: { value: fields.urgency }, question: { value: fields.question },
+    breed: { value: fields.breed || "Not given" }, sex: { value: fields.sex || "Unknown" },
+    reproductiveStatus: { value: fields.reproductiveStatus || "Unknown" }, weight: { value: fields.weight || "Not given" },
+    category: { value: fields.category }, urgency: { value: fields.urgency }, symptomOnset: { value: fields.symptomOnset || "Not given" },
+    symptomTrend: { value: fields.symptomTrend || "Not applicable / general question" }, appetite: { value: fields.appetite || "Not sure / not applicable" },
+    drinking: { value: fields.drinking || "Not sure / not applicable" }, urination: { value: fields.urination || "Not sure / not applicable" },
+    stool: { value: fields.stool || "Not sure / not applicable" }, energy: { value: fields.energy || "Not sure / not applicable" },
+    vomiting: { value: fields.vomiting || "Not sure / not applicable" }, medicalHistory: { value: fields.medicalHistory || "None reported" },
+    currentMedications: { value: fields.currentMedications || "None reported" }, actionsTaken: { value: fields.actionsTaken || "None reported" },
+    question: { value: fields.question },
     attachmentSummary: { value: fields.attachmentSummary || "" }, sourceChannel: { value: fields.sourceChannel || "Website" },
     conversationStatus: { value: fields.conversationStatus || "Needs response" }, paymentStatus: { value: fields.paymentStatus },
     paymentMethod: { value: fields.paymentMethod || "Client has no preference" }, paymentAmount: { value: fields.paymentAmount },

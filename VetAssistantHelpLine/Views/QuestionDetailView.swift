@@ -49,8 +49,9 @@ struct QuestionDetailView: View {
             VStack(spacing: 16) {
                 header
                 questionCard
-                attachmentsCard
+                currentConditionCard
                 petCard
+                attachmentsCard
                 clientCard
                 paymentCard
                 replyActions
@@ -282,12 +283,34 @@ struct QuestionDetailView: View {
 
     private var petCard: some View {
         InfoTile {
-            SectionHeader("Pet")
+            SectionHeader("Dog or cat profile")
             CompactLabel(title: "Name", value: question.petName, icon: "heart.fill")
             CompactLabel(title: "Species", value: question.species, icon: "pawprint.fill")
+            CompactLabel(title: "Breed or mix", value: question.breed, icon: "pawprint.circle.fill")
             CompactLabel(title: "Age", value: question.age, icon: "birthday.cake.fill")
+            CompactLabel(title: "Sex", value: question.sex, icon: "person.crop.circle")
+            CompactLabel(title: "Spayed / neutered", value: question.reproductiveStatus, icon: "checkmark.seal.fill")
+            CompactLabel(title: "Weight", value: question.weight, icon: "scalemass.fill")
             CompactLabel(title: "Category", value: question.category, icon: "tag.fill")
             CompactLabel(title: "Client urgency", value: question.urgency, icon: "exclamationmark.triangle.fill")
+        }
+    }
+
+    private var currentConditionCard: some View {
+        InfoTile {
+            SectionHeader("Current condition", subtitle: "Review these details before replying.")
+            CompactLabel(title: "Started", value: question.symptomOnset, icon: "clock.fill")
+            CompactLabel(title: "Trend", value: question.symptomTrend, icon: "chart.line.uptrend.xyaxis")
+            CompactLabel(title: "Eating", value: question.appetite, icon: "fork.knife")
+            CompactLabel(title: "Drinking", value: question.drinking, icon: "drop.fill")
+            CompactLabel(title: "Urination", value: question.urination, icon: "toilet.fill")
+            CompactLabel(title: "Stool", value: question.stool, icon: "list.bullet.clipboard.fill")
+            CompactLabel(title: "Energy / behavior", value: question.energy, icon: "bolt.heart.fill")
+            CompactLabel(title: "Vomiting", value: question.vomiting, icon: "waveform.path.ecg")
+            Divider()
+            CompactLabel(title: "Medical history", value: question.medicalHistory, icon: "cross.case.fill")
+            CompactLabel(title: "Medications / supplements", value: question.currentMedications, icon: "pills.fill")
+            CompactLabel(title: "Already tried / vet contacted", value: question.actionsTaken, icon: "checklist")
         }
     }
 

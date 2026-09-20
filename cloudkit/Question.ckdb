@@ -1,4 +1,4 @@
-// Target Question schema for the newer app; 13 added String fields are not yet live.
+// Reference Question schema for the current app.
 // Not a full container export: merge with an exported schema before importing.
 // World and Authenticated have no Question permissions. Operator membership is pending.
 DEFINE SCHEMA
@@ -12,12 +12,27 @@ DEFINE SCHEMA
         phone STRING,
         species STRING,
         age STRING,
+        breed STRING,
+        sex STRING,
+        reproductiveStatus STRING,
+        weight STRING,
         category STRING,
+        urgency STRING,
+        symptomOnset STRING,
+        symptomTrend STRING,
+        appetite STRING,
+        drinking STRING,
+        urination STRING,
+        stool STRING,
+        energy STRING,
+        vomiting STRING,
+        medicalHistory STRING,
+        currentMedications STRING,
+        actionsTaken STRING,
         question STRING,
         preferredReply STRING,
         requestedService STRING,
         petName STRING,
-        urgency STRING,
         attachmentSummary STRING,
         sourceChannel STRING,
         conversationStatus STRING,

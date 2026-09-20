@@ -28,8 +28,23 @@ struct ClientQuestion: Identifiable {
     var petName: String { string(for: "petName") ?? "Pet" }
     var species: String { string(for: "species") ?? "Unknown" }
     var age: String { string(for: "age") ?? "Not given" }
+    var breed: String { string(for: "breed") ?? "Not given" }
+    var sex: String { string(for: "sex") ?? "Unknown" }
+    var reproductiveStatus: String { string(for: "reproductiveStatus") ?? "Unknown" }
+    var weight: String { string(for: "weight") ?? "Not given" }
     var category: String { string(for: "category") ?? "Other" }
     var urgency: String { string(for: "urgency") ?? "Not specified" }
+    var symptomOnset: String { string(for: "symptomOnset") ?? "Not given" }
+    var symptomTrend: String { string(for: "symptomTrend") ?? "Not given" }
+    var appetite: String { string(for: "appetite") ?? "Not given" }
+    var drinking: String { string(for: "drinking") ?? "Not given" }
+    var urination: String { string(for: "urination") ?? "Not given" }
+    var stool: String { string(for: "stool") ?? "Not given" }
+    var energy: String { string(for: "energy") ?? "Not given" }
+    var vomiting: String { string(for: "vomiting") ?? "Not given" }
+    var medicalHistory: String { string(for: "medicalHistory") ?? "None reported" }
+    var currentMedications: String { string(for: "currentMedications") ?? "None reported" }
+    var actionsTaken: String { string(for: "actionsTaken") ?? "None reported" }
     var question: String { string(for: "question") ?? "" }
     var attachmentSummary: String? { string(for: "attachmentSummary") }
     var sourceChannel: String { string(for: "sourceChannel") ?? "Website" }

@@ -8,15 +8,21 @@ enum HelplineConfig {
     static let checkoutBaseURL = URL(string: "https://vet-helpline-development.dkjmmz6whh.workers.dev")!
 
     static let purpose = """
-    Worried about your dog or cat and not sure what to do next? Send the details, \
-    choose email, text, or phone, and attach helpful photos, videos, or records \
-    for practical guidance from a veterinary assistant.
+    Have questions about your dog or cat? Just ask. Send the details and get \
+    clear, practical, general educational guidance from an experienced veterinary \
+    assistant by email, text, or phone.
+    """
+
+    static let costExplanation = """
+    Every question is reviewed first. It may be answered at no charge or receive \
+    a free referral. If paid help is appropriate, the client sees and approves \
+    the exact $10, $20, or $35 price before payment. Nothing is charged automatically.
     """
 
     // The three steps shown on the shareable card and welcome page.
     static let howItWorks = [
         "Scan the code and tell me what is happening with your dog or cat",
-        "I choose complimentary service or confirm a price before sending a payment link",
+        "I may answer it free, provide a free referral, or offer a clearly priced service",
         "I review the details and files, then answer by email, text, or phone"
     ]
 

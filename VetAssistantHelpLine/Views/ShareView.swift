@@ -118,6 +118,16 @@ private struct ShareCard: View {
                 }
             }
 
+            VStack(alignment: .leading, spacing: 5) {
+                CardSectionTitle("What it Costs")
+                Text(HelplineConfig.costExplanation)
+                    .font(.caption)
+                    .foregroundStyle(ink)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(10)
+            .background(AppPalette.clinicGreen.opacity(0.09), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+
             CardSectionTitle("Services")
 
             VStack(alignment: .leading, spacing: 10) {

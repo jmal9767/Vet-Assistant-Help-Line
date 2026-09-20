@@ -29,8 +29,8 @@ struct CommunicationsView: View {
                     VStack(spacing: 16) {
                         HeroPanel(
                             icon: "bubble.left.and.bubble.right.fill",
-                            title: "Communications",
-                            subtitle: "Client texts, emails, and masked call requests belong here once your relay provider is connected."
+                            title: "Messages",
+                            subtitle: "Read each client's concern, reply, and see the service and payment decision for the same case."
                         ) {
                             HStack(spacing: 10) {
                                 MetricPill(title: "Open", value: "\(openCount)", icon: "bubble.left.fill", tint: AppPalette.warmGold)
@@ -49,7 +49,7 @@ struct CommunicationsView: View {
                             ContentUnavailableView(
                                 "No conversations yet",
                                 systemImage: "bubble.left.and.bubble.right",
-                                description: Text("Messages from the masked text/email/call relay will appear here.")
+                                description: Text("Client questions and your active conversations will appear here.")
                             )
                             .padding(.top, 24)
                         } else {
@@ -69,7 +69,7 @@ struct CommunicationsView: View {
                 }
                 .refreshable { await store.refresh() }
             }
-            .navigationTitle("Communications")
+            .navigationTitle("Messages")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -113,14 +113,21 @@ private struct CommunicationRow: View {
                             .foregroundStyle(tint)
                     }
 
-                    Text(question.conversationStatus)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
+                    HStack(spacing: 8) {
+                        Label(question.conversationStatus, systemImage: "bubble.left.fill")
+                        Label(question.paymentStatus, systemImage: "creditcard.fill")
+                    }
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
 
-                    Text(question.question)
-                        .font(.subheadline)
+                    Text("Client concern")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(tint)
+                    Text(question.question.isEmpty ? "No concern was included." : question.question)
+                        .font(.body)
                         .foregroundStyle(.primary)
-                        .lineLimit(2)
+                        .lineLimit(4)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
         }

@@ -149,10 +149,22 @@ private struct QuestionRow: View {
                     }
                     Text("\(question.petName) · \(question.species) · \(question.preferredReply)")
                         .font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                    Text(question.question).font(.subheadline).lineLimit(2)
+
+                    Divider()
+
+                    Label("Client concern", systemImage: "quote.bubble.fill")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(tint)
+                    Text(question.question.isEmpty ? "No concern was included." : question.question)
+                        .font(.body)
+                        .foregroundStyle(.primary)
+                        .lineLimit(6)
+                        .fixedSize(horizontal: false, vertical: true)
                     HStack {
                         Label(question.paymentStatus, systemImage: question.isComplimentary ? "gift.fill" : "creditcard")
                         if !question.attachments.isEmpty { Label("\(question.attachments.count)", systemImage: "paperclip") }
+                        Spacer()
+                        Label("Review case", systemImage: "chevron.right")
                     }
                     .font(.caption.weight(.semibold)).foregroundStyle(tint)
                 }

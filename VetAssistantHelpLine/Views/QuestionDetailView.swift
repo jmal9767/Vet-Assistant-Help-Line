@@ -63,12 +63,12 @@ struct QuestionDetailView: View {
         ScrollView {
             VStack(spacing: 16) {
                 header
-                paymentCard
-                replyActions
                 questionCard
                 attachmentsCard
-                clientCard
                 petCard
+                clientCard
+                paymentCard
+                replyActions
             }
             .padding(16)
         }
@@ -279,8 +279,8 @@ struct QuestionDetailView: View {
 
     private var questionCard: some View {
         InfoTile {
-            SectionHeader("Client Question")
-            Text(question.question)
+            SectionHeader("Client Concern", subtitle: "Review this before choosing the service and price.")
+            Text(question.question.isEmpty ? "No concern was included." : question.question)
                 .font(.body)
                 .lineSpacing(3)
                 .textSelection(.enabled)

@@ -4,11 +4,13 @@ struct PaymentsView: View {
     @Environment(QuestionStore.self) private var store
 
     private var paymentQuestions: [ClientQuestion] {
-        store.questions.sorted { $0.submittedAt > $1.submittedAt }
+        store.questions
+            .filter { $0.paymentStatus != "Reviewing" && !$0.paymentStatus.isEmpty }
+            .sorted { $0.submittedAt > $1.submittedAt }
     }
 
     private var pendingQuestions: [ClientQuestion] {
-        paymentQuestions.filter { !["Paid", "Refunded", "Complimentary"].contains($0.paymentStatus) }
+        paymentQuestions.filter { $0.paymentStatus == "Payment requested" }
     }
 
     private var paidQuestions: [ClientQuestion] {
@@ -25,7 +27,7 @@ struct PaymentsView: View {
                         HeroPanel(
                             icon: "creditcard.fill",
                             title: "Payments",
-                            subtitle: "Track service price, payment links, signatures, and paid cases from inside the app."
+                            subtitle: "Cases appear here after you choose a price, complimentary service, or referral in Inbox."
                         ) {
                             HStack(spacing: 10) {
                                 MetricPill(title: "Pending", value: "\(pendingQuestions.count)", icon: "clock.fill", tint: AppPalette.warmGold)
@@ -38,7 +40,7 @@ struct PaymentsView: View {
                             ContentUnavailableView(
                                 "No payment records",
                                 systemImage: "creditcard",
-                                description: Text("Client submissions will appear here after they arrive.")
+                                description: Text("Review a client concern in Inbox, then choose a paid, complimentary, or referral service.")
                             )
                             .padding(.top, 24)
                         } else {
@@ -74,7 +76,7 @@ struct PaymentsView: View {
     }
 
     private var complimentaryCount: Int {
-        paymentQuestions.filter { $0.paymentStatus == "Complimentary" }.count
+        paymentQuestions.filter { ["Complimentary", "Referred — no charge"].contains($0.paymentStatus) }.count
     }
 }
 
@@ -111,6 +113,15 @@ private struct PaymentRow: View {
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
 
+                    Text("Client concern")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(tint)
+                    Text(question.question.isEmpty ? "No concern was included." : question.question)
+                        .font(.subheadline)
+                        .foregroundStyle(.primary)
+                        .lineLimit(3)
+                        .fixedSize(horizontal: false, vertical: true)
+
                     HStack(spacing: 8) {
                         Label(question.paymentStatus, systemImage: iconName)
                         if question.signedConsentName != nil {
@@ -131,6 +142,7 @@ private struct PaymentRow: View {
         case "Paid": "checkmark.circle.fill"
         case "Complimentary": "gift.fill"
         case "Refunded": "arrow.uturn.backward.circle.fill"
+        case "Referred — no charge": "cross.case.fill"
         case "Payment requested": "paperplane.fill"
         default: "clock.fill"
         }
@@ -141,6 +153,7 @@ private struct PaymentRow: View {
         case "Paid": AppPalette.clinicGreen
         case "Complimentary": AppPalette.clinicGreen
         case "Refunded": AppPalette.brand
+        case "Referred — no charge": AppPalette.brand
         case "Payment requested": AppPalette.warmGold
         default: AppPalette.danger
         }

@@ -14,15 +14,15 @@ enum HelplineConfig {
     """
 
     static let costExplanation = """
-    Every question is reviewed first. It may be answered at no charge or receive \
-    a free referral. If paid help is appropriate, the client sees and approves \
-    the exact $10, $20, or $35 price before payment. Nothing is charged automatically.
+    Clients choose the $10, $20, or $35 service that fits the help they want and \
+    see the price before submitting. PayPal and Apple Pay continue to secure checkout; \
+    Cash App payments are confirmed manually.
     """
 
     // The three steps shown on the shareable card and welcome page.
     static let howItWorks = [
-        "Scan the code and tell me what is happening with your dog or cat",
-        "I may answer it free, provide a free referral, or offer a clearly priced service",
+        "Scan the code and choose a $10, $20, or $35 service",
+        "Tell me what is happening with your dog or cat and complete payment",
         "I review the details and files, then answer by email, text, or phone"
     ]
 
@@ -65,11 +65,6 @@ enum HelplineConfig {
             ServicePrice(service: "Phone or live text",
                          price: "$35",
                          detail: "One general topic, usually 30–45 minutes, with reasonable clarification and no abrupt cutoff")
-        ]),
-        PriceSection(title: "Operator discretion", items: [
-            ServicePrice(service: "Complimentary or referral only",
-                         price: "$0",
-                         detail: "The operator may waive the fee or refer the question without charge")
         ]),
         PriceSection(title: "Private file uploads", items: [
             ServicePrice(service: "Any file type",

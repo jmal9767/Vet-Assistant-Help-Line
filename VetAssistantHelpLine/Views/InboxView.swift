@@ -85,7 +85,7 @@ struct InboxView: View {
     }
 
     private var overview: some View {
-        HeroPanel(icon: "stethoscope", title: "Client queue", subtitle: "Review questions, choose free or paid service, reply, and archive completed cases.") {
+        HeroPanel(icon: "stethoscope", title: "Client queue", subtitle: "Read each paid request, reply through the selected service, and archive completed cases.") {
             HStack(spacing: 10) {
                 MetricPill(title: "New", value: "\(store.newQuestions.count)", icon: "bell.fill", tint: AppPalette.warmGold)
                 MetricPill(title: "Answered", value: "\(store.answeredQuestions.count)", icon: "checkmark.circle.fill", tint: AppPalette.clinicGreen)
@@ -161,7 +161,7 @@ private struct QuestionRow: View {
                         .lineLimit(6)
                         .fixedSize(horizontal: false, vertical: true)
                     HStack {
-                        Label(question.paymentStatus, systemImage: question.isComplimentary ? "gift.fill" : "creditcard")
+                        Label(question.paymentStatus, systemImage: question.paymentStatus == "Referred — no charge" ? "cross.case.fill" : "creditcard")
                         if !question.attachments.isEmpty { Label("\(question.attachments.count)", systemImage: "paperclip") }
                         Spacer()
                         Label("Review case", systemImage: "chevron.right")

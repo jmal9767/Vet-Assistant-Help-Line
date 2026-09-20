@@ -209,18 +209,18 @@
   </section>
 
   <section class="card">
-    <h2>What happens after you send</h2>
+    <h2>How it works</h2>
     <div class="promise-grid">
-      <div class="promise"><strong>1. I review it first</strong>I check your question, files, and urgency before confirming the best service.</div>
-      <div class="promise"><strong>2. I confirm the next step</strong>I may provide the reply free of charge or confirm a price and payment link first.</div>
-      <div class="promise"><strong>3. You get a clear reply</strong>Your answer comes by email, text, or phone in the time frame you chose.</div>
+      <div class="promise"><strong>1. Choose your service</strong>Select $10 quick written help, $20 written support, or a $35 phone or live-text conversation.</div>
+      <div class="promise"><strong>2. Send your question and pay</strong>PayPal or Apple Pay opens immediately. If you choose Cash App, the payment link is sent separately.</div>
+      <div class="promise"><strong>3. Get your reply</strong>Your answer comes by email, text, or phone using the service you selected.</div>
     </div>
   </section>
 
   <section class="card">
     <h2>What it costs</h2>
-    <p><strong>Your question may be answered for free.</strong> Every request is reviewed first. I may provide a complimentary response or a no-charge referral to a veterinarian.</p>
-    <p>If paid help is appropriate, you will see and approve the exact <strong>$10, $20, or $35</strong> service price before payment. Nothing is charged automatically.</p>
+    <p>Choose the <strong>$10, $20, or $35</strong> service that fits the help you want. The price is shown before you submit or pay.</p>
+    <p>If your dog or cat needs diagnosis, medication advice, treatment, or urgent care, contact a licensed veterinarian instead.</p>
   </section>
 
   <!-- PRICING -->
@@ -230,10 +230,9 @@
       <li><strong>Quick written response — $10:</strong> a simple answer by email or text, with reasonable clarification for 24 hours.</li>
       <li><strong>Written support — $20:</strong> one topic by email or text, with reasonable back-and-forth for up to 3 days.</li>
       <li><strong>Phone or live-text conversation — $35:</strong> one general topic, usually 30–45 minutes, with reasonable clarification and no abrupt cutoff.</li>
-      <li><strong>Complimentary or referral-only response — $0:</strong> the operator may waive the fee or refer the question to a veterinarian without charge.</li>
     </ul>
     <p><strong>📎 Private file uploads are included:</strong> up to 4 files of any type, 10 MB per file.</p>
-    <p class="note">Submitting a question never creates a charge. After review, you receive the service option and secure payment link, if a fee applies. You may accept or decline.</p>
+    <p class="note">You choose the service and see its price before sending. PayPal and Apple Pay open secure checkout after submission; Cash App payments are confirmed manually.</p>
   </section>
 
   <section class="card">
@@ -254,9 +253,12 @@
       <label for="requestedService">First, choose the kind of help you want</label>
       <select id="requestedService" required>
         <option value="">Select a service…</option>
-        <option value="Email response">Email response</option>
-        <option value="Text response">Text response</option>
-        <option value="Phone call">Phone call</option>
+        <option value="Quick email response · $10">Quick email response · $10</option>
+        <option value="Quick text response · $10">Quick text response · $10</option>
+        <option value="Written email support · $20">Written email support · $20</option>
+        <option value="Written text support · $20">Written text support · $20</option>
+        <option value="Phone conversation · $35">Phone conversation · $35</option>
+        <option value="Live-text conversation · $35">Live-text conversation · $35</option>
       </select>
       <p class="note" id="serviceNote">Pick an option first. The form will adjust based on email, text, or phone.</p>
 
@@ -277,9 +279,8 @@
       <select id="paymentMethod">
         <option>PayPal or Apple Pay</option>
         <option>Cash App</option>
-        <option>Whichever link you send</option>
       </select>
-      <p class="note">I'll confirm the service option and send a secure payment link if a fee applies.</p>
+      <p class="note">PayPal and Apple Pay continue to secure checkout automatically. If you choose Cash App, its payment link is sent separately and confirmed manually.</p>
 
       <!-- Honeypot: humans never see or fill this. -->
       <div style="position:absolute; left:-9999px;" aria-hidden="true">
@@ -334,7 +335,7 @@
 
       <label for="signedConsentName">Type your name to sign</label>
       <input type="text" id="signedConsentName" required autocomplete="name" placeholder="Your full name">
-      <p class="note">By typing your name, you confirm the statement above and agree to the service terms. If a fee applies, you will approve it before paying.</p>
+      <p class="note">By typing your name, you confirm the statement above, agree to the service terms, and accept the displayed price for your selected service.</p>
 
       <p style="margin-top:1.25rem;">
         <button type="submit" class="btn btn-navy">Send my question</button>
@@ -382,9 +383,9 @@
       question: document.getElementById("question").value.trim(),
       sourceChannel: "Website",
       conversationStatus: "Needs response",
-      paymentStatus: "Reviewing",
+      paymentStatus: "Payment requested",
       paymentMethod: document.getElementById("paymentMethod").value,
-      paymentAmount: "Not set",
+      paymentAmount: amountFromService(document.getElementById("requestedService").value),
       paymentLink: "",
       signedConsentName: document.getElementById("signedConsentName").value.trim(),
       signedConsentAt: new Date().toISOString(),
@@ -421,7 +422,8 @@
       return;
     }
     if (payload.urgency === "I may need an emergency vet") {
-      alert("If this may be an emergency, please contact an emergency veterinarian now. You can still send details after your dog or cat is safe.");
+      alert("Please contact an emergency veterinarian now instead of submitting a paid request.");
+      return;
     }
 
     if (WORKER_URL.indexOf("REPLACE_WITH") === 0) {
@@ -474,14 +476,20 @@
           throw new Error(data.error || "Send failed");
         });
       }
+      return response.json();
+    }).then(function (data) {
+      if (data.checkoutURL) {
+        window.location.assign(data.checkoutURL);
+        return;
+      }
       var section = document.getElementById("askSection");
       section.replaceChildren();
       var heading = document.createElement("h2");
       heading.textContent = "✅ Question sent!";
       var message = document.createElement("p");
-      message.textContent = "Thanks, " + payload.name + ". I'll review the details for " +
-        (payload.petName || "your dog or cat") + ", choose the appropriate service option or provide a no-charge referral, and contact you by " +
-        payload.preferredReply + ". Watch " + payload.email + " for the next step.";
+      message.textContent = "Thanks, " + payload.name + ". Your " + payload.requestedService +
+        " request for " + (payload.petName || "your dog or cat") + " was received. Watch " +
+        payload.email + " for the Cash App payment link, then for your reply.";
       section.append(heading, message);
     }).catch(function (error) {
       window.clearTimeout(timeout);
@@ -511,7 +519,7 @@
   }
 
   function replyMethodFromService(service) {
-    if (service.indexOf("Text") === 0) return "Text message";
+    if (service.toLowerCase().indexOf("text") !== -1) return "Text message";
     if (service.indexOf("Phone") === 0) return "Phone call";
     return "Email";
   }
@@ -529,7 +537,7 @@
     }
     fields.classList.remove("hidden");
     if (method === "Email") {
-      note.textContent = "You'll receive a written email answer after I confirm the service option and price, if any.";
+      note.textContent = "You'll receive written help by email for the displayed price.";
       phoneNote.textContent = "Optional for email replies.";
     } else if (method === "Text message") {
       note.textContent = "You'll receive help by text message, so your phone number is required.";

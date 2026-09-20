@@ -104,7 +104,13 @@ export default {
     const result = await saveQuestionToCloudKit(env, cloudKitCreateBody(fields));
     if (!result.ok) return json({ error: "Could not save the question" }, 502, cors);
 
-    return json({ ok: true }, 200, cors);
+    const checkoutURL = fields.paymentMethod === "PayPal or Apple Pay" && result.recordName
+      ? `${url.origin}/pay?question=${encodeURIComponent(result.recordName)}`
+      : "";
+    if (checkoutURL) {
+      await updateQuestionPayment(env, result.recordName, { paymentLink: checkoutURL });
+    }
+    return json({ ok: true, recordName: result.recordName, checkoutURL }, 200, cors);
   },
 };
 
@@ -120,17 +126,31 @@ function validatedFields(body) {
   }
   if (!/^\S+@\S+\.\S+$/.test(fields.email)) return { error: "Please enter a valid email address." };
   if (!["Dog", "Cat"].includes(fields.species)) return { error: "This service accepts questions about dogs and cats only." };
-  fields.preferredReply ||= fields.phone ? "Text message" : "Email";
+  const services = {
+    "Quick email response · $10": { reply: "Email", amount: "$10" },
+    "Quick text response · $10": { reply: "Text message", amount: "$10" },
+    "Written email support · $20": { reply: "Email", amount: "$20" },
+    "Written text support · $20": { reply: "Text message", amount: "$20" },
+    "Phone conversation · $35": { reply: "Phone call", amount: "$35" },
+    "Live-text conversation · $35": { reply: "Text message", amount: "$35" },
+  };
+  const selectedService = services[fields.requestedService];
+  if (!selectedService) return { error: "Please choose a valid service." };
+  fields.preferredReply = selectedService.reply;
   if (["Text message", "Phone call"].includes(fields.preferredReply) && fields.phone.replace(/\D/g, "").length < 7) {
     return { error: "Please enter a valid phone number for text or phone service." };
   }
-  fields.requestedService ||= fields.preferredReply;
   fields.urgency ||= "Not specified";
+  if (fields.urgency === "I may need an emergency vet") {
+    return { error: "Please contact an emergency veterinarian now instead of submitting a paid request." };
+  }
   fields.sourceChannel = "Website";
   fields.conversationStatus = "Needs response";
-  fields.paymentStatus = "Reviewing";
-  fields.paymentMethod ||= "Client has no preference";
-  fields.paymentAmount = "Not set";
+  fields.paymentStatus = "Payment requested";
+  if (!["PayPal or Apple Pay", "Cash App"].includes(fields.paymentMethod)) {
+    return { error: "Please choose a valid payment method." };
+  }
+  fields.paymentAmount = selectedService.amount;
   fields.paymentLink = "";
   return fields;
 }
@@ -245,7 +265,11 @@ async function saveQuestionToCloudKit(env, requestBody) {
   const response = await fetch(`https://api.apple-cloudkit.com${path}`, { method: "POST", headers, body: requestBody });
   if (!response.ok) return { ok: false, status: response.status };
   const result = await response.json();
-  return { ok: !result.records?.some((record) => record.serverErrorCode) };
+  const record = result.records?.find((item) => !item.serverErrorCode);
+  return {
+    ok: Boolean(record) && !result.records?.some((item) => item.serverErrorCode),
+    recordName: record?.recordName || "",
+  };
 }
 
 async function fetchQuestionFromCloudKit(env, recordName) {

@@ -58,43 +58,11 @@ final class QuestionStore {
         await save(question.record, failureMessage: "Couldn't update the payment")
     }
 
-    func makeComplimentary(replyMethod: String, for question: ClientQuestion) async {
-        question.record["paymentStatus"] = "Complimentary"
-        question.record["paymentAmount"] = "$0"
-        question.record["paymentMethod"] = "No charge"
-        question.record["paymentLink"] = ""
-        question.record["preferredReply"] = replyMethod
-        question.record["requestedService"] = "Complimentary \(replyMethod.lowercased())"
-        await save(question.record, failureMessage: "Couldn't make this service complimentary")
-    }
-
     func requestPayment(amount: String, link: String, for question: ClientQuestion) async {
         question.record["paymentStatus"] = "Payment requested"
         question.record["paymentAmount"] = amount
         question.record["paymentLink"] = link
         await save(question.record, failureMessage: "Couldn't save the payment request")
-    }
-
-    func applyServiceOffer(
-        name: String,
-        replyMethod: String,
-        amount: String,
-        paymentMethod: String,
-        paymentLink: String,
-        paymentStatus: String,
-        for question: ClientQuestion
-    ) async {
-        question.record["requestedService"] = name
-        question.record["preferredReply"] = replyMethod
-        question.record["paymentAmount"] = amount
-        question.record["paymentLink"] = paymentLink
-        question.record["paymentStatus"] = paymentStatus
-        question.record["paymentMethod"] = paymentStatus == "Payment requested" ? paymentMethod : "No charge"
-        if paymentStatus == "Referred — no charge" {
-            question.record["status"] = ClientQuestion.Status.answered.rawValue
-            question.record["conversationStatus"] = "Closed"
-        }
-        await save(question.record, failureMessage: "Couldn't save the service decision")
     }
 
     func deletePermanently(_ question: ClientQuestion) async {

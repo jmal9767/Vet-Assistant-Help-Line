@@ -23,17 +23,6 @@ struct TemplatesView: View {
             """
         ),
         Template(
-            title: "Complimentary Service",
-            intent: "Tell the client you are waiving the charge.",
-            icon: "gift.fill",
-            tint: AppPalette.clinicGreen,
-            text: """
-            Hi [name], I reviewed your question about [pet name]. I'm happy to \
-            provide this [email / text / phone] response at no charge. There is \
-            no payment required.
-            """
-        ),
-        Template(
             title: "Confirm Price",
             intent: "Use before taking payment or starting a paid answer.",
             icon: "creditcard.fill",
@@ -74,8 +63,8 @@ struct TemplatesView: View {
             tint: AppPalette.clinicGreen,
             text: """
             Hi [name], I received your question about [pet name]. I'll review \
-            the details and any files you sent, then let you know whether I can \
-            provide a complimentary response or offer the $10, $20, or $35 service that fits. \
+            the details and any files you sent, then let you know which $10, $20, \
+            or $35 service fits the question. \
             Nothing is charged automatically.
             """
         ),

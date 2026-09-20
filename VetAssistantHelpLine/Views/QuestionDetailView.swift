@@ -7,10 +7,6 @@ private enum ServiceOffer: String, CaseIterable, Identifiable {
     case writtenText = "Written text support · $20"
     case phoneConversation = "Phone conversation · $35"
     case textConversation = "Live-text conversation · $35"
-    case complimentaryEmail = "Complimentary email · $0"
-    case complimentaryText = "Complimentary text · $0"
-    case complimentaryPhone = "Complimentary phone call · $0"
-    case referral = "Refer to veterinarian · $0"
 
     var id: String { rawValue }
     var amount: String {
@@ -18,25 +14,16 @@ private enum ServiceOffer: String, CaseIterable, Identifiable {
         case .quickEmail, .quickText: "$10"
         case .writtenEmail, .writtenText: "$20"
         case .phoneConversation, .textConversation: "$35"
-        default: "$0"
         }
     }
     var replyMethod: String {
         switch self {
-        case .quickEmail, .writtenEmail, .complimentaryEmail, .referral: "Email"
-        case .quickText, .writtenText, .textConversation, .complimentaryText: "Text message"
-        case .phoneConversation, .complimentaryPhone: "Phone call"
+        case .quickEmail, .writtenEmail: "Email"
+        case .quickText, .writtenText, .textConversation: "Text message"
+        case .phoneConversation: "Phone call"
         }
     }
-    var requiresPayment: Bool { amount != "$0" }
     var needsPhone: Bool { replyMethod != "Email" }
-    var paymentStatus: String {
-        switch self {
-        case .referral: "Referred — no charge"
-        case .complimentaryEmail, .complimentaryText, .complimentaryPhone: "Complimentary"
-        default: "Payment requested"
-        }
-    }
 }
 
 private enum PaymentChoice: String, CaseIterable, Identifiable {
@@ -54,8 +41,6 @@ struct QuestionDetailView: View {
 
     let question: ClientQuestion
     @State private var showMailError = false
-    @State private var selectedOffer: ServiceOffer = .writtenEmail
-    @State private var selectedPayment: PaymentChoice = .paypal
     @State private var showArchiveConfirmation = false
     @State private var showDeleteConfirmation = false
 
@@ -106,9 +91,6 @@ struct QuestionDetailView: View {
             Button("Cancel", role: .cancel) { }
         } message: {
             Text("This removes the CloudKit record and cannot be undone. Uploaded files expire separately after 30 days.")
-        }
-        .onAppear {
-            selectedOffer = defaultOffer
         }
     }
 
@@ -193,7 +175,7 @@ struct QuestionDetailView: View {
 
     private var paymentCard: some View {
         InfoTile {
-            SectionHeader("Service and payment", subtitle: "Choose the service after reviewing the question. PayPal and Apple Pay confirm automatically; verify Cash App before marking it paid.")
+            SectionHeader("Service and payment", subtitle: "The client selected the service and price before submitting. PayPal and Apple Pay confirm automatically; verify Cash App manually.")
 
             HStack(spacing: 10) {
                 MetricPill(title: "Payment", value: question.paymentStatus, icon: "creditcard.fill", tint: paymentTint)
@@ -201,52 +183,25 @@ struct QuestionDetailView: View {
             }
             CompactLabel(title: "Signed consent", value: signedConsentText, icon: "signature")
 
-            Picker("Service offer", selection: $selectedOffer) {
-                ForEach(ServiceOffer.allCases) { offer in
-                    Text(offer.rawValue).tag(offer)
-                }
-            }
-            .pickerStyle(.menu)
-
-            if selectedOffer.requiresPayment {
-                Picker("Payment option", selection: $selectedPayment) {
-                    ForEach(PaymentChoice.allCases) { method in
-                        Text(method.rawValue).tag(method)
-                    }
-                }
-                .pickerStyle(.segmented)
-            }
-
-            if selectedOffer.requiresPayment {
-                CompactLabel(
-                    title: selectedPayment.rawValue,
-                    value: selectedPaymentLink.isEmpty ? "Add your Cash App for Business link in Settings before sending the offer." : selectedPaymentLink,
-                    icon: "link.circle.fill"
-                )
-            } else {
-                CompactLabel(title: "Charge", value: "No payment required", icon: "gift.fill")
-            }
+            CompactLabel(title: "Selected service", value: question.requestedService, icon: "checkmark.circle.fill")
+            CompactLabel(
+                title: selectedPayment.rawValue,
+                value: selectedPaymentLink.isEmpty ? "Add your Cash App for Business link in Settings before sending it." : selectedPaymentLink,
+                icon: "link.circle.fill"
+            )
 
             Button {
                 Task {
-                    await store.applyServiceOffer(
-                        name: selectedOffer.rawValue,
-                        replyMethod: selectedOffer.replyMethod,
-                        amount: selectedOffer.amount,
-                        paymentMethod: selectedPayment.rawValue,
-                        paymentLink: selectedOffer.requiresPayment ? selectedPaymentLink : "",
-                        paymentStatus: selectedOffer.paymentStatus,
-                        for: question
-                    )
+                    await store.updatePayment(status: "Payment requested", amount: selectedOffer.amount, link: selectedPaymentLink, for: question)
                     if let offerMessageURL { openURL(offerMessageURL) }
                 }
             } label: {
-                Label("Save Decision + Prepare Client Message", systemImage: "paperplane.fill")
+                Label("Prepare Payment Message", systemImage: "paperplane.fill")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
-            .tint(selectedOffer.requiresPayment ? AppPalette.brand : AppPalette.clinicGreen)
-            .disabled((selectedOffer.requiresPayment && selectedPaymentLink.isEmpty) || (selectedOffer.needsPhone && question.phone == nil))
+            .tint(AppPalette.brand)
+            .disabled(selectedPaymentLink.isEmpty || (selectedOffer.needsPhone && question.phone == nil))
 
             if let link = question.paymentLink, !link.isEmpty, let paymentURL = URL(string: link) {
                 Link(destination: paymentURL) {
@@ -343,7 +298,6 @@ struct QuestionDetailView: View {
     private var paymentTint: Color {
         switch question.paymentStatus {
         case "Paid": AppPalette.clinicGreen
-        case "Complimentary": AppPalette.clinicGreen
         case "Refunded": AppPalette.brand
         case "Payment requested": AppPalette.warmGold
         case "Referred — no charge": AppPalette.brand
@@ -353,11 +307,18 @@ struct QuestionDetailView: View {
     }
 
     private var defaultOffer: ServiceOffer {
+        if let offer = ServiceOffer(rawValue: question.requestedService) { return offer }
         switch question.preferredReply {
-        case "Text message": .quickText
-        case "Phone call": .phoneConversation
-        default: .quickEmail
+        case "Text message": return .quickText
+        case "Phone call": return .phoneConversation
+        default: return .quickEmail
         }
+    }
+
+    private var selectedOffer: ServiceOffer { defaultOffer }
+
+    private var selectedPayment: PaymentChoice {
+        question.paymentMethod == PaymentChoice.cashApp.rawValue ? .cashApp : .paypal
     }
 
     private var selectedPaymentLink: String {
@@ -372,12 +333,8 @@ struct QuestionDetailView: View {
     }
 
     private var offerMessageURL: URL? {
-        let paymentSentence = selectedOffer.requiresPayment
-            ? "The price is \(selectedOffer.amount). If you would like to continue, pay with \(selectedPayment.rawValue) here: \(selectedPaymentLink). " + (selectedPayment == .cashApp ? "Please tell me after you send it so I can confirm it." : "My app will confirm the payment automatically.")
-            : selectedOffer == .referral
-                ? "There is no charge. This request needs a licensed veterinarian, so please contact your veterinarian or an emergency hospital if the concern may be urgent."
-                : "I can provide this service at no charge. No payment is required."
-        let message = "Hi \(question.name), I reviewed your request about \(petDisplayName). I can offer: \(selectedOffer.rawValue). \(paymentSentence)"
+        let paymentSentence = "The price is \(selectedOffer.amount). Pay with \(selectedPayment.rawValue) here: \(selectedPaymentLink). " + (selectedPayment == .cashApp ? "Please tell me after you send it so I can confirm it." : "My app will confirm the payment automatically.")
+        let message = "Hi \(question.name), you selected \(selectedOffer.rawValue) for \(petDisplayName). \(paymentSentence)"
 
         if selectedOffer.replyMethod != "Email", let phone = question.phone {
             var components = URLComponents()

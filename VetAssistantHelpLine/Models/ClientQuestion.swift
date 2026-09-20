@@ -43,8 +43,6 @@ struct ClientQuestion: Identifiable {
 
     var submittedAt: Date { record["submittedAt"] as? Date ?? record.creationDate ?? .distantPast }
     var status: Status { Status(rawValue: string(for: "status") ?? "") ?? .new }
-    var isComplimentary: Bool { paymentStatus == "Complimentary" }
-
     var attachments: [Attachment] {
         guard let attachmentSummary else { return [] }
         return attachmentSummary.split(separator: "\n").map { line in

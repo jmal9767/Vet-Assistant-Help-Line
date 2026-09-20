@@ -1,13 +1,11 @@
 # PayPal, Apple Pay, and Cash App setup
 
-Submitting a question never charges the client.
+The client chooses a **$10 quick response**, **$20 written support**, or **$35 phone/live-text conversation** before submitting.
 
-1. Review the question and estimate the time needed.
-2. Open the question in the operator app.
-3. Choose a **$10 quick response**, **$20 written support**, **$35 phone/live-text conversation**, complimentary service, or no-charge referral.
-4. For **PayPal or Apple Pay**, send the question-specific checkout link. A successful capture marks the CloudKit question **Paid** automatically.
-5. For **Cash App**, send your Cash App for Business link and mark the question paid only after the payment appears in Cash App.
-6. Use **Refunded** only after the provider confirms the refund.
+1. For **PayPal or Apple Pay**, the website opens the question-specific secure checkout after submission. A successful capture marks the CloudKit question **Paid** automatically.
+2. For **Cash App**, the selected price and payment method appear in the operator app. Send the Cash App for Business link when needed and mark the question paid only after the payment appears in Cash App.
+3. Begin the requested service after confirming payment.
+4. Use **Refunded** only after the provider confirms the refund.
 
 The app stores only the selected amount, provider, status, and checkout URL. Card and bank information stays with PayPal, Apple Pay, or Cash App.
 

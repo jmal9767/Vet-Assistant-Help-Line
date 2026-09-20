@@ -4,13 +4,11 @@
 
 1. Open the iPhone app and review emergency warning signs first.
 2. If the message may describe an emergency, send the Emergency Redirect template immediately.
-3. Review the question and private files. Files may be any type, up to four files and 10 MB each. Download unfamiliar file types only when you recognize and trust the client submission.
-4. Decide whether the request is within the educational scope. Refer diagnosis, medication, dosing, treatment, prognosis, diagnostic interpretation, and other clinical decisions to a licensed veterinarian.
-5. Estimate the time needed and choose one option in the question:
-   - **Make This Service Free** and select email, text, or phone.
-   - Select **$10, $20, or $35**, choose PayPal/Apple Pay or Cash App, and prepare the client message.
-6. For paid service, confirm payment in the payment provider before marking it Paid.
-7. Send the response through the agreed channel. Add the standard disclaimer and mark the question Answered.
+3. Confirm the client-selected service and payment status in the question.
+4. Review the question and private files. Files may be any type, up to four files and 10 MB each. Download unfamiliar file types only when you recognize and trust the client submission.
+5. Decide whether the request is within the educational scope. Refer diagnosis, medication, dosing, treatment, prognosis, diagnostic interpretation, and other clinical decisions to a licensed veterinarian; refund a paid request when you cannot provide the selected service.
+6. Confirm payment before beginning the response. PayPal and Apple Pay update automatically; Cash App is confirmed manually.
+7. Send the response through the selected channel. Add the standard disclaimer and mark the question Answered.
 8. Archive completed questions. Archived questions remain available in the Inbox’s Archived filter.
 
 ## Before every response
@@ -22,7 +20,7 @@
 
 ## Payments
 
-Submitting the form never charges a client. The operator chooses a $10, $20, or $35 service, complimentary service, or a no-charge referral after reviewing the request. PayPal and Apple Pay confirmation updates the app automatically; Cash App is confirmed manually. Card and bank information stays with the payment provider.
+The client chooses a $10, $20, or $35 service before submitting. PayPal and Apple Pay checkout begins immediately after submission and updates the app automatically after payment; Cash App is confirmed manually. Card and bank information stays with the payment provider.
 
 ## Privacy and retention
 

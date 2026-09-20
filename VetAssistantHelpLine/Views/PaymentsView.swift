@@ -27,12 +27,12 @@ struct PaymentsView: View {
                         HeroPanel(
                             icon: "creditcard.fill",
                             title: "Payments",
-                            subtitle: "Cases appear here after you choose a price, complimentary service, or referral in Inbox."
+                            subtitle: "Track the service and payment choice each client made before submitting."
                         ) {
                             HStack(spacing: 10) {
                                 MetricPill(title: "Pending", value: "\(pendingQuestions.count)", icon: "clock.fill", tint: AppPalette.warmGold)
                                 MetricPill(title: "Paid", value: "\(paidQuestions.count)", icon: "checkmark.circle.fill", tint: AppPalette.clinicGreen)
-                                MetricPill(title: "Free", value: "\(complimentaryCount)", icon: "gift.fill", tint: AppPalette.brand)
+                                MetricPill(title: "Refunded", value: "\(refundedCount)", icon: "arrow.uturn.backward.circle.fill", tint: AppPalette.brand)
                             }
                         }
 
@@ -40,7 +40,7 @@ struct PaymentsView: View {
                             ContentUnavailableView(
                                 "No payment records",
                                 systemImage: "creditcard",
-                                description: Text("Review a client concern in Inbox, then choose a paid, complimentary, or referral service.")
+                                description: Text("New client-selected services will appear here after submission.")
                             )
                             .padding(.top, 24)
                         } else {
@@ -75,8 +75,8 @@ struct PaymentsView: View {
         }
     }
 
-    private var complimentaryCount: Int {
-        paymentQuestions.filter { ["Complimentary", "Referred — no charge"].contains($0.paymentStatus) }.count
+    private var refundedCount: Int {
+        paymentQuestions.filter { $0.paymentStatus == "Refunded" }.count
     }
 }
 
@@ -140,7 +140,6 @@ private struct PaymentRow: View {
     private var iconName: String {
         switch question.paymentStatus {
         case "Paid": "checkmark.circle.fill"
-        case "Complimentary": "gift.fill"
         case "Refunded": "arrow.uturn.backward.circle.fill"
         case "Referred — no charge": "cross.case.fill"
         case "Payment requested": "paperplane.fill"
@@ -151,7 +150,6 @@ private struct PaymentRow: View {
     private var tint: Color {
         switch question.paymentStatus {
         case "Paid": AppPalette.clinicGreen
-        case "Complimentary": AppPalette.clinicGreen
         case "Refunded": AppPalette.brand
         case "Referred — no charge": AppPalette.brand
         case "Payment requested": AppPalette.warmGold

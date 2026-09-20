@@ -27,40 +27,52 @@ accounts.
 
 In Xcode, select the **VetAssistantHelpLine** target → **Signing & Capabilities**:
 
-1. Set **Bundle Identifier** to something you own, e.g.
-   `com.jmal9767.VetAssistantHelpLine` (don't ship `com.example.…` — CloudKit
-   container names are global).
-2. Make sure your **Team** is selected.
+1. Keep **Bundle Identifier** as `com.jmal9767.VetAssistantHelpLine`.
+2. Select **Bay Area Apps LLC**, team `XF8WR8DG9P`.
 3. Click **+ Capability** and add **iCloud** → check **CloudKit**. Xcode should
-   pick up the container `iCloud.<your bundle id>` from the existing
-   `VetAssistantHelpLine.entitlements` file (it uses `iCloud.$(CFBundleIdentifier)`).
+   use `iCloud.com.jmal9767.VetAssistantHelpLine`, which is already specified
+   in `VetAssistantHelpLine.entitlements`.
 4. Add **Push Notifications**.
 5. Add **Background Modes** → check **Remote notifications**.
 
-Run the app once on your device — this creates the CloudKit container.
+The container and Development schema already exist. Run the app on an iPhone
+signed in to the iCloud account that will answer client questions. The app's
+iCloud user and the Apple Developer account can be different accounts.
 
 ## 2. CloudKit Console: schema (~10 min)
 
 Open [CloudKit Console](https://icloud.developer.apple.com/) → your container →
 **Development** environment.
 
+Use the exact field mapping in [Question schema](QUESTION_SCHEMA.md), which
+matches the current intake form, relay, and operator app. Confirm the selected
+Apple Developer team matches your app before creating or changing a container.
+
 1. **Schema → Record Types → New Type**: `Question` with these fields, all type
    **String** except where noted:
-   - `name`, `email`, `species`, `age`, `category`, `question`, `status`
+   - `name`, `email`, `phone`, `species`, `age`, `category`, `question`, `status`
    - `submittedAt` — type **Date/Time**
+   - `phone` is optional and must remain a String to preserve `+` and leading
+     zeroes. The relay sets `status` to `new` and supplies `submittedAt`.
 2. **Indexes** on `Question`:
    - `recordName` → **Queryable**
    - `submittedAt` → **Queryable** and **Sortable**
-3. **Schema → Security Roles**: for `Question`, give **Authenticated** →
-   **Read** and **Write**. Do **not** give World read access — that would make
-   client questions (and their email addresses) publicly readable. "Authenticated"
-   effectively means *you*, since only your app queries this container.
+3. **Schema → Security Roles**: inspect existing permissions first. Use a
+   dedicated operator role with **Read** and **Write** on `Question`, assigned
+   only to your operator iCloud user. Give the relay's server-to-server role
+   **Create**, **Read**, and **Write** so it can validate a question-specific
+   checkout, create intake records, and record verified PayPal/Apple Pay status
+   changes. Keep the server key private. Do not grant World or Authenticated general Read
+   or Write access: **Authenticated means all authenticated iCloud users, not
+   just you**. Questions contain private client contact information.
 
 ## 3. Server-to-server key (~5 min)
 
 In Terminal:
 
 ```bash
+# Run in a private folder outside the Git repository.
+umask 077
 # Generate the key pair
 openssl ecparam -name prime256v1 -genkey -noout -out eckey.pem
 # Public key — paste this into CloudKit Console
@@ -76,21 +88,41 @@ Keep `eckey.pem` / `eckey-pkcs8.pem` private — never commit them to the repo.
 
 ## 4. Deploy the Cloudflare Worker (~10 min)
 
-1. Create a free account at [cloudflare.com](https://dash.cloudflare.com/), go to
-   **Workers & Pages** → **Create Worker**.
-2. Paste in the contents of [`relay/cloudkit-worker.js`](../relay/cloudkit-worker.js)
-   and deploy.
-3. In the Worker's **Settings → Variables and Secrets**, add:
+The local [`relay/wrangler.jsonc`](../relay/wrangler.jsonc) now selects the
+existing relay, the correct container, the Development environment, and the
+website origin. This file is prepared locally; the Worker has not been deployed.
+
+With Node.js/npm installed, open Terminal in the repository and run:
+
+```bash
+cd relay
+npx wrangler login
+npx wrangler deploy
+npx wrangler secret put CLOUDKIT_KEY_ID
+npx wrangler secret put CLOUDKIT_PRIVATE_KEY
+```
+
+The login opens Cloudflare's sign-in page. Deploy prints the Worker URL. For
+`CLOUDKIT_KEY_ID`, enter the key ID from Apple. For `CLOUDKIT_PRIVATE_KEY`, provide
+the complete contents of `eckey-pkcs8.pem`, including the BEGIN/END lines. You can
+also add the multiline private key in the dashboard instead of using the final
+command: **Workers & Pages → vet-helpline-development → Settings → Variables and
+Secrets → Add → Secret**, then **Deploy**. Until both credentials are configured,
+the relay cannot submit questions to CloudKit.
+
+The complete settings are:
 
    | Name | Value |
    |------|-------|
-   | `CLOUDKIT_CONTAINER` | `iCloud.<your bundle id>`, e.g. `iCloud.com.jmal9767.VetAssistantHelpLine` |
+   | `CLOUDKIT_CONTAINER` | `iCloud.com.jmal9767.VetAssistantHelpLine` |
    | `CLOUDKIT_ENVIRONMENT` | `development` (switch to `production` after you deploy the schema) |
    | `CLOUDKIT_KEY_ID` | the Key ID from step 3 |
    | `CLOUDKIT_PRIVATE_KEY` | the full contents of `eckey-pkcs8.pem` (mark as **Secret**) |
    | `ALLOWED_ORIGIN` | `https://jmal9767.github.io` |
 
-4. Copy the Worker URL (e.g. `https://vet-helpline.<you>.workers.dev`).
+Copy the actual Worker URL printed by deployment; do not use the example URL
+literally. See [Cloudflare deployment configuration](https://developers.cloudflare.com/workers/wrangler/configuration/)
+and [adding secrets](https://developers.cloudflare.com/workers/configuration/secrets/).
 
 ## 5. Point the website at the Worker (~2 min)
 

@@ -1,0 +1,34 @@
+// Target Question schema for the newer app; 13 added String fields are not yet live.
+// Not a full container export: merge with an exported schema before importing.
+// World and Authenticated have no Question permissions. Operator membership is pending.
+DEFINE SCHEMA
+
+    CREATE ROLE Operator;
+
+    RECORD TYPE Question (
+        "___recordID" REFERENCE QUERYABLE,
+        name STRING,
+        email STRING,
+        phone STRING,
+        species STRING,
+        age STRING,
+        category STRING,
+        question STRING,
+        preferredReply STRING,
+        requestedService STRING,
+        petName STRING,
+        urgency STRING,
+        attachmentSummary STRING,
+        sourceChannel STRING,
+        conversationStatus STRING,
+        paymentStatus STRING,
+        paymentMethod STRING,
+        paymentAmount STRING,
+        paymentLink STRING,
+        signedConsentName STRING,
+        signedConsentAt STRING,
+        status STRING,
+        submittedAt TIMESTAMP QUERYABLE SORTABLE,
+        GRANT WRITE TO "_creator",
+        GRANT READ, WRITE TO Operator
+    );

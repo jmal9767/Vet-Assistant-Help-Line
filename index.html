@@ -36,7 +36,14 @@
   }
   header h1 { margin: 0 0 .25rem; font-size: 1.75rem; }
   header p { margin: 0; opacity: .9; }
-  main { max-width: 720px; margin: 0 auto; padding: 1rem; }
+  main {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+  }
+  main > section { order: 3; }
   .card {
     background: var(--card);
     border: 1px solid var(--border);
@@ -45,9 +52,11 @@
     margin: 1.25rem 0;
   }
   .emergency {
+    order: 1;
     border: 2px solid var(--red);
     background: var(--red-bg);
   }
+  #askSection { order: 2; }
   .emergency h2 { color: var(--red); margin-top: 0; }
   .emergency ul { columns: 2; gap: 2rem; padding-left: 1.2rem; margin: .75rem 0; }
   .emergency li { margin-bottom: .35rem; break-inside: avoid; }
@@ -67,7 +76,7 @@
   .btn-navy { background: var(--navy); color: #fff; }
   .btn-navy:hover { background: var(--navy-dark); }
   label { display: block; font-weight: 600; margin-top: 1rem; margin-bottom: .25rem; }
-  input[type="text"], input[type="email"], select, textarea {
+  input[type="text"], input[type="email"], input[type="tel"], input[type="file"], select, textarea {
     width: 100%;
     padding: .6rem .7rem;
     border: 1px solid var(--border);
@@ -98,13 +107,55 @@
     text-align: center;
   }
   .note { font-size: .9rem; color: var(--muted); margin-top: .5rem; }
+  .promise-grid {
+    display: grid;
+    gap: .75rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .promise {
+    background: #eef5f3;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: .8rem;
+    font-size: .92rem;
+  }
+  .promise strong { display: block; color: var(--navy-dark); }
+  .option-grid {
+    display: grid;
+    gap: .75rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-top: .5rem;
+  }
+  .option-card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: .85rem;
+    background: #fff;
+  }
+  .option-card label { margin: 0; display: flex; gap: .45rem; align-items: flex-start; }
+  .option-card strong { display: block; line-height: 1.2; }
+  .option-card span { display: block; color: var(--muted); font-size: .85rem; font-weight: 400; margin-top: .15rem; }
+  .hidden { display: none; }
+  .step-label {
+    display: inline-block;
+    margin-bottom: .4rem;
+    color: var(--navy);
+    font-size: .85rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+  @media (max-width: 640px) {
+    .option-grid,
+    .promise-grid { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
 <body>
 
 <header>
   <h1><span aria-hidden="true">🐾</span> Vet Assistant Help Line</h1>
-  <p>Is it really an emergency? Honest pet-care answers from a veterinary assistant — helping you make the right call for your pet, by email within 24–48 hours.</p>
+  <p>Pet-care questions answered by a veterinary assistant — choose email, text, or phone and attach any helpful files.</p>
 </header>
 
 <main>
@@ -138,10 +189,11 @@
   <section class="card">
     <h2>What I can help with</h2>
     <ul class="help-list">
-      <li>Helping you decide whether something is an emergency — or can wait for your regular vet</li>
+      <li>Identifying general warning signs and helping you choose an appropriate next step</li>
       <li>General pet care, feeding, and husbandry questions</li>
       <li>Grooming, enrichment, and basic behavior tips</li>
       <li>Home care &amp; recovery questions after a vet visit</li>
+      <li>Reviewing photos, short videos, PDFs, records, and labels for general context</li>
       <li>Preparing for vet or emergency visits &amp; what questions to ask</li>
       <li>Understanding routine care (vaccination schedules, parasite prevention basics)</li>
       <li>Pointing you to trusted resources and local services</li>
@@ -149,38 +201,46 @@
     <p class="cannot"><strong>What I can't do:</strong> I'm a veterinary assistant with experience in both emergency and general practice, but not a licensed veterinarian. I cannot diagnose conditions, prescribe or recommend medication doses, or replace an exam by your vet. When in doubt, I'll always point you to a licensed veterinarian.</p>
   </section>
 
+  <section class="card">
+    <h2>What happens after you send</h2>
+    <div class="promise-grid">
+      <div class="promise"><strong>1. I review it first</strong>I check your question, files, and urgency before confirming the best service.</div>
+      <div class="promise"><strong>2. I confirm the next step</strong>I may provide the reply free of charge or confirm a price and payment link first.</div>
+      <div class="promise"><strong>3. You get a clear reply</strong>Your answer comes by email, text, or phone in the time frame you chose.</div>
+    </div>
+  </section>
+
   <!-- PRICING -->
   <section class="card">
     <h2>Pricing</h2>
-    <!-- ⚙️ SETUP: adjust these to your real prices (keep them in sync with welcome.html, poster.html, and the app's HelplineConfig). -->
-    <p><strong>📧 Email answers</strong> — reply within 24–48 hours:</p>
     <ul class="help-list">
-      <li><strong>Quick question — $10:</strong> one straightforward question, one email reply.</li>
-      <li><strong>Detailed question — $20:</strong> multi-part, behavior, or "should I see a vet about this?" questions. In-depth reply plus one follow-up.</li>
+      <li><strong>Quick written response — $10:</strong> a simple answer by email or text, with reasonable clarification for 24 hours.</li>
+      <li><strong>Written support — $20:</strong> one topic by email or text, with reasonable back-and-forth for up to 3 days.</li>
+      <li><strong>Phone or live-text conversation — $35:</strong> one general topic, usually 30–45 minutes, with reasonable clarification and no abrupt cutoff.</li>
+      <li><strong>Complimentary or referral-only response — $0:</strong> the operator may waive the fee or refer the question to a veterinarian without charge.</li>
     </ul>
-    <p><strong>💬 Text-message answers</strong> — reply within 24–48 hours:</p>
-    <ul class="help-list">
-      <li><strong>Quick question by text — $15:</strong> one straightforward question, answered by text message.</li>
-      <li><strong>Live text chat (15 minutes) — $25:</strong> scheduled back-and-forth conversation by text.</li>
-    </ul>
-    <p><strong>📞 Phone calls</strong> — scheduled with you:</p>
-    <ul class="help-list">
-      <li><strong>Quick call (15 minutes) — $30:</strong> talk one question through.</li>
-      <li><strong>Full consult (30 minutes) — $45:</strong> general care guidance on any topic.</li>
-    </ul>
-    <p><strong>⚡️ Need it faster?</strong> Add to any email or text answer:</p>
-    <ul class="help-list">
-      <li><strong>Same-day reply — +$10:</strong> your answer within 12 hours.</li>
-      <li><strong>Express reply — +$20:</strong> your answer within 2–4 hours. Not for emergencies — those go straight to an ER vet.</li>
-    </ul>
-    <p class="note">Send your question first — I'll confirm the price with you by email before you pay anything. Every answer is backed by a full satisfaction guarantee: if you don't feel your question was answered, you get a full refund.</p>
+    <p><strong>📎 Private file uploads are included:</strong> up to 4 files of any type, 10 MB per file.</p>
+    <p class="note">Submitting a question never creates a charge. After review, you receive the service option and secure payment link, if a fee applies. You may accept or decline.</p>
   </section>
 
   <!-- INTAKE FORM -->
   <section class="card" id="askSection">
-    <h2>Ask your question</h2>
-    <p class="note">Your question is sent straight to the help line — I'll reply to the email address you give below.</p>
+    <span class="step-label">Step 1</span>
+    <h2>Choose your help option</h2>
+    <p class="note">Pick the service first. After that, the question form will open and ask for the details I need.</p>
     <form id="intakeForm">
+      <label for="requestedService">First, choose the kind of help you want</label>
+      <select id="requestedService" required>
+        <option value="">Select a service…</option>
+        <option value="Email response">Email response</option>
+        <option value="Text response">Text response</option>
+        <option value="Phone call">Phone call</option>
+      </select>
+      <p class="note" id="serviceNote">Pick an option first. The form will adjust based on email, text, or phone.</p>
+
+      <div id="questionnaireFields" class="hidden">
+      <span class="step-label">Step 2</span>
+      <h3>Tell me what is going on</h3>
       <label for="name">Your name</label>
       <input type="text" id="name" required autocomplete="name">
 
@@ -189,13 +249,24 @@
 
       <label for="phone">Phone number (optional)</label>
       <input type="tel" id="phone" autocomplete="tel" placeholder="Add your number if you'd prefer your reply by text message">
-      <p class="note">Leave blank for an email reply. If you add your number, I'll text your answer instead.</p>
+      <p class="note" id="phoneNote">Optional for email replies. Required for text replies or phone calls.</p>
+
+      <label for="paymentMethod">Preferred payment method</label>
+      <select id="paymentMethod">
+        <option>PayPal or Apple Pay</option>
+        <option>Cash App</option>
+        <option>Whichever link you send</option>
+      </select>
+      <p class="note">I'll confirm the service option and send a secure payment link if a fee applies.</p>
 
       <!-- Honeypot: humans never see or fill this. -->
       <div style="position:absolute; left:-9999px;" aria-hidden="true">
         <label for="website">Website</label>
         <input type="text" id="website" tabindex="-1" autocomplete="off">
       </div>
+
+      <label for="petName">Pet's name (optional)</label>
+      <input type="text" id="petName" placeholder="e.g., Bella">
 
       <label for="species">Pet species</label>
       <select id="species" required>
@@ -218,41 +289,57 @@
         <option>Feeding &amp; nutrition (general)</option>
         <option>Grooming &amp; general care</option>
         <option>Behavior &amp; training basics</option>
-        <option>Should I see a vet about this?</option>
+        <option>General warning signs and contacting a veterinarian</option>
         <option>Preparing for a vet visit</option>
         <option>New pet questions</option>
         <option>Other</option>
       </select>
 
+      <label for="urgency">How worried are you right now?</label>
+      <select id="urgency">
+        <option>Not urgent — general question</option>
+        <option>Concerned — I want guidance soon</option>
+        <option>Very worried — I plan to contact a veterinarian</option>
+        <option>I may need an emergency vet</option>
+      </select>
+
       <label for="question">Your question</label>
       <textarea id="question" required placeholder="Describe what's going on. Include how long it's been happening and anything you've already tried."></textarea>
 
+      <label for="attachments">Files (optional)</label>
+      <input type="file" id="attachments" multiple>
+      <p class="note">You can add up to 4 files of any type, 10 MB each. Private links expire after 30 days.</p>
+
       <div class="checkbox-row">
         <input type="checkbox" id="ack" required>
-        <label for="ack" style="font-weight:400; margin:0;">I understand this help line provides <strong>general educational information only</strong>, not veterinary medical advice, diagnosis, or treatment, and is not a substitute for care from a licensed veterinarian. For emergencies I will contact an emergency vet directly.</label>
+        <label for="ack" style="font-weight:400; margin:0;">I am at least 18 years old. I understand this is <strong>general educational information only</strong>, not veterinary medical advice, diagnosis, medication guidance, treatment, or a substitute for a licensed veterinarian. It does not create a veterinarian-client-patient relationship. I agree to the <a href="terms.html" target="_blank">service terms</a> and <a href="privacy.html" target="_blank">privacy notice</a>. For emergencies I will contact an emergency veterinarian directly.</label>
       </div>
+
+      <label for="signedConsentName">Type your name to sign</label>
+      <input type="text" id="signedConsentName" required autocomplete="name" placeholder="Your full name">
+      <p class="note">By typing your name, you confirm the statement above and agree to the service terms. If a fee applies, you will approve it before paying.</p>
 
       <p style="margin-top:1.25rem;">
         <button type="submit" class="btn btn-navy">Send my question</button>
       </p>
+      </div>
     </form>
   </section>
 
-  <!-- INSTALL AS APP -->
   <section class="card">
-    <h2><span aria-hidden="true">📱</span> Keep this app on your phone</h2>
-    <p>Add this page to your home screen and it works just like an app — free, no App Store needed:</p>
+    <h2>Before you submit</h2>
     <ul class="help-list">
-      <li><strong>iPhone / iPad:</strong> tap the Share button <span aria-hidden="true">(⬆️ in a box)</span> in Safari, then <strong>Add to Home Screen</strong>.</li>
-      <li><strong>Android:</strong> tap the menu <span aria-hidden="true">(⋮)</span> in Chrome, then <strong>Add to Home screen</strong> (or <strong>Install app</strong>).</li>
+      <li>If breathing, collapse, poisoning, uncontrolled bleeding, or severe pain is possible, contact an emergency vet now.</li>
+      <li>Include timing, changes in appetite/energy/bathroom habits, and anything already tried.</li>
+      <li>Photos or videos are helpful for visible or intermittent issues.</li>
     </ul>
-    <p class="note">You'll get a paw-print icon that opens this help line full-screen, ready whenever you have a pet question.</p>
   </section>
 
 </main>
 
 <footer>
-  <p><strong>Disclaimer:</strong> This service is run by a veterinary assistant and provides general pet-care education only. It does not create a veterinarian–client–patient relationship, and it does not replace or supersede the advice, diagnosis, or treatment of a licensed veterinarian — always consult a licensed veterinarian for medical concerns about your pet. Responses are not immediate: if you believe your pet may be experiencing a life-threatening emergency, do not wait for a reply. Contact an emergency veterinary hospital right away, or ASPCA Poison Control at (888) 426-4435 (24/7).</p>
+  <p><strong>Disclaimer:</strong> This service is run by a veterinary assistant and provides general pet-care education only. It is not veterinary medical advice and does not diagnose, prescribe, recommend medication or doses, provide treatment, interpret diagnostic results, or create a veterinarian-client-patient relationship. Contact a licensed veterinarian for medical concerns about your pet. Responses are not immediate: if you believe your pet may be experiencing a life-threatening emergency, do not wait for a reply. Contact an emergency veterinary hospital right away, or ASPCA Poison Control at (888) 426-4435 (24/7).</p>
+  <p><a href="privacy.html">Privacy</a> · <a href="terms.html">Service, cancellation &amp; refund terms</a></p>
 </footer>
 
 <script>
@@ -261,6 +348,10 @@
   var WORKER_URL = "https://vet-helpline-development.dkjmmz6whh.workers.dev";
   var HELPLINE_EMAIL = "jahmal9767@gmail.com";
 
+  document.getElementById("requestedService").addEventListener("change", function (event) {
+    updateServiceGuidance(event.target.value);
+  });
+
   document.getElementById("intakeForm").addEventListener("submit", function (e) {
     e.preventDefault();
 
@@ -268,23 +359,76 @@
       name: document.getElementById("name").value.trim(),
       email: document.getElementById("email").value.trim(),
       phone: document.getElementById("phone").value.trim(),
+      preferredReply: replyMethodFromService(document.getElementById("requestedService").value),
+      requestedService: document.getElementById("requestedService").value,
+      petName: document.getElementById("petName").value.trim(),
       species: document.getElementById("species").value,
       age: document.getElementById("age").value.trim() || "Not given",
       category: document.getElementById("category").value,
+      urgency: document.getElementById("urgency").value,
       question: document.getElementById("question").value.trim(),
+      sourceChannel: "Website",
+      conversationStatus: "Needs response",
+      paymentStatus: "Reviewing",
+      paymentMethod: document.getElementById("paymentMethod").value,
+      paymentAmount: "Not set",
+      paymentLink: "",
+      signedConsentName: document.getElementById("signedConsentName").value.trim(),
+      signedConsentAt: new Date().toISOString(),
+      acceptedTerms: document.getElementById("ack").checked ? "yes" : "no",
       website: document.getElementById("website").value // honeypot
     };
+    var files = Array.prototype.slice.call(document.getElementById("attachments").files || []);
+    payload.attachmentSummary = files.length
+      ? files.map(function (file) {
+          return file.name + " (" + (file.type || "unknown type") + ", " + Math.ceil(file.size / 1024) + " KB)";
+        }).join("\n")
+      : "";
     if (payload.website) return; // bots only — humans never see that field
+
+    if (!payload.requestedService) {
+      alert("Please choose the kind of help you want first.");
+      return;
+    }
+    if ((payload.preferredReply === "Text message" || payload.preferredReply === "Phone call") && !payload.phone) {
+      alert("Please add your phone number for text replies or phone calls.");
+      return;
+    }
+    if (!payload.signedConsentName) {
+      alert("Please type your name to sign the consent statement.");
+      return;
+    }
+    if (files.length > 4) {
+      alert("Please choose 4 files or fewer.");
+      return;
+    }
+    var oversizedFile = files.find(function (file) { return file.size > 10 * 1024 * 1024; });
+    if (oversizedFile) {
+      alert(oversizedFile.name + " is too large. Please keep each file under 10 MB.");
+      return;
+    }
+    if (payload.urgency === "I may need an emergency vet") {
+      alert("If this may be an emergency, please contact an emergency veterinarian now. You can still send details after your pet is safe.");
+    }
 
     if (WORKER_URL.indexOf("REPLACE_WITH") === 0) {
       // Email mode: open the client's mail app with the question pre-filled.
-      var subject = "Help line question (" + payload.species + " · " + payload.category + ")";
+      var subject = "Help line question (" + (payload.petName || payload.species) + " · " + payload.category + ")";
       var body = "Name: " + payload.name +
         "\nReply-to email: " + payload.email +
-        (payload.phone ? "\nPhone (text reply requested): " + payload.phone : "") +
+        "\nPreferred reply: " + payload.preferredReply +
+        "\nService requested: " + payload.requestedService +
+        "\nPayment status: " + payload.paymentStatus +
+        "\nPreferred payment: " + payload.paymentMethod +
+        "\nPayment amount: " + payload.paymentAmount +
+        "\nSigned consent: " + payload.signedConsentName + " at " + payload.signedConsentAt +
+        (payload.phone ? "\nPhone: " + payload.phone : "") +
+        (payload.petName ? "\nPet name: " + payload.petName : "") +
         "\nPet species: " + payload.species +
         "\nPet age: " + payload.age +
         "\nCategory: " + payload.category +
+        "\nUrgency: " + payload.urgency +
+        (payload.attachmentSummary ? "\n\nFiles selected:\n" + payload.attachmentSummary + "\n\nPlease attach these files to this email before sending." : "") +
         "\n\nQuestion:\n" + payload.question;
       window.location.href = "mailto:" + HELPLINE_EMAIL +
         "?subject=" + encodeURIComponent(subject) +
@@ -296,7 +440,7 @@
         note.className = "note";
         e.target.appendChild(note);
       }
-      note.innerHTML = "📧 Your email app should have opened with your question filled in — <strong>press send there</strong> and your question is on its way. If nothing opened, email it to <strong>" + HELPLINE_EMAIL + "</strong>.";
+      note.innerHTML = "📧 Your email app should have opened with your question filled in. If you selected files, attach them to that email, then <strong>press send there</strong>. If nothing opened, email it to the public help-line address shown here: <strong>" + HELPLINE_EMAIL + "</strong>.<br><br><strong>Note:</strong> this address should be a public alias that forwards to the operator privately. Email fallback goes to the mailbox only and will not appear in the private operator app until the CloudKit worker or inbound email relay is connected.";
       return;
     }
 
@@ -304,27 +448,84 @@
     button.disabled = true;
     button.textContent = "Sending…";
 
+    var controller = new AbortController();
+    var timeout = window.setTimeout(function () { controller.abort(); }, 25000);
     fetch(WORKER_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+      body: submissionBody(payload, files),
+      signal: controller.signal
     }).then(function (response) {
-      if (!response.ok) throw new Error("Send failed: " + response.status);
-      document.getElementById("askSection").innerHTML =
-        "<h2>✅ Question sent!</h2><p>Thanks, " +
-        payload.name.replace(/[<>&]/g, "") +
-        " — you'll get a reply at <strong>" +
-        payload.email.replace(/[<>&]/g, "") +
-        "</strong> within 24–48 hours.</p>";
-    }).catch(function () {
+      window.clearTimeout(timeout);
+      if (!response.ok) {
+        return response.json().catch(function () { return {}; }).then(function (data) {
+          throw new Error(data.error || "Send failed");
+        });
+      }
+      var section = document.getElementById("askSection");
+      section.replaceChildren();
+      var heading = document.createElement("h2");
+      heading.textContent = "✅ Question sent!";
+      var message = document.createElement("p");
+      message.textContent = "Thanks, " + payload.name + ". I'll review the details for " +
+        (payload.petName || "your pet") + ", choose the appropriate service option or provide a no-charge referral, and contact you by " +
+        payload.preferredReply + ". Watch " + payload.email + " for the next step.";
+      section.append(heading, message);
+    }).catch(function (error) {
+      window.clearTimeout(timeout);
       button.disabled = false;
       button.textContent = "Send my question";
       var fallback = HELPLINE_EMAIL.indexOf("REPLACE_WITH") === 0
         ? "Please try again in a few minutes."
         : "Please try again in a few minutes, or email your question directly to " + HELPLINE_EMAIL + ".";
-      alert("Sorry — your question couldn't be sent. " + fallback);
+      alert("Sorry — your question couldn't be sent. " + (error.message || fallback));
     });
   });
+
+  function submissionBody(payload, files) {
+    var form = new FormData();
+    Object.keys(payload).forEach(function (key) {
+      form.append(key, payload[key]);
+    });
+    files.forEach(function (file) {
+      form.append("attachments", file, file.name);
+    });
+    return form;
+  }
+
+  function amountFromService(service) {
+    var match = String(service).match(/\\$\\d+/);
+    return match ? match[0] : "Confirm";
+  }
+
+  function replyMethodFromService(service) {
+    if (service.indexOf("Text") === 0) return "Text message";
+    if (service.indexOf("Phone") === 0) return "Phone call";
+    return "Email";
+  }
+
+  function updateServiceGuidance(service) {
+    var note = document.getElementById("serviceNote");
+    var phoneNote = document.getElementById("phoneNote");
+    var fields = document.getElementById("questionnaireFields");
+    var method = replyMethodFromService(service);
+    if (!service) {
+      note.textContent = "Pick an option first. The form will adjust based on email, text, or phone.";
+      fields.classList.add("hidden");
+      phoneNote.textContent = "Optional for email replies. Required for text replies or phone calls.";
+      return;
+    }
+    fields.classList.remove("hidden");
+    if (method === "Email") {
+      note.textContent = "You'll receive a written email answer after I confirm the service option and price, if any.";
+      phoneNote.textContent = "Optional for email replies.";
+    } else if (method === "Text message") {
+      note.textContent = "You'll receive help by text message, so your phone number is required.";
+      phoneNote.textContent = "Required for this text-message service.";
+    } else {
+      note.textContent = "You'll schedule or receive a phone call, so your phone number is required.";
+      phoneNote.textContent = "Required for this phone-call service.";
+    }
+  }
 
   if ("serviceWorker" in navigator && window.location.protocol === "https:") {
     navigator.serviceWorker.register("sw.js");

@@ -1,0 +1,26 @@
+{
+  "name": "vet-helpline-development",
+  "account_id": "7ab8b86286681040e1c9ebc8c2699220",
+  "main": "cloudkit-worker.js",
+  "compatibility_date": "2026-09-16",
+  "workers_dev": true,
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "CLOUDKIT_CONTAINER": "iCloud.com.jmal9767.VetAssistantHelpLine",
+    "CLOUDKIT_ENVIRONMENT": "development",
+    "PAYPAL_ENVIRONMENT": "sandbox",
+    "ALLOWED_ORIGIN": "https://jmal9767.github.io"
+  },
+  "ratelimits": [
+    {
+      "name": "INTAKE_RATE_LIMITER",
+      "namespace_id": "1001",
+      "simple": {
+        "limit": 5,
+        "period": 60
+      }
+    }
+  ]
+}

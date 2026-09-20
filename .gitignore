@@ -60,3 +60,10 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
+
+# Cloudflare local state and CloudKit credentials
+node_modules/
+.wrangler/
+.dev.vars*
+.env*
+eckey*.pem

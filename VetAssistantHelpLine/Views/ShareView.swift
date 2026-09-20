@@ -4,43 +4,58 @@ import CoreImage.CIFilterBuiltins
 /// A shareable card that explains the service, lists prices, and shows a
 /// QR code that opens the client page.
 struct ShareView: View {
+    @AppStorage("setup.clientSiteURL") private var clientSiteURL = HelplineConfig.siteURL.absoluteString
+    @AppStorage("setup.siteDisplayName") private var siteDisplayName = HelplineConfig.siteDisplayName
     @State private var cardImage: Image?
+
+    private var shareURL: URL {
+        URL(string: clientSiteURL.trimmingCharacters(in: .whitespacesAndNewlines)) ?? HelplineConfig.siteURL
+    }
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 16) {
-                    ShareCard()
-                        .padding(.horizontal)
+            ZStack {
+                AppPalette.appBackground.ignoresSafeArea()
 
-                    if let cardImage {
-                        ShareLink(
-                            item: cardImage,
-                            preview: SharePreview("Vet Assistant Help Line", image: cardImage)
+                ScrollView {
+                    VStack(spacing: 16) {
+                        HeroPanel(
+                            icon: "qrcode.viewfinder",
+                            title: "Share the help line",
+                            subtitle: "Use this client-facing card for posters, messages, and quick handouts."
                         ) {
-                            Label("Share this card", systemImage: "square.and.arrow.up")
-                                .frame(maxWidth: .infinity)
+                            if let cardImage {
+                                ShareLink(
+                                    item: cardImage,
+                                    preview: SharePreview("Vet Assistant Help Line", image: cardImage)
+                                ) {
+                                    Label("Share Card", systemImage: "square.and.arrow.up")
+                                        .frame(maxWidth: .infinity)
+                                }
+                                .buttonStyle(.borderedProminent)
+                            }
                         }
-                        .buttonStyle(.borderedProminent)
-                        .padding(.horizontal)
-                    }
 
-                    Text("Print it, post it, or send it — scanning the QR code opens the help-line page where clients submit questions.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
+                        ShareCard(siteURL: shareURL, siteDisplayName: siteDisplayName)
+                            .shadow(color: .black.opacity(0.10), radius: 18, x: 0, y: 8)
+
+                        Text("Scanning the QR code opens the public page where clients submit questions.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding(16)
                 }
-                .padding(.vertical)
             }
             .navigationTitle("Share")
-            .task { renderCard() }
+            .task(id: clientSiteURL) { renderCard() }
+            .task(id: siteDisplayName) { renderCard() }
         }
     }
 
     @MainActor
     private func renderCard() {
-        let renderer = ImageRenderer(content: ShareCard().frame(width: 400))
+        let renderer = ImageRenderer(content: ShareCard(siteURL: shareURL, siteDisplayName: siteDisplayName).frame(width: 460))
         renderer.scale = 3
         if let uiImage = renderer.uiImage {
             cardImage = Image(uiImage: uiImage)
@@ -49,143 +64,197 @@ struct ShareView: View {
 }
 
 private struct ShareCard: View {
-    // The card is always white (it's meant to be printed and shared), so use
-    // fixed ink colors rather than system colors that invert in dark mode.
+    let siteURL: URL
+    let siteDisplayName: String
+
+    // The card is always white for printing and sharing, so it uses fixed ink colors.
     private let ink = Color(red: 0.08, green: 0.09, blue: 0.11)
-    private let mutedInk = Color(red: 0.24, green: 0.27, blue: 0.32)
+    private let mutedInk = Color(red: 0.30, green: 0.33, blue: 0.38)
+    private let line = Color(red: 0.88, green: 0.90, blue: 0.92)
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .center, spacing: 10) {
                 Image(systemName: "pawprint.fill")
-                Text("Vet Assistant Help Line")
-                    .font(.title3.bold())
+                    .font(.title3.weight(.bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 38, height: 38)
+                    .background(AppPalette.brand, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Vet Assistant Help Line")
+                        .font(.title3.weight(.bold))
+                        .foregroundStyle(ink)
+                    Text("Practical pet-care guidance")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(AppPalette.brand)
+                }
             }
-            .foregroundStyle(Color("AccentColor"))
 
             Text(HelplineConfig.purpose)
                 .font(.footnote)
                 .foregroundStyle(ink)
+                .lineSpacing(2)
 
-            VStack(alignment: .leading, spacing: 3) {
-                Text("How it works")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color("AccentColor"))
+            Divider().overlay(line)
+
+            QRBlock(siteURL: siteURL, siteDisplayName: siteDisplayName)
+                .frame(maxWidth: .infinity)
+
+            VStack(alignment: .leading, spacing: 10) {
+                CardSectionTitle("How it Works")
                 ForEach(Array(HelplineConfig.howItWorks.enumerated()), id: \.offset) { index, step in
-                    HStack(alignment: .top, spacing: 6) {
-                        Text("\(index + 1).")
-                            .fontWeight(.semibold)
-                        Text(step)
-                    }
-                    .font(.caption)
-                    .foregroundStyle(ink)
+                    NumberedLine(number: index + 1, text: step)
                 }
             }
 
-            VStack(alignment: .leading, spacing: 3) {
-                Text("What you can ask")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color("AccentColor"))
-                ForEach(HelplineConfig.canHelpWith, id: \.self) { item in
-                    HStack(alignment: .top, spacing: 6) {
-                        Text("•")
-                        Text(item)
-                    }
-                    .font(.caption)
-                    .foregroundStyle(ink)
-                }
-            }
+            CardSectionTitle("Services")
 
             VStack(alignment: .leading, spacing: 10) {
                 ForEach(HelplineConfig.priceMenu) { section in
-                    VStack(alignment: .leading, spacing: 5) {
+                    VStack(alignment: .leading, spacing: 6) {
                         Text(section.title)
                             .font(.caption.weight(.semibold))
-                            .foregroundStyle(Color("AccentColor"))
+                            .foregroundStyle(AppPalette.brand)
+
                         ForEach(section.items) { item in
-                            VStack(alignment: .leading, spacing: 1) {
-                                HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack(alignment: .firstTextBaseline) {
                                     Text(item.service)
                                         .font(.caption.weight(.semibold))
                                         .foregroundStyle(ink)
-                                    Spacer()
+                                    Spacer(minLength: 8)
                                     Text(item.price)
-                                        .font(.caption.weight(.semibold))
-                                        .foregroundStyle(Color("AccentColor"))
+                                        .font(.caption.weight(.bold))
+                                        .foregroundStyle(AppPalette.clinicGreen)
                                 }
                                 Text(item.detail)
                                     .font(.caption2)
                                     .foregroundStyle(mutedInk)
                             }
-                            .frame(maxWidth: .infinity, alignment: .leading)
                         }
                     }
+                    .padding(10)
+                    .background(AppPalette.brand.opacity(0.07), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                 }
             }
-            .padding(12)
-            .background(Color("AccentColor").opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
 
-            HStack(spacing: 14) {
-                if let qr = Self.qrImage(for: HelplineConfig.siteURL) {
-                    Image(uiImage: qr)
-                        .interpolation(.none)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 110, height: 110)
-                }
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Scan to see how it works & ask a question")
-                        .font(.subheadline.weight(.semibold))
+            VStack(alignment: .leading, spacing: 5) {
+                CardSectionTitle("Ask About")
+                ForEach(HelplineConfig.canHelpWith, id: \.self) { item in
+                    Label(item, systemImage: "checkmark.circle.fill")
+                        .font(.caption)
                         .foregroundStyle(ink)
-                    Text(HelplineConfig.siteURL.absoluteString)
-                        .font(.caption2)
-                        .foregroundStyle(mutedInk)
-                    Text("Standard replies within \(HelplineConfig.responseWindow) — faster options above. No app download needed.")
-                        .font(.caption2)
-                        .foregroundStyle(mutedInk)
                 }
             }
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text("⚠️ Emergencies can't wait for email")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.red)
-                Text("Trouble breathing, seizures, bleeding, or possible poisoning — contact an emergency vet immediately. Poison Control: \(HelplineConfig.poisonControlDisplay) (24/7, fee may apply).")
-                    .font(.caption2)
-                    .foregroundStyle(ink)
-            }
-            .padding(10)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.red.opacity(0.07), in: RoundedRectangle(cornerRadius: 10))
+            EmergencyNote()
 
             Text(HelplineConfig.clientDisclaimer)
                 .font(.caption2)
                 .foregroundStyle(mutedInk)
+                .lineSpacing(1)
         }
         .padding(20)
-        .background(.white, in: RoundedRectangle(cornerRadius: 16))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .strokeBorder(.quaternary)
-        )
+        .background(.white, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .strokeBorder(line)
+        }
         .environment(\.colorScheme, .light)
     }
+}
 
-    private static func qrImage(for url: URL) -> UIImage? {
+private struct QRBlock: View {
+    let siteURL: URL
+    let siteDisplayName: String
+
+    var body: some View {
+        VStack(spacing: 10) {
+            if let qr = ShareCard.qrImage(for: siteURL) {
+                Image(uiImage: qr)
+                    .interpolation(.none)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 260, height: 260)
+                    .padding(12)
+                    .background(.white, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .strokeBorder(Color.black.opacity(0.35), lineWidth: 2)
+                    }
+            }
+
+            Text("Scan to ask a question")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(Color(red: 0.08, green: 0.09, blue: 0.11))
+                .multilineTextAlignment(.center)
+
+            Text(siteDisplayName.isEmpty ? siteURL.absoluteString : siteDisplayName)
+                .font(.caption2)
+                .foregroundStyle(Color(red: 0.30, green: 0.33, blue: 0.38))
+                .multilineTextAlignment(.center)
+        }
+    }
+}
+
+private struct NumberedLine: View {
+    let number: Int
+    let text: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 7) {
+            Text("\(number)")
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(.white)
+                .frame(width: 18, height: 18)
+                .background(AppPalette.brand, in: Circle())
+            Text(text)
+                .font(.caption)
+                .foregroundStyle(Color(red: 0.08, green: 0.09, blue: 0.11))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
+private struct CardSectionTitle: View {
+    let title: String
+
+    init(_ title: String) {
+        self.title = title
+    }
+
+    var body: some View {
+        Text(title)
+            .font(.subheadline.weight(.bold))
+            .foregroundStyle(AppPalette.brand)
+    }
+}
+
+private struct EmergencyNote: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Emergencies cannot wait for email")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(AppPalette.danger)
+            Text("Trouble breathing, seizures, bleeding, or possible poisoning: contact an emergency vet immediately. Poison Control: \(HelplineConfig.poisonControlDisplay) (24/7, fee may apply).")
+                .font(.caption2)
+                .foregroundStyle(Color(red: 0.08, green: 0.09, blue: 0.11))
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(AppPalette.danger.opacity(0.08), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+}
+
+private extension ShareCard {
+    static func qrImage(for url: URL) -> UIImage? {
         let filter = CIFilter.qrCodeGenerator()
         filter.message = Data(url.absoluteString.utf8)
         filter.correctionLevel = "M"
         guard let output = filter.outputImage else { return nil }
 
-        // Tint the QR modules with the app accent color so the card matches
-        // the printed poster (docs/share-qr.png).
-        let colored = CIFilter.falseColor()
-        colored.inputImage = output
-        colored.color0 = CIColor(color: UIColor(named: "AccentColor") ?? .black)
-        colored.color1 = CIColor(red: 1, green: 1, blue: 1)
-        guard let tinted = colored.outputImage else { return nil }
-
-        let scaled = tinted.transformed(by: CGAffineTransform(scaleX: 12, y: 12))
+        let scaled = output.transformed(by: CGAffineTransform(scaleX: 12, y: 12))
         guard let cgImage = CIContext().createCGImage(scaled, from: scaled.extent) else { return nil }
         return UIImage(cgImage: cgImage)
     }

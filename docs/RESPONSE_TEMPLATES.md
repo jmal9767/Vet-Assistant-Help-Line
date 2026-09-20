@@ -107,6 +107,7 @@ template, re-read `LEGAL_SCOPE.md` before writing a custom reply.
 
 > ---
 > *I'm a veterinary assistant, not a licensed veterinarian. This is general
-> educational information only — not veterinary medical advice, diagnosis, or
-> treatment, and not a substitute for an exam by a licensed veterinarian. If
+> general pet-care education only — not veterinary medical advice. I cannot diagnose,
+> prescribe, recommend medication or doses, provide treatment, interpret diagnostic
+> results, or establish a veterinarian-client-patient relationship. If
 > your pet is in distress, contact an emergency veterinary clinic immediately.*

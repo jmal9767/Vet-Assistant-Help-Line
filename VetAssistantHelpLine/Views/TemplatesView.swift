@@ -17,9 +17,9 @@ struct TemplatesView: View {
             icon: "hand.wave.fill",
             tint: AppPalette.brand,
             text: """
-            Hi [name], thanks for reaching out to the Vet Assistant Help Line. \
-            I reviewed your question about [pet name / your pet], and here's \
-            the general pet-care guidance I can offer:
+            Hi [name], thanks for reaching out to the Paws & Whiskers Care Line. \
+            I reviewed your question about [dog or cat name / your dog or cat], and here's \
+            the general dog-and-cat care guidance I can offer:
             """
         ),
         Template(
@@ -41,7 +41,7 @@ struct TemplatesView: View {
             text: """
             Hi [name], thanks for sending this in. Based on what you described, \
             I can provide this by [email / text / phone]. Based on the question and \
-            estimated time, the price is [amount from $5 to $40]. If that works \
+            estimated time, the price is [service price: $10, $20, or $35]. If that works \
             for you, I'll send the payment link before I begin.
             """
         ),
@@ -75,7 +75,7 @@ struct TemplatesView: View {
             text: """
             Hi [name], I received your question about [pet name]. I'll review \
             the details and any files you sent, then let you know whether I can \
-            provide a complimentary response or offer a price from $5 to $40. \
+            provide a complimentary response or offer the $10, $20, or $35 service that fits. \
             Nothing is charged automatically.
             """
         ),
@@ -123,7 +123,7 @@ struct TemplatesView: View {
             text: """
             I'm sorry, but as a veterinary assistant I can't diagnose conditions \
             or recommend medications or doses - that has to come from a licensed \
-            veterinarian who can examine your pet. What I can do is help you \
+            veterinarian who can examine your dog or cat. What I can do is help you \
             prepare questions for that visit.
             """
         ),

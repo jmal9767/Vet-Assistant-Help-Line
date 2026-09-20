@@ -1,8 +1,7 @@
-const CACHE = "vahl-v2";
+const CACHE = "paws-whiskers-v1";
 const ASSETS = [
   "./",
   "./index.html",
-  "./operator.html",
   "./privacy.html",
   "./terms.html",
   "./manifest.webmanifest",

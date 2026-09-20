@@ -1,5 +1,5 @@
 /**
- * Cloudflare Worker: hold-until-satisfied payments for the help line.
+ * Cloudflare Worker: hold-until-satisfied payments for the care line.
  *
  * Flow:
  *   1. Operator opens  /new?key=<OPERATOR_KEY>&amount=20&desc=Detailed+question
@@ -14,7 +14,7 @@
  * Required configuration (Worker → Settings → Variables and Secrets):
  *   STRIPE_SECRET_KEY  your Stripe secret key (sk_live_… / sk_test_…) — Secret
  *   OPERATOR_KEY       a long random string only you know — Secret
- *   SITE_URL           e.g. "https://jmal9767.github.io/Vet-Assistant-Help-Line/"
+ *   SITE_URL           e.g. "https://paws-whiskers-care-line.dkjmmz6whh.workers.dev/"
  *
  * Required bindings:
  *   PAYMENTS           a KV namespace (Workers → KV) bound as "PAYMENTS"
@@ -53,7 +53,7 @@ async function handleNew(url, env) {
   }
 
   const amount = Number(url.searchParams.get("amount"));
-  const desc = (url.searchParams.get("desc") || "Help line answer").slice(0, 120);
+  const desc = (url.searchParams.get("desc") || "Care line answer").slice(0, 120);
   if (!Number.isFinite(amount) || amount < 1 || amount > 500) {
     return html("Amount must be between 1 and 500 (whole dollars).", 400);
   }
@@ -119,7 +119,7 @@ async function handleApprove(url, env) {
     return html("Sorry — the payment couldn't be completed. Please try again later.", 502);
   }
   await env.PAYMENTS.delete("cs:" + id);
-  return html("<h2>✅ Thank you!</h2><p>Your payment is complete. We're glad the help line could help — come back any time.</p>");
+  return html("<h2>✅ Thank you!</h2><p>Your payment is complete. We're glad the care line could help — come back any time.</p>");
 }
 
 /** Cron: capture anything authorized more than AUTO_CAPTURE_HOURS ago. */
@@ -184,7 +184,7 @@ function escapeHtml(text) {
 function html(body, status = 200) {
   return new Response(
     `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Vet Assistant Help Line</title>
+    <title>Paws & Whiskers Care Line</title>
     <style>body{font-family:-apple-system,sans-serif;max-width:600px;margin:2rem auto;padding:0 1rem;line-height:1.6;color:#14181c}
     a{color:#1f3a5f;word-break:break-all}h2{color:#1f3a5f}</style></head><body>${body}</body></html>`,
     { status, headers: { "Content-Type": "text/html; charset=utf-8" } }

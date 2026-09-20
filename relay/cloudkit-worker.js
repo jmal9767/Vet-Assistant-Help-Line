@@ -1,5 +1,5 @@
 /**
- * Vet Assistant Help Line intake relay.
+ * Paws & Whiskers Care Line intake relay.
  * Website submissions are saved to CloudKit. Optional files are stored in a
  * private R2 bucket and exposed only through signed, expiring download URLs.
  */
@@ -119,6 +119,7 @@ function validatedFields(body) {
     fields[key] = value;
   }
   if (!/^\S+@\S+\.\S+$/.test(fields.email)) return { error: "Please enter a valid email address." };
+  if (!["Dog", "Cat"].includes(fields.species)) return { error: "This service accepts questions about dogs and cats only." };
   fields.preferredReply ||= fields.phone ? "Text message" : "Email";
   if (["Text message", "Phone call"].includes(fields.preferredReply) && fields.phone.replace(/\D/g, "").length < 7) {
     return { error: "Please enter a valid phone number for text or phone service." };
@@ -164,7 +165,7 @@ async function handleTwilioSMS(request, env, cors) {
   });
   const result = await saveQuestionToCloudKit(env, cloudKitCreateBody(fields));
   if (!result.ok) return json({ error: "Could not save SMS" }, 502, cors);
-  return new Response("<Response><Message>Thanks — your message reached the Vet Assistant Help Line.</Message></Response>", {
+  return new Response("<Response><Message>Thanks — your message reached the Paws & Whiskers Care Line.</Message></Response>", {
     status: 200, headers: { "Content-Type": "text/xml", ...cors },
   });
 }
@@ -191,8 +192,8 @@ function handleTwilioVoice(request, env) {
   const operatorPhone = env.OPERATOR_PHONE || "";
   const callerID = env.TWILIO_CALLER_ID || "";
   const body = operatorPhone
-    ? `<Response><Say>Connecting you to the Vet Assistant Help Line.</Say><Dial${callerID ? ` callerId="${escapeXML(callerID)}"` : ""}>${escapeXML(operatorPhone)}</Dial></Response>`
-    : "<Response><Say>The help line phone relay is not configured. Please use the website.</Say></Response>";
+    ? `<Response><Say>Connecting you to the Paws & Whiskers Care Line.</Say><Dial${callerID ? ` callerId="${escapeXML(callerID)}"` : ""}>${escapeXML(operatorPhone)}</Dial></Response>`
+    : "<Response><Say>The care line phone relay is not configured. Please use the website.</Say></Response>";
   return new Response(body, { status: 200, headers: { "Content-Type": "text/xml" } });
 }
 
@@ -280,7 +281,7 @@ function paidOffer(record) {
   if (fieldValue(record, "paymentStatus") !== "Payment requested" || !allowedAmounts.has(amount)) return null;
   return {
     amount: amount.toFixed(2),
-    service: fieldValue(record, "requestedService") || "Vet Assistant Help Line service",
+    service: fieldValue(record, "requestedService") || "Paws & Whiskers Care Line service",
   };
 }
 
@@ -288,9 +289,9 @@ async function serveCheckout(url, env) {
   const recordName = url.searchParams.get("question") || "";
   const record = await fetchQuestionFromCloudKit(env, recordName);
   const offer = record && paidOffer(record);
-  if (!offer) return checkoutMessage("Payment link unavailable", "This payment request is no longer available. Please contact the help line.", 404);
+  if (!offer) return checkoutMessage("Payment link unavailable", "This payment request is no longer available. Please contact the care line.", 404);
   if (!env.PAYPAL_CLIENT_ID || !env.PAYPAL_CLIENT_SECRET) {
-    return checkoutMessage("Checkout is being connected", "Please contact the help line for a payment link.", 503);
+    return checkoutMessage("Checkout is being connected", "Please contact the care line for a payment link.", 503);
   }
 
   const safeQuestion = JSON.stringify(recordName).replace(/</g, "\\u003c");
@@ -299,13 +300,13 @@ async function serveCheckout(url, env) {
   const sdkURL = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(env.PAYPAL_CLIENT_ID)}&currency=USD&components=buttons,applepay`;
   return new Response(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Secure payment</title><script src="${sdkURL}"></script><script src="https://applepay.cdn-apple.com/jsapi/1.latest/apple-pay-sdk.js"></script>
-<style>body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f7fa;color:#132238;margin:0}.card{max-width:520px;margin:32px auto;background:white;border-radius:18px;padding:24px;box-shadow:0 10px 35px #13223818}.brand{color:#173f67}h1{font-size:1.6rem}.amount{font-size:2rem;font-weight:800;margin:.35rem 0 1rem}.note{color:#536579;line-height:1.45}#applepay-container{margin:14px 0}apple-pay-button{--apple-pay-button-width:100%;--apple-pay-button-height:48px;--apple-pay-button-border-radius:8px}#status{font-weight:650;margin-top:16px}</style></head><body><main class="card"><div class="brand">🐾 Vet Assistant Help Line</div><h1>${safeService}</h1><div class="amount">$${offer.amount}</div><p class="note">Choose PayPal or Apple Pay. Your question will be marked paid automatically after payment succeeds.</p><div id="paypal-buttons"></div><div id="applepay-container"></div><p id="status" role="status"></p></main>
+<style>body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f7fa;color:#132238;margin:0}.card{max-width:520px;margin:32px auto;background:white;border-radius:18px;padding:24px;box-shadow:0 10px 35px #13223818}.brand{color:#173f67}h1{font-size:1.6rem}.amount{font-size:2rem;font-weight:800;margin:.35rem 0 1rem}.note{color:#536579;line-height:1.45}#applepay-container{margin:14px 0}apple-pay-button{--apple-pay-button-width:100%;--apple-pay-button-height:48px;--apple-pay-button-border-radius:8px}#status{font-weight:650;margin-top:16px}</style></head><body><main class="card"><div class="brand">🐾 Paws & Whiskers Care Line</div><h1>${safeService}</h1><div class="amount">$${offer.amount}</div><p class="note">Choose PayPal or Apple Pay. Your question will be marked paid automatically after payment succeeds.</p><div id="paypal-buttons"></div><div id="applepay-container"></div><p id="status" role="status"></p></main>
 <script>const question=${safeQuestion}, amount=${safeAmount};
 const statusEl=document.getElementById('status');
 async function createOrder(){const r=await fetch('/api/paypal/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question})});const d=await r.json();if(!r.ok)throw new Error(d.error||'Could not start payment');return d.id}
 async function capture(orderID,method){const r=await fetch('/api/paypal/orders/'+encodeURIComponent(orderID)+'/capture',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question,method})});const d=await r.json();if(!r.ok)throw new Error(d.error||'Could not complete payment');statusEl.textContent='Payment received. Thank you!';return d}
 paypal.Buttons({createOrder,onApprove:d=>capture(d.orderID,'PayPal'),onError:()=>{statusEl.textContent='Payment could not be completed. Please try again.'}}).render('#paypal-buttons');
-if(window.ApplePaySession&&ApplePaySession.canMakePayments()){const applepay=paypal.Applepay();applepay.config().then(c=>{if(!c.isEligible)return;document.getElementById('applepay-container').innerHTML='<apple-pay-button id="applepay-button" buttonstyle="black" type="pay" locale="en-US"></apple-pay-button>';document.getElementById('applepay-button').onclick=()=>{const session=new ApplePaySession(4,{countryCode:c.countryCode,merchantCapabilities:c.merchantCapabilities,supportedNetworks:c.supportedNetworks,currencyCode:'USD',total:{label:'Vet Assistant Help Line',type:'final',amount}});session.onvalidatemerchant=e=>applepay.validateMerchant({validationUrl:e.validationURL,displayName:'Vet Assistant Help Line'}).then(v=>session.completeMerchantValidation(v.merchantSession)).catch(()=>session.abort());session.onpaymentauthorized=e=>createOrder().then(id=>applepay.confirmOrder({orderId:id,token:e.payment.token,billingContact:e.payment.billingContact}).then(()=>capture(id,'Apple Pay')).then(()=>session.completePayment(ApplePaySession.STATUS_SUCCESS))).catch(()=>session.completePayment(ApplePaySession.STATUS_FAILURE));session.begin()}}).catch(()=>{})}
+if(window.ApplePaySession&&ApplePaySession.canMakePayments()){const applepay=paypal.Applepay();applepay.config().then(c=>{if(!c.isEligible)return;document.getElementById('applepay-container').innerHTML='<apple-pay-button id="applepay-button" buttonstyle="black" type="pay" locale="en-US"></apple-pay-button>';document.getElementById('applepay-button').onclick=()=>{const session=new ApplePaySession(4,{countryCode:c.countryCode,merchantCapabilities:c.merchantCapabilities,supportedNetworks:c.supportedNetworks,currencyCode:'USD',total:{label:'Paws & Whiskers Care Line',type:'final',amount}});session.onvalidatemerchant=e=>applepay.validateMerchant({validationUrl:e.validationURL,displayName:'Paws & Whiskers Care Line'}).then(v=>session.completeMerchantValidation(v.merchantSession)).catch(()=>session.abort());session.onpaymentauthorized=e=>createOrder().then(id=>applepay.confirmOrder({orderId:id,token:e.payment.token,billingContact:e.payment.billingContact}).then(()=>capture(id,'Apple Pay')).then(()=>session.completePayment(ApplePaySession.STATUS_SUCCESS))).catch(()=>session.completePayment(ApplePaySession.STATUS_FAILURE));session.begin()}}).catch(()=>{})}
 </script></body></html>`, { headers: securityHTMLHeaders() });
 }
 
@@ -493,7 +494,11 @@ function escapeXML(value) {
 }
 function isAllowedOrigin(request, env) {
   const origin = request.headers.get("Origin") || "";
-  return Boolean(env.ALLOWED_ORIGIN && origin === env.ALLOWED_ORIGIN);
+  const allowedOrigins = String(env.ALLOWED_ORIGIN || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+  return allowedOrigins.includes(origin);
 }
 function corsHeaders(request, env) {
   const origin = isAllowedOrigin(request, env) ? request.headers.get("Origin") : "null";

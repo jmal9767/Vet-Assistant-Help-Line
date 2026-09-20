@@ -26,4 +26,4 @@ Submitting the form never charges a client. The operator chooses a $10, $20, or 
 
 ## Privacy and retention
 
-Use a public help-line email for client replies. Do not place server secrets in the app or website. Private file links expire after 30 days, and the R2 bucket should delete uploaded objects after 30 days. Handle deletion or correction requests through the client’s existing contact channel.
+Use a public care-line email for client replies. Do not place server secrets in the app or website. Private file links expire after 30 days, and the R2 bucket should delete uploaded objects after 30 days. Handle deletion or correction requests through the client’s existing contact channel.

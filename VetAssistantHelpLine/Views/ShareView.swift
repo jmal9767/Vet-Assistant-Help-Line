@@ -21,13 +21,13 @@ struct ShareView: View {
                     VStack(spacing: 16) {
                         HeroPanel(
                             icon: "qrcode.viewfinder",
-                            title: "Share the help line",
+                            title: "Share the care line",
                             subtitle: "Use this client-facing card for posters, messages, and quick handouts."
                         ) {
                             if let cardImage {
                                 ShareLink(
                                     item: cardImage,
-                                    preview: SharePreview("Vet Assistant Help Line", image: cardImage)
+                                    preview: SharePreview("Paws & Whiskers Care Line", image: cardImage)
                                 ) {
                                     Label("Share Card", systemImage: "square.and.arrow.up")
                                         .frame(maxWidth: .infinity)
@@ -48,6 +48,7 @@ struct ShareView: View {
                 }
             }
             .navigationTitle("Share")
+            .onAppear { migrateLegacyBrandSettings() }
             .task(id: clientSiteURL) { renderCard() }
             .task(id: siteDisplayName) { renderCard() }
         }
@@ -59,6 +60,15 @@ struct ShareView: View {
         renderer.scale = 3
         if let uiImage = renderer.uiImage {
             cardImage = Image(uiImage: uiImage)
+        }
+    }
+
+    private func migrateLegacyBrandSettings() {
+        if clientSiteURL.contains("jmal9767.github.io") {
+            clientSiteURL = HelplineConfig.siteURL.absoluteString
+        }
+        if siteDisplayName.contains("Vet Assistant Help Line") {
+            siteDisplayName = HelplineConfig.siteDisplayName
         }
     }
 }
@@ -82,10 +92,10 @@ private struct ShareCard: View {
                     .background(AppPalette.brand, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Vet Assistant Help Line")
+                    Text("Paws & Whiskers Care Line")
                         .font(.title3.weight(.bold))
                         .foregroundStyle(ink)
-                    Text("Practical pet-care guidance")
+                    Text("Practical dog-and-cat care guidance")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(AppPalette.brand)
                 }

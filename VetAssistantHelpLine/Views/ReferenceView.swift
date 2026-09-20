@@ -38,7 +38,7 @@ struct ReferenceView: View {
                         }
 
                         InfoTile {
-                            SectionHeader("Red-Flag Signs", subtitle: "Do not wait on asynchronous help-line replies for these.")
+                            SectionHeader("Red-Flag Signs", subtitle: "Do not wait on asynchronous care-line replies for these.")
 
                             LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 10)], spacing: 10) {
                                 ForEach(redFlags, id: \.self) { flag in

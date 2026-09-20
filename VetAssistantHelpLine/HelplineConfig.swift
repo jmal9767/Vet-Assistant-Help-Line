@@ -3,19 +3,19 @@ import Foundation
 enum HelplineConfig {
     /// The client page the QR code points to — the same URL as the printed
     /// poster (docs/share-qr.png), so every QR code lands in the same place.
-    static let siteURL = URL(string: "https://jmal9767.github.io/Vet-Assistant-Help-Line/")!
-    static let siteDisplayName = "Vet Assistant Help Line intake page"
+    static let siteURL = URL(string: "https://paws-whiskers-care-line.dkjmmz6whh.workers.dev/")!
+    static let siteDisplayName = "Paws & Whiskers Care Line intake page"
     static let checkoutBaseURL = URL(string: "https://vet-helpline-development.dkjmmz6whh.workers.dev")!
 
     static let purpose = """
-    Worried about your pet and not sure what to do next? Send the details, \
+    Worried about your dog or cat and not sure what to do next? Send the details, \
     choose email, text, or phone, and attach helpful photos, videos, or records \
     for practical guidance from a veterinary assistant.
     """
 
     // The three steps shown on the shareable card and welcome page.
     static let howItWorks = [
-        "Scan the code and tell me what is happening with your pet",
+        "Scan the code and tell me what is happening with your dog or cat",
         "I choose complimentary service or confirm a price before sending a payment link",
         "I review the details and files, then answer by email, text, or phone"
     ]
@@ -28,7 +28,7 @@ enum HelplineConfig {
         "Home care and recovery questions after a vet visit",
         "Photo, video, PDF and document review for context",
         "Vet or ER visit prep and questions to ask",
-        "New-pet, senior-pet and routine-care basics"
+        "New and senior dog or cat routine-care basics"
     ]
 
     struct ServicePrice: Identifiable {
@@ -82,7 +82,7 @@ enum HelplineConfig {
     // same wording in their footers.
     static let clientDisclaimer = """
     Disclaimer: This service is run by a veterinary assistant and provides \
-    general pet-care education only. It is not veterinary medical advice and \
+    general dog-and-cat care education only. It is not veterinary medical advice and \
     does not diagnose, prescribe, recommend medication or doses, provide \
     treatment, or create a veterinarian-client-patient relationship. Contact \
     a licensed veterinarian for medical concerns. For a possible emergency, \
@@ -93,7 +93,7 @@ enum HelplineConfig {
     static let disclaimerFooter = """
     —
     A reminder: I'm a veterinary assistant, not a veterinarian. This is general \
-    pet-care education only, not veterinary medical advice. I cannot diagnose, \
+    dog-and-cat care education only, not veterinary medical advice. I cannot diagnose, \
     prescribe, recommend medication or doses, provide a treatment plan, interpret \
     diagnostic results, or establish a veterinarian-client-patient relationship. \
     Contact a licensed veterinarian for medical concerns. For a possible emergency, \

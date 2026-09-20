@@ -1,4 +1,4 @@
-# California scope guide for the Vet Assistant Help Line
+# California scope guide for the Paws & Whiskers Care Line
 
 **Operational guidance only; not legal advice.** This review is based on California sources current on September 20, 2026. Rules may differ when the operator or animal is outside California. Before accepting paying clients, obtain advice for the actual business model and jurisdictions served.
 
@@ -18,7 +18,7 @@ Official sources:
 
 ## Required boundary for this service
 
-This help line must remain a general educational service. It must not:
+This care line must remain a general educational service. It must not:
 
 - Identify or suggest a diagnosis for a specific animal.
 - Recommend or prescribe medication, supplements, doses, applications, or treatments.
@@ -39,7 +39,7 @@ Charging for a service, providing it free, adding a disclaimer, or communicating
 
 ## Emergency handling
 
-For possible breathing difficulty, collapse, seizure, poisoning, major trauma, uncontrolled bleeding, inability to urinate, severe pain, pale or blue gums, heatstroke, eye injury, difficult labor, or another urgent concern, tell the person to contact an emergency veterinarian immediately. Do not provide case-specific first aid or ask them to wait for a help-line response.
+For possible breathing difficulty, collapse, seizure, poisoning, major trauma, uncontrolled bleeding, inability to urinate, severe pain, pale or blue gums, heatstroke, eye injury, difficult labor, or another urgent concern, tell the person to contact an emergency veterinarian immediately. Do not provide case-specific first aid or ask them to wait for a care-line response.
 
 ASPCA Animal Poison Control: (888) 426-4435. A consultation fee may apply.
 

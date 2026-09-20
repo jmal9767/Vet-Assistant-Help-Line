@@ -12,7 +12,7 @@ var WORKER_URL = "REPLACE_WITH_YOUR_WORKER_URL";
 
 With that placeholder, the website opens the client's email app and sends a normal email to `HELPLINE_EMAIL`. Those messages go to your mailbox only. They do not appear in the private iOS app.
 
-Use a public help-line email alias for `HELPLINE_EMAIL`, not your personal email. The alias can forward to your private inbox, but clients should only ever see the public address.
+Use a public care-line email alias for `HELPLINE_EMAIL`, not your personal email. The alias can forward to your private inbox, but clients should only ever see the public address.
 
 ## Option 1: Website form directly to app
 
@@ -32,9 +32,9 @@ Use an inbound email provider, such as SendGrid Inbound Parse or another email r
 https://your-worker.your-subdomain.workers.dev/sendgrid/inbound?secret=YOUR_WEBHOOK_SECRET
 ```
 
-Then emails sent to the configured help-line address can be converted into CloudKit `Question` records.
+Then emails sent to the configured care-line address can be converted into CloudKit `Question` records.
 
-For anonymous replies, send responses from the same public help-line mailbox or a provider-managed alias. If you reply from a personal email account in Mail, the client will see that personal address.
+For anonymous replies, send responses from the same public care-line mailbox or a provider-managed alias. If you reply from a personal email account in Mail, the client will see that personal address.
 
 ## Required CloudKit fields
 

@@ -134,7 +134,7 @@ struct QuestionDetailView: View {
 
     private var replyActions: some View {
         InfoTile {
-            SectionHeader("Reply", subtitle: question.email.isEmpty ? "No email address was included with this submission." : "Confirm payment, reply from your public help-line account, then mark the case answered.")
+            SectionHeader("Reply", subtitle: question.email.isEmpty ? "No email address was included with this submission." : "Confirm payment, reply from your public care-line account, then mark the case answered.")
 
             CompactLabel(
                 title: "Client-facing sender",
@@ -391,7 +391,7 @@ struct QuestionDetailView: View {
         components.scheme = "mailto"
         components.path = question.email
         components.queryItems = [
-            URLQueryItem(name: "subject", value: "Your Vet Assistant Help Line request"),
+            URLQueryItem(name: "subject", value: "Your Paws & Whiskers Care Line request"),
             URLQueryItem(name: "body", value: message)
         ]
         return components.url
@@ -409,7 +409,7 @@ struct QuestionDetailView: View {
 
     private var publicReplyAddressText: String {
         guard !publicHelpLineEmail.isEmpty else {
-            return "Set a public help-line email in Settings before replying. Mail cannot hide a personal sender by itself."
+            return "Set a public care-line email in Settings before replying. Mail cannot hide a personal sender by itself."
         }
         return "\(publicHelpLineEmail) should be the only email address clients see."
     }
@@ -426,7 +426,7 @@ struct QuestionDetailView: View {
         guard let phone = question.phone else { return nil }
         let digits = phone.filter { $0.isNumber || $0 == "+" }
         guard !digits.isEmpty else { return nil }
-        let greeting = "Hi \(question.name), this is the Vet Assistant Help Line replying about \(petDisplayName). "
+        let greeting = "Hi \(question.name), this is the Paws & Whiskers Care Line replying about \(petDisplayName). "
         var components = URLComponents()
         components.scheme = "sms"
         components.path = digits
@@ -449,13 +449,13 @@ struct QuestionDetailView: View {
         let body = """
         Hi \(question.name),
 
-        Thanks for reaching out to the help line about \(petDisplayName).
+        Thanks for reaching out to the Paws & Whiskers Care Line about \(petDisplayName).
 
 
         \(HelplineConfig.disclaimerFooter)
         """
         components.queryItems = [
-            URLQueryItem(name: "subject", value: "Re: Your pet-care question - \(question.category)"),
+            URLQueryItem(name: "subject", value: "Re: Your dog-or-cat care question - \(question.category)"),
             URLQueryItem(name: "body", value: body)
         ]
         return components.url

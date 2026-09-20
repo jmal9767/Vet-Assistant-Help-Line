@@ -14,7 +14,7 @@ struct SettingsView: View {
                 VStack(spacing: 16) {
                     InfoTile {
                         SectionHeader("Contact", subtitle: "These are the only details you may need to change.")
-                        TextField("Public help-line email", text: $helplineEmail)
+                        TextField("Public care-line email", text: $helplineEmail)
                             .keyboardType(.emailAddress)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
@@ -35,7 +35,7 @@ struct SettingsView: View {
                     }
 
                     InfoTile {
-                        SectionHeader("Help-line tools")
+                        SectionHeader("Care-line tools")
                         NavigationLink { TemplatesView() } label: {
                             settingsRow("Reply Templates", icon: "text.badge.checkmark")
                         }

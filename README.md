@@ -1,6 +1,6 @@
-# Vet Assistant Help Line
+# Paws & Whiskers Care Line
 
-A private iPhone operator app and public client website for general pet-care education from a veterinary assistant.
+A private iPhone operator app and public client website for general dog-and-cat care education from a veterinary assistant.
 
 ## Current flow
 
@@ -24,7 +24,7 @@ A private iPhone operator app and public client website for general pet-care edu
 
 ## Service boundary
 
-The help line provides general educational information only. It is not veterinary medical advice, diagnosis, prognosis, prescription, medication dosing, or treatment, and it does not establish a veterinarian-client-patient relationship. Possible emergencies must be directed immediately to a licensed veterinarian or emergency hospital.
+The care line provides general educational information only. It is not veterinary medical advice, diagnosis, prognosis, prescription, medication dosing, or treatment, and it does not establish a veterinarian-client-patient relationship. Possible emergencies must be directed immediately to a licensed veterinarian or emergency hospital.
 
 Veterinary practice and consumer rules vary by jurisdiction. Review the service, pricing, privacy notice, and terms with qualified local professionals before accepting paying clients.
 
@@ -32,4 +32,4 @@ Veterinary practice and consumer rules vary by jurisdiction. Review the service,
 
 Open `VetAssistantHelpLine.xcodeproj` in Xcode. The app uses the CloudKit container `iCloud.com.jmal9767.VetAssistantHelpLine`. Development and Production CloudKit schemas are separate; deploy and verify the Production schema before using TestFlight or App Store distribution.
 
-The client site is hosted at `https://jmal9767.github.io/Vet-Assistant-Help-Line/` and posts to the configured Cloudflare Worker.
+The client site is hosted at `https://paws-whiskers-care-line.dkjmmz6whh.workers.dev/` and posts to the configured Cloudflare Worker.

@@ -134,7 +134,7 @@ final class QuestionStore {
             options: .firesOnRecordCreation
         )
         let info = CKSubscription.NotificationInfo()
-        info.title = "New help-line question"
+        info.title = "New Paws & Whiskers question"
         info.alertBody = "A client sent a new question."
         info.soundName = "default"
         info.shouldBadge = true

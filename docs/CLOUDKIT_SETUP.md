@@ -118,7 +118,7 @@ The complete settings are:
    | `CLOUDKIT_ENVIRONMENT` | `development` (switch to `production` after you deploy the schema) |
    | `CLOUDKIT_KEY_ID` | the Key ID from step 3 |
    | `CLOUDKIT_PRIVATE_KEY` | the full contents of `eckey-pkcs8.pem` (mark as **Secret**) |
-   | `ALLOWED_ORIGIN` | `https://jmal9767.github.io` |
+   | `ALLOWED_ORIGIN` | `https://paws-whiskers-care-line.dkjmmz6whh.workers.dev,https://jmal9767.github.io` |
 
 Copy the actual Worker URL printed by deployment; do not use the example URL
 literally. See [Cloudflare deployment configuration](https://developers.cloudflare.com/workers/wrangler/configuration/)

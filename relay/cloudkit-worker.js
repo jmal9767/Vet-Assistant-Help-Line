@@ -4,6 +4,8 @@
  * private R2 bucket and exposed only through signed, expiring download URLs.
  */
 
+import applePayDomainAssociation from "./apple-developer-merchantid-domain-association.txt";
+
 const MAX_LENGTHS = {
   name: 100, email: 200, phone: 40, preferredReply: 40, requestedService: 120,
   petName: 100, species: 60, age: 60, category: 80, urgency: 80, question: 4000,
@@ -19,6 +21,12 @@ const ATTACHMENT_LINK_SECONDS = 30 * 24 * 60 * 60;
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+
+    if (request.method === "GET" && url.pathname === "/.well-known/apple-developer-merchantid-domain-association") {
+      return new Response(applePayDomainAssociation, {
+        headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, max-age=3600" },
+      });
+    }
 
     if (request.method === "GET" && url.pathname.startsWith("/attachments/")) {
       return serveAttachment(url, env);

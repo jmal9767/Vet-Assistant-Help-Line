@@ -7,10 +7,17 @@
   "observability": {
     "enabled": true
   },
+  "rules": [
+    {
+      "type": "Text",
+      "globs": ["**/*.txt"],
+      "fallthrough": true
+    }
+  ],
   "vars": {
     "CLOUDKIT_CONTAINER": "iCloud.com.jmal9767.VetAssistantHelpLine",
     "CLOUDKIT_ENVIRONMENT": "development",
-    "PAYPAL_ENVIRONMENT": "sandbox",
+    "PAYPAL_ENVIRONMENT": "live",
     "ALLOWED_ORIGIN": "https://jmal9767.github.io"
   },
   "ratelimits": [

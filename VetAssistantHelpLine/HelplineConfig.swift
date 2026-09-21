@@ -14,14 +14,14 @@ enum HelplineConfig {
     """
 
     static let costExplanation = """
-    Clients choose the $10, $20, or $35 service that fits the help they want and \
+    Clients choose the $10, $20, $30, or $35 service that fits the help they want and \
     see the price before submitting. PayPal and Apple Pay continue to secure checkout; \
     Cash App payments are confirmed manually.
     """
 
     // The three steps shown on the shareable card and welcome page.
     static let howItWorks = [
-        "Scan the code and choose a $10, $20, or $35 service",
+        "Scan the code and choose a $10, $20, $30, or $35 service",
         "Tell me what is happening with your dog or cat and complete payment",
         "I review the details and files, then answer by email, text, or phone"
     ]
@@ -62,7 +62,10 @@ enum HelplineConfig {
                          detail: "One topic with reasonable back-and-forth for up to 3 days")
         ]),
         PriceSection(title: "Scheduled conversation", items: [
-            ServicePrice(service: "Phone or live text",
+            ServicePrice(service: "Live text",
+                         price: "$30",
+                         detail: "One general topic through a scheduled real-time text conversation with reasonable clarification"),
+            ServicePrice(service: "Phone",
                          price: "$35",
                          detail: "One general topic, usually 30–45 minutes, with reasonable clarification and no abrupt cutoff")
         ]),

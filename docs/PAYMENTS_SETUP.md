@@ -1,6 +1,6 @@
 # PayPal, Apple Pay, and Cash App setup
 
-The client chooses a **$10 quick response**, **$20 written support**, or **$35 phone/live-text conversation** before submitting.
+The client chooses a **$10 quick response**, **$20 written support**, **$30 live-text conversation**, or **$35 phone conversation** before submitting.
 
 1. For **PayPal or Apple Pay**, the website opens the question-specific secure checkout after submission. A successful capture marks the CloudKit question **Paid** automatically.
 2. For **Cash App**, the selected price and payment method appear in the operator app. Send the Cash App for Business link when needed and mark the question paid only after the payment appears in Cash App.

@@ -20,7 +20,7 @@
 
 ## Payments
 
-The client chooses a $10, $20, or $35 service before submitting. PayPal and Apple Pay checkout begins immediately after submission and updates the app automatically after payment; Cash App is confirmed manually. Card and bank information stays with the payment provider.
+The client chooses a $10, $20, $30, or $35 service before submitting. PayPal and Apple Pay checkout begins immediately after submission and updates the app automatically after payment; Cash App is confirmed manually. Card and bank information stays with the payment provider.
 
 ## Privacy and retention
 

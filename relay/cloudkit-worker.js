@@ -139,7 +139,7 @@ function validatedFields(body) {
     "Written email support · $20": { reply: "Email", amount: "$20" },
     "Written text support · $20": { reply: "Text message", amount: "$20" },
     "Phone conversation · $35": { reply: "Phone call", amount: "$35" },
-    "Live-text conversation · $35": { reply: "Text message", amount: "$35" },
+    "Live-text conversation · $30": { reply: "Text message", amount: "$30" },
   };
   const selectedService = services[fields.requestedService];
   if (!selectedService) return { error: "Please choose a valid service." };
@@ -323,7 +323,7 @@ function fieldValue(record, name) {
 function paidOffer(record) {
   const amountText = fieldValue(record, "paymentAmount");
   const amount = Number(amountText.replace(/[^0-9.]/g, ""));
-  const allowedAmounts = new Set([10, 20, 35]);
+  const allowedAmounts = new Set([10, 20, 30, 35]);
   if (fieldValue(record, "paymentStatus") !== "Payment requested" || !allowedAmounts.has(amount)) return null;
   return {
     amount: amount.toFixed(2),

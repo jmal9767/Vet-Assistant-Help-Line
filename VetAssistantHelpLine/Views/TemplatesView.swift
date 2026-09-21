@@ -30,7 +30,7 @@ struct TemplatesView: View {
             text: """
             Hi [name], thanks for sending this in. Based on what you described, \
             I can provide this by [email / text / phone]. Based on the question and \
-            estimated time, the price is [service price: $10, $20, or $35]. If that works \
+            estimated time, the price is [service price: $10, $20, $30, or $35]. If that works \
             for you, I'll send the payment link before I begin.
             """
         ),

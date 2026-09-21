@@ -6,20 +6,22 @@ private enum ServiceOffer: String, CaseIterable, Identifiable {
     case writtenEmail = "Written email support · $20"
     case writtenText = "Written text support · $20"
     case phoneConversation = "Phone conversation · $35"
-    case textConversation = "Live-text conversation · $35"
+    case textConversation = "Live-text conversation · $30"
+    case legacyTextConversation = "Live-text conversation · $35"
 
     var id: String { rawValue }
     var amount: String {
         switch self {
         case .quickEmail, .quickText: "$10"
         case .writtenEmail, .writtenText: "$20"
-        case .phoneConversation, .textConversation: "$35"
+        case .textConversation: "$30"
+        case .phoneConversation, .legacyTextConversation: "$35"
         }
     }
     var replyMethod: String {
         switch self {
         case .quickEmail, .writtenEmail: "Email"
-        case .quickText, .writtenText, .textConversation: "Text message"
+        case .quickText, .writtenText, .textConversation, .legacyTextConversation: "Text message"
         case .phoneConversation: "Phone call"
         }
     }

@@ -211,15 +211,15 @@
   <section class="card">
     <h2>How it works</h2>
     <div class="promise-grid">
-      <div class="promise"><strong>1. Choose your service</strong>Select $10 quick written help, $20 written support, $30 live text, or a $35 phone conversation.</div>
-      <div class="promise"><strong>2. Send your question and pay</strong>PayPal or Apple Pay opens immediately. If you choose Cash App, the payment link is sent separately.</div>
-      <div class="promise"><strong>3. Get your reply</strong>Your answer comes by email, text, or phone using the service you selected.</div>
+      <div class="promise"><strong>1. Choose what works for you</strong>Select a small-fee option or Community Access at $0. No explanation is required for Community Access.</div>
+      <div class="promise"><strong>2. Send your question</strong>Paid options continue to checkout. Community Access skips payment and sends your question directly.</div>
+      <div class="promise"><strong>3. Get your reply</strong>Your answer comes through the option you selected. Community Access receives the same respectful service without a payment requirement.</div>
     </div>
   </section>
 
   <section class="card">
     <h2>What it costs</h2>
-    <p>Choose the <strong>$10, $20, $30, or $35</strong> service that fits the help you want. The price is shown before you submit or pay.</p>
+    <p>Choose the option that works for you today. Paid options are kept intentionally small, and <strong>Community Access — $0</strong> is available with no explanation required.</p>
     <p>If your dog or cat needs diagnosis, medication advice, treatment, or urgent care, contact a licensed veterinarian instead.</p>
   </section>
 
@@ -227,13 +227,13 @@
   <section class="card">
     <h2>Pricing</h2>
     <ul class="help-list">
-      <li><strong>Quick written response — $10:</strong> a simple answer by email or text, with reasonable clarification for 24 hours.</li>
-      <li><strong>Written support — $20:</strong> one topic by email or text, with reasonable back-and-forth for up to 3 days.</li>
-      <li><strong>Live-text conversation — $30:</strong> one general topic through a scheduled real-time text conversation, with reasonable clarification.</li>
-      <li><strong>Phone conversation — $35:</strong> one general topic by phone, usually 30–45 minutes, with reasonable clarification and no abrupt cutoff.</li>
+      <li><strong>Quick Question — $5:</strong> for a simple question that needs a short response by email or text.</li>
+      <li><strong>Detailed Guidance — $10:</strong> for a question that needs more time and explanation by email or text.</li>
+      <li><strong>Phone Support — $20:</strong> for when you would rather talk through your question by phone.</li>
+      <li><strong>Community Access — $0:</strong> no-cost access is always available when needed. No explanation required.</li>
     </ul>
     <p><strong>📎 Private file uploads are included:</strong> up to 4 files of any type, 10 MB per file.</p>
-    <p class="note">You choose the service and see its price before sending. PayPal and Apple Pay open secure checkout after submission; Cash App payments are confirmed manually.</p>
+    <p class="note">Choose what works for you. Paid options continue to secure checkout after submission. Community Access does not require payment.</p>
   </section>
 
   <section class="card">
@@ -254,12 +254,13 @@
       <label for="requestedService">First, choose the kind of help you want</label>
       <select id="requestedService" required>
         <option value="">Select a service…</option>
-        <option value="Quick email response · $10">Quick email response · $10</option>
-        <option value="Quick text response · $10">Quick text response · $10</option>
-        <option value="Written email support · $20">Written email support · $20</option>
-        <option value="Written text support · $20">Written text support · $20</option>
-        <option value="Phone conversation · $35">Phone conversation · $35</option>
-        <option value="Live-text conversation · $30">Live-text conversation · $30</option>
+        <option value="Quick Question — Email · $5">Quick Question — Email · $5</option>
+        <option value="Quick Question — Text · $5">Quick Question — Text · $5</option>
+        <option value="Detailed Guidance — Email · $10">Detailed Guidance — Email · $10</option>
+        <option value="Detailed Guidance — Text · $10">Detailed Guidance — Text · $10</option>
+        <option value="Phone Support · $20">Phone Support · $20</option>
+        <option value="Community Access — Email · $0">Community Access — Email · $0</option>
+        <option value="Community Access — Text · $0">Community Access — Text · $0</option>
       </select>
       <p class="note" id="serviceNote">Pick an option first. The form will adjust based on email, text, or phone.</p>
 
@@ -276,12 +277,12 @@
       <input type="tel" id="phone" autocomplete="tel" placeholder="Add your number if you'd prefer your reply by text message">
       <p class="note" id="phoneNote">Optional for email replies. Required for text replies or phone calls.</p>
 
-      <label for="paymentMethod">Preferred payment method</label>
+      <div id="paymentFields"><label for="paymentMethod">Preferred payment method</label>
       <select id="paymentMethod">
         <option>PayPal or Apple Pay</option>
         <option>Cash App</option>
       </select>
-      <p class="note">PayPal and Apple Pay continue to secure checkout automatically. If you choose Cash App, its payment link is sent separately and confirmed manually.</p>
+      <p class="note">PayPal and Apple Pay continue to secure checkout automatically. If you choose Cash App, its payment link is sent separately and confirmed manually.</p></div>
 
       <!-- Honeypot: humans never see or fill this. -->
       <div style="position:absolute; left:-9999px;" aria-hidden="true">
@@ -466,8 +467,8 @@
       question: document.getElementById("question").value.trim(),
       sourceChannel: "Website",
       conversationStatus: "Needs response",
-      paymentStatus: "Payment requested",
-      paymentMethod: document.getElementById("paymentMethod").value,
+      paymentStatus: isCommunityAccess(document.getElementById("requestedService").value) ? "No payment required" : "Payment requested",
+      paymentMethod: isCommunityAccess(document.getElementById("requestedService").value) ? "Community Access" : document.getElementById("paymentMethod").value,
       paymentAmount: amountFromService(document.getElementById("requestedService").value),
       paymentLink: "",
       signedConsentName: document.getElementById("signedConsentName").value.trim(),
@@ -589,9 +590,9 @@
       var heading = document.createElement("h2");
       heading.textContent = "✅ Question sent!";
       var message = document.createElement("p");
-      message.textContent = "Thanks, " + payload.name + ". Your " + payload.requestedService +
-        " request for " + (payload.petName || "your dog or cat") + " was received. Watch " +
-        payload.email + " for the Cash App payment link, then for your reply.";
+      message.textContent = isCommunityAccess(payload.requestedService)
+        ? "Thanks, " + payload.name + ". Your Community Access request for " + (payload.petName || "your dog or cat") + " was received. No payment is required."
+        : "Thanks, " + payload.name + ". Your " + payload.requestedService + " request for " + (payload.petName || "your dog or cat") + " was received. Watch " + payload.email + " for the Cash App payment link, then for your reply.";
       section.append(heading, message);
     }).catch(function (error) {
       window.clearTimeout(timeout);
@@ -620,6 +621,8 @@
     return match ? match[0] : "Confirm";
   }
 
+  function isCommunityAccess(service) { return String(service).indexOf("Community Access") === 0; }
+
   function replyMethodFromService(service) {
     if (service.toLowerCase().indexOf("text") !== -1) return "Text message";
     if (service.indexOf("Phone") === 0) return "Phone call";
@@ -629,20 +632,28 @@
   function updateServiceGuidance(service) {
     var note = document.getElementById("serviceNote");
     var phoneNote = document.getElementById("phoneNote");
+    var paymentFields = document.getElementById("paymentFields");
     var fields = document.getElementById("questionnaireFields");
     var method = replyMethodFromService(service);
     if (!service) {
       note.textContent = "Pick an option first. The form will adjust based on email, text, or phone.";
       fields.classList.add("hidden");
+      paymentFields.classList.remove("hidden");
       phoneNote.textContent = "Optional for email replies. Required for text replies or phone calls.";
       return;
     }
     fields.classList.remove("hidden");
+    if (isCommunityAccess(service)) {
+      paymentFields.classList.add("hidden");
+      note.textContent = "Community Access is $0. No payment and no explanation are required.";
+    } else {
+      paymentFields.classList.remove("hidden");
+    }
     if (method === "Email") {
-      note.textContent = "You'll receive written help by email for the displayed price.";
+      note.textContent = isCommunityAccess(service) ? "Community Access is $0. You'll receive your reply by email. No explanation required." : "You'll receive written help by email for the displayed price.";
       phoneNote.textContent = "Optional for email replies.";
     } else if (method === "Text message") {
-      note.textContent = "You'll receive help by text message, so your phone number is required.";
+      note.textContent = isCommunityAccess(service) ? "Community Access is $0. You'll receive your reply by text, so your phone number is required. No explanation required." : "You'll receive help by text message, so your phone number is required.";
       phoneNote.textContent = "Required for this text-message service.";
     } else {
       note.textContent = "You'll schedule or receive a phone call, so your phone number is required.";

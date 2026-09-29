@@ -21,8 +21,8 @@ enum HelplineConfig {
 
     // The three steps shown on the shareable card and welcome page.
     static let howItWorks = [
-        "Scan the code and choose a $10, $20, $30, or $35 service",
-        "Tell me what is happening with your dog or cat and complete payment",
+        "Scan the code and choose the option that works for you",
+        "Tell me what is happening with your dog or cat; paid options continue to checkout",
         "I review the details and files, then answer by email, text, or phone"
     ]
 
@@ -53,21 +53,19 @@ enum HelplineConfig {
     // ⚙️ SETUP: adjust these to your real prices before sharing the QR card
     // (keep them in sync with index.html, welcome.html, and poster.html).
     static let priceMenu: [PriceSection] = [
-        PriceSection(title: "Written help", items: [
-            ServicePrice(service: "Quick email or text response",
+        PriceSection(title: "Access options", items: [
+            ServicePrice(service: "Quick Question",
+                         price: "$5",
+                         detail: "A simple email or text response"),
+            ServicePrice(service: "Detailed Guidance",
                          price: "$10",
-                         detail: "A simple answer with reasonable clarification for 24 hours"),
-            ServicePrice(service: "Written email or text support",
+                         detail: "More time and explanation by email or text"),
+            ServicePrice(service: "Phone Support",
                          price: "$20",
-                         detail: "One topic with reasonable back-and-forth for up to 3 days")
-        ]),
-        PriceSection(title: "Scheduled conversation", items: [
-            ServicePrice(service: "Live text",
-                         price: "$30",
-                         detail: "One general topic through a scheduled real-time text conversation with reasonable clarification"),
-            ServicePrice(service: "Phone",
-                         price: "$35",
-                         detail: "One general topic, usually 30–45 minutes, with reasonable clarification and no abrupt cutoff")
+                         detail: "Talk through your question by phone"),
+            ServicePrice(service: "Community Access",
+                         price: "$0",
+                         detail: "No-cost access when needed; no explanation required")
         ]),
         PriceSection(title: "Private file uploads", items: [
             ServicePrice(service: "Any file type",

@@ -92,6 +92,11 @@ export default {
     if (body.website) return json({ ok: true }, 200, cors);
 
     if (body.acceptedTerms !== "yes") return json({ error: "Please accept the service terms and privacy notice." }, 400, cors);
+    if (body.acceptedCommunicationPolicy !== "yes") return json({ error: "Please accept the communication policy." }, 400, cors);
+    const moderation = moderateClientMessage(body.question);
+    if (moderation.blocked) {
+      return json({ error: "This message cannot be submitted as written because it appears to violate the communication policy. Please revise it and try again." }, 400, cors);
+    }
     const fields = validatedFields(body);
     if (fields.error) return json({ error: fields.error }, 400, cors);
 
@@ -116,6 +121,19 @@ export default {
     return json({ ok: true, recordName: result.recordName, checkoutURL }, 200, cors);
   },
 };
+
+function moderateClientMessage(message) {
+  const text = String(message || "").toLowerCase();
+  // Deliberately narrow: block explicit threats/severe harassment, not ordinary profanity
+  // or strong language describing the animal's condition.
+  const severePatterns = [
+    /\b(i('| a)?m going to|i will|gonna) (kill|hurt|shoot|stab|attack) (you|u)\b/,
+    /\bkill yourself\b/,
+    /\b(i know where you live|i('| a)?ll find you)\b/,
+    /\b(send|show) (me )?(nudes|naked pictures)\b/
+  ];
+  return { blocked: severePatterns.some((pattern) => pattern.test(text)) };
+}
 
 function validatedFields(body) {
   const fields = {};

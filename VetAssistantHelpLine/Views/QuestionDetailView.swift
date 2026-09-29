@@ -1,28 +1,28 @@
 import SwiftUI
 
 private enum ServiceOffer: String, CaseIterable, Identifiable {
-    case quickEmail = "Quick email response · $10"
-    case quickText = "Quick text response · $10"
-    case writtenEmail = "Written email support · $20"
-    case writtenText = "Written text support · $20"
-    case phoneConversation = "Phone conversation · $35"
-    case textConversation = "Live-text conversation · $30"
-    case legacyTextConversation = "Live-text conversation · $35"
+    case quickEmail = "Quick Question — Email · $5"
+    case quickText = "Quick Question — Text · $5"
+    case detailedEmail = "Detailed Guidance — Email · $10"
+    case detailedText = "Detailed Guidance — Text · $10"
+    case phoneSupport = "Phone Support · $20"
+    case communityEmail = "Community Access — Email · $0"
+    case communityText = "Community Access — Text · $0"
 
     var id: String { rawValue }
     var amount: String {
         switch self {
-        case .quickEmail, .quickText: "$10"
-        case .writtenEmail, .writtenText: "$20"
-        case .textConversation: "$30"
-        case .phoneConversation, .legacyTextConversation: "$35"
+        case .quickEmail, .quickText: "$5"
+        case .detailedEmail, .detailedText: "$10"
+        case .phoneSupport: "$20"
+        case .communityEmail, .communityText: "$0"
         }
     }
     var replyMethod: String {
         switch self {
-        case .quickEmail, .writtenEmail: "Email"
-        case .quickText, .writtenText, .textConversation, .legacyTextConversation: "Text message"
-        case .phoneConversation: "Phone call"
+        case .quickEmail, .detailedEmail, .communityEmail: "Email"
+        case .quickText, .detailedText, .communityText: "Text message"
+        case .phoneSupport: "Phone call"
         }
     }
     var needsPhone: Bool { replyMethod != "Email" }
@@ -178,7 +178,7 @@ struct QuestionDetailView: View {
 
     private var paymentCard: some View {
         InfoTile {
-            SectionHeader("Service and payment", subtitle: "The client selected the service and price before submitting. PayPal and Apple Pay confirm automatically; verify Cash App manually.")
+            SectionHeader("Service and payment", subtitle: question.paymentAmount == "$0" ? "Community Access selected — no payment required." : "The client selected the service and price before submitting. PayPal and Apple Pay confirm automatically; verify Cash App manually.")
 
             HStack(spacing: 10) {
                 MetricPill(title: "Payment", value: question.paymentStatus, icon: "creditcard.fill", tint: paymentTint)

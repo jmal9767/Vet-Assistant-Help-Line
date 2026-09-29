@@ -4,10 +4,10 @@ A private iPhone operator app and public client website for general dog-and-cat 
 
 ## Current flow
 
-1. A client opens the website, chooses a $10, $20, $30, or $35 email, text, or phone service, enters the question, and may upload up to four files of any type at 10 MB each.
+1. A client opens the website, chooses a $5 Quick Question, $10 Detailed Guidance, $20 Phone Support, or $0 Community Access option, enters the question, and may upload up to four files of any type at 10 MB each.
 2. A secured Cloudflare Worker saves the question to the CloudKit `Question` record type. Files go to a private R2 bucket through signed links that expire after 30 days.
 3. The operator receives a CloudKit push notification and opens the matching question in the iPhone app.
-4. The client continues to PayPal or Apple Pay checkout, or completes the selected Cash App payment. The operator can see the chosen service and payment status in the app.
+4. Paid options continue to PayPal or Apple Pay checkout, or the selected Cash App payment. Community Access skips payment. The operator can see the chosen service and payment status in the app.
 5. PayPal and Apple Pay confirm in the app automatically; Cash App is confirmed manually.
 6. The operator replies by email, text, or phone, marks the question answered, and may archive it.
 

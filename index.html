@@ -392,10 +392,16 @@
 
       <label for="question">Your question</label>
       <textarea id="question" required placeholder="Describe what's going on. Include how long it's been happening and anything you've already tried."></textarea>
+      <p class="note"><strong>Communication policy:</strong> Please keep messages respectful. Abusive, threatening, discriminatory, sexually inappropriate, or repeatedly hostile messages are not permitted. Strong language used to describe a situation is not automatically a violation.</p>
 
       <label for="attachments">Files (optional)</label>
       <input type="file" id="attachments" multiple>
       <p class="note">You can add up to 4 files of any type, 10 MB each. Private links expire after 30 days.</p>
+
+      <div class="checkbox-row">
+        <input type="checkbox" id="communicationAck" required>
+        <label for="communicationAck" style="font-weight:400; margin:0;">I agree to communicate respectfully and understand that abusive, threatening, discriminatory, sexually inappropriate, or repeatedly hostile messages may be rejected and access may be restricted.</label>
+      </div>
 
       <div class="checkbox-row">
         <input type="checkbox" id="ack" required>
@@ -474,6 +480,7 @@
       signedConsentName: document.getElementById("signedConsentName").value.trim(),
       signedConsentAt: new Date().toISOString(),
       acceptedTerms: document.getElementById("ack").checked ? "yes" : "no",
+      acceptedCommunicationPolicy: document.getElementById("communicationAck").checked ? "yes" : "no",
       website: document.getElementById("website").value // honeypot
     };
     var files = Array.prototype.slice.call(document.getElementById("attachments").files || []);
@@ -490,6 +497,14 @@
     }
     if ((payload.preferredReply === "Text message" || payload.preferredReply === "Phone call") && !payload.phone) {
       alert("Please add your phone number for text replies or phone calls.");
+      return;
+    }
+    var moderation = moderateClientMessage(payload.question);
+    if (moderation.blocked) {
+      alert("This message can't be sent as written because it appears to violate the communication policy. Please revise the message and try again.");
+      return;
+    }
+    if (moderation.warned && !window.confirm("Some wording in this message may come across as directed hostility. Please review it before sending. Send it as written?")) {
       return;
     }
     if (!payload.signedConsentName) {
@@ -604,6 +619,25 @@
       alert("Sorry — your question couldn't be sent. " + (error.message || fallback));
     });
   });
+
+  function moderateClientMessage(message) {
+    var text = String(message || "").toLowerCase();
+    var severe = [
+      /\b(i('| a)?m going to|i will|gonna) (kill|hurt|shoot|stab|attack) (you|u)\b/,
+      /\bkill yourself\b/,
+      /\b(i know where you live|i('| a)?ll find you)\b/,
+      /\b(send|show) (me )?(nudes|naked pictures)\b/
+    ];
+    var directedHostility = [
+      /\byou('| a)?re (an? )?(idiot|moron|stupid|useless|worthless)\b/,
+      /\bfuck you\b/,
+      /\bshut the fuck up\b/
+    ];
+    return {
+      blocked: severe.some(function (pattern) { return pattern.test(text); }),
+      warned: directedHostility.some(function (pattern) { return pattern.test(text); })
+    };
+  }
 
   function submissionBody(payload, files) {
     var form = new FormData();

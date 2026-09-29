@@ -88,9 +88,11 @@ Keep `eckey.pem` / `eckey-pkcs8.pem` private — never commit them to the repo.
 
 ## 4. Deploy the Cloudflare Worker (~10 min)
 
-The local [`relay/wrangler.jsonc`](../relay/wrangler.jsonc) now selects the
-existing relay, the correct container, the Development environment, and the
-website origin. This file is prepared locally; the Worker has not been deployed.
+The local [`relay/wrangler.jsonc`](../relay/wrangler.jsonc) selects the
+existing relay, the CloudKit Development environment, PayPal sandbox, and the
+website origin. The public site already points at this relay. Redeploy after
+changing these settings. PayPal stays in sandbox until CloudKit is production;
+the relay refuses live checkout if those two settings disagree.
 
 With Node.js/npm installed, open Terminal in the repository and run:
 
@@ -115,7 +117,8 @@ The complete settings are:
    | Name | Value |
    |------|-------|
    | `CLOUDKIT_CONTAINER` | `iCloud.com.jmal9767.VetAssistantHelpLine` |
-   | `CLOUDKIT_ENVIRONMENT` | `development` (switch to `production` after you deploy the schema) |
+   | `CLOUDKIT_ENVIRONMENT` | `development` until the Production schema is deployed |
+   | `PAYPAL_ENVIRONMENT` | `sandbox` until CloudKit is `production` |
    | `CLOUDKIT_KEY_ID` | the Key ID from step 3 |
    | `CLOUDKIT_PRIVATE_KEY` | the full contents of `eckey-pkcs8.pem` (mark as **Secret**) |
    | `ALLOWED_ORIGIN` | `https://paws-whiskers-care-line.dkjmmz6whh.workers.dev,https://jmal9767.github.io` |
@@ -143,11 +146,14 @@ Commit and push — GitHub Pages redeploys automatically.
 
 ## Going live
 
-When everything works, in CloudKit Console use **Deploy Schema Changes…** to
-push the schema from Development to **Production**, change the Worker's
-`CLOUDKIT_ENVIRONMENT` to `production`, and build the app in Release (Xcode
-automatically uses the production CloudKit environment for App Store /
-TestFlight builds).
+Do these in order. Skipping one is how a paid question never reaches the App Store build.
+
+1. In CloudKit Console, assign the **Operator** role to the iCloud user that signs in on the answering iPhone. The checked-in schema notes that this membership was still pending. Without it, the app cannot read questions.
+2. Use **Deploy Schema Changes…** to copy the Development schema to **Production**. Confirm World and Authenticated still have no Read or Write on `Question`.
+3. Set the Worker's `CLOUDKIT_ENVIRONMENT` to `production` and `PAYPAL_ENVIRONMENT` to `live`, using the live PayPal app credentials, then redeploy.
+4. Install a Release, TestFlight, or App Store build. Those builds read Production, not Development.
+
+Leave draft pull requests #4, #5, and #6 unmerged. They describe older Stripe prices and flows that disagree with the current PayPal site.
 
 ## Troubleshooting
 

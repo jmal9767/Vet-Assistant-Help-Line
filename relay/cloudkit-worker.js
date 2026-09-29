@@ -331,11 +331,22 @@ function paidOffer(record) {
   };
 }
 
+function livePaymentsBlocked(env) {
+  return env.PAYPAL_ENVIRONMENT === "live" && env.CLOUDKIT_ENVIRONMENT !== "production";
+}
+
 async function serveCheckout(url, env) {
   const recordName = url.searchParams.get("question") || "";
   const record = await fetchQuestionFromCloudKit(env, recordName);
   const offer = record && paidOffer(record);
   if (!offer) return checkoutMessage("Payment link unavailable", "This payment request is no longer available. Please contact the care line.", 404);
+  if (livePaymentsBlocked(env)) {
+    return checkoutMessage(
+      "Checkout is not live yet",
+      "Live card checkout is turned off while questions are saved to CloudKit Development. A TestFlight or App Store build would not see those questions. Use Cash App and confirm it in the app, or switch CloudKit to production before turning PayPal live.",
+      503
+    );
+  }
   if (!env.PAYPAL_CLIENT_ID || !env.PAYPAL_CLIENT_SECRET) {
     return checkoutMessage("Checkout is being connected", "Please contact the care line for a payment link.", 503);
   }
@@ -362,6 +373,7 @@ async function createPayPalOrder(request, env) {
   const record = await fetchQuestionFromCloudKit(env, recordName);
   const offer = record && paidOffer(record);
   if (!offer) return json({ error: "Invalid payment request" }, 400);
+  if (livePaymentsBlocked(env)) return json({ error: "Live checkout is disabled while CloudKit is not production" }, 503);
   const token = await payPalAccessToken(env);
   if (!token) return json({ error: "Payment service is not configured" }, 503);
   const response = await fetch(`${payPalAPIBase(env)}/v2/checkout/orders`, {
@@ -381,6 +393,7 @@ async function capturePayPalOrder(request, env, orderID) {
   const input = await safeJSON(request);
   const recordName = String(input?.question || "");
   const method = input?.method === "Apple Pay" ? "Apple Pay" : "PayPal";
+  if (livePaymentsBlocked(env)) return json({ error: "Live checkout is disabled while CloudKit is not production" }, 503);
   const token = await payPalAccessToken(env);
   if (!token || !/^[A-Z0-9]+$/.test(orderID)) return json({ error: "Invalid payment" }, 400);
 

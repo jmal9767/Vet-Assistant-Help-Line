@@ -17,7 +17,7 @@
   "vars": {
     "CLOUDKIT_CONTAINER": "iCloud.com.jmal9767.VetAssistantHelpLine",
     "CLOUDKIT_ENVIRONMENT": "development",
-    "PAYPAL_ENVIRONMENT": "live",
+    "PAYPAL_ENVIRONMENT": "sandbox",
     "ALLOWED_ORIGIN": "https://paws-whiskers-care-line.dkjmmz6whh.workers.dev,https://jmal9767.github.io"
   },
   "ratelimits": [

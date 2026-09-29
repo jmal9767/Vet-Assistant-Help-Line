@@ -107,7 +107,7 @@ export default {
     const result = await saveQuestionToCloudKit(env, cloudKitCreateBody(fields));
     if (!result.ok) return json({ error: "Could not save the question" }, 502, cors);
 
-    const checkoutURL = fields.paymentMethod === "PayPal or Apple Pay" && result.recordName
+    const checkoutURL = fields.paymentStatus === "Payment requested" && fields.paymentMethod === "PayPal or Apple Pay" && result.recordName
       ? `${url.origin}/pay?question=${encodeURIComponent(result.recordName)}`
       : "";
     if (checkoutURL) {
@@ -134,12 +134,13 @@ function validatedFields(body) {
     return { error: "Please select the spay or neuter status." };
   }
   const services = {
-    "Quick email response · $10": { reply: "Email", amount: "$10" },
-    "Quick text response · $10": { reply: "Text message", amount: "$10" },
-    "Written email support · $20": { reply: "Email", amount: "$20" },
-    "Written text support · $20": { reply: "Text message", amount: "$20" },
-    "Phone conversation · $35": { reply: "Phone call", amount: "$35" },
-    "Live-text conversation · $30": { reply: "Text message", amount: "$30" },
+    "Quick Question — Email · $5": { reply: "Email", amount: "$5" },
+    "Quick Question — Text · $5": { reply: "Text message", amount: "$5" },
+    "Detailed Guidance — Email · $10": { reply: "Email", amount: "$10" },
+    "Detailed Guidance — Text · $10": { reply: "Text message", amount: "$10" },
+    "Phone Support · $20": { reply: "Phone call", amount: "$20" },
+    "Community Access — Email · $0": { reply: "Email", amount: "$0", community: true },
+    "Community Access — Text · $0": { reply: "Text message", amount: "$0", community: true },
   };
   const selectedService = services[fields.requestedService];
   if (!selectedService) return { error: "Please choose a valid service." };
@@ -156,8 +157,10 @@ function validatedFields(body) {
   }
   fields.sourceChannel = "Website";
   fields.conversationStatus = "Needs response";
-  fields.paymentStatus = "Payment requested";
-  if (!["PayPal or Apple Pay", "Cash App"].includes(fields.paymentMethod)) {
+  fields.paymentStatus = selectedService.community ? "No payment required" : "Payment requested";
+  if (selectedService.community) {
+    fields.paymentMethod = "Community Access";
+  } else if (!["PayPal or Apple Pay", "Cash App"].includes(fields.paymentMethod)) {
     return { error: "Please choose a valid payment method." };
   }
   fields.paymentAmount = selectedService.amount;
@@ -323,7 +326,7 @@ function fieldValue(record, name) {
 function paidOffer(record) {
   const amountText = fieldValue(record, "paymentAmount");
   const amount = Number(amountText.replace(/[^0-9.]/g, ""));
-  const allowedAmounts = new Set([10, 20, 30, 35]);
+  const allowedAmounts = new Set([5, 10, 20]);
   if (fieldValue(record, "paymentStatus") !== "Payment requested" || !allowedAmounts.has(amount)) return null;
   return {
     amount: amount.toFixed(2),

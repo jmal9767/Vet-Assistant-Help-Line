@@ -13,8 +13,12 @@ The app stores only the selected amount, provider, status, and checkout URL. Car
 
 Add these secrets to `vet-helpline-development`:
 
-- `PAYPAL_CLIENT_ID` — Live PayPal REST app client ID.
-- `PAYPAL_CLIENT_SECRET` — Live PayPal REST app secret.
+- `PAYPAL_CLIENT_ID` — PayPal REST app client ID for the environment in `PAYPAL_ENVIRONMENT`.
+- `PAYPAL_CLIENT_SECRET` — matching PayPal REST app secret.
 - `PAYPAL_WEBHOOK_ID` — ID for a webhook pointed at `https://vet-helpline-development.dkjmmz6whh.workers.dev/paypal/webhook`.
 
-Set `PAYPAL_ENVIRONMENT` to `live` after sandbox testing. Subscribe the webhook to `PAYMENT.CAPTURE.REFUNDED` and `PAYMENT.CAPTURE.REVERSED`. Enable Apple Pay for the PayPal app and register the Worker checkout domain in PayPal before live Apple Pay testing.
+`PAYPAL_ENVIRONMENT` stays `sandbox` while `CLOUDKIT_ENVIRONMENT` is `development`. The relay refuses live PayPal and Apple Pay checkout in that combination, because a Release, TestFlight, or App Store build reads CloudKit Production and would miss the paid question. After the Production schema is deployed and the operator role is assigned, set both `CLOUDKIT_ENVIRONMENT` and `PAYPAL_ENVIRONMENT` to `production` and `live`, then redeploy.
+
+`relay/payment-worker.js` is a retired Stripe hold-and-capture worker. Do not deploy it. It no longer creates charges or captures a card on a timer. PayPal, Apple Pay, and Cash App in this guide are the only payment path.
+
+Subscribe the webhook to `PAYMENT.CAPTURE.REFUNDED` and `PAYMENT.CAPTURE.REVERSED`. Enable Apple Pay for the PayPal app and register the Worker checkout domain in PayPal before live Apple Pay testing.

@@ -28,7 +28,7 @@ enum HelplineConfig {
 
     // Shown on the shareable card; keep in sync with the website pages.
     static let canHelpWith = [
-        "\"Is this an emergency — or can it wait?\"",
+        "Warning signs that mean contact an emergency vet now",
         "General care, feeding, husbandry & grooming",
         "Behavior basics and enrichment ideas",
         "Home care and recovery questions after a vet visit",

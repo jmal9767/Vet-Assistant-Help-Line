@@ -4,7 +4,7 @@ A private iPhone operator app and public client website for general dog-and-cat 
 
 ## Current flow
 
-1. A client opens the website, chooses a $5 Quick Question, $10 Detailed Guidance, $20 Phone Support, or Free Community Support option, enters the question, and may upload up to four files of any type at 10 MB each.
+1. A client opens the website, chooses a $10 Quick Question, $15 Detailed Guidance, $25 Phone Support, or Free Community Support option, enters the question, and may upload up to four files of any type at 10 MB each.
 2. A secured Cloudflare Worker saves the question to the CloudKit `Question` record type. Files go to a private R2 bucket through signed links that expire after 30 days.
 3. The operator receives a CloudKit push notification and opens the matching question in the iPhone app.
 4. Paid options continue to PayPal or Apple Pay checkout. Free Community Support skips payment. The operator can see the chosen service and payment status in the app.

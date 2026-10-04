@@ -172,11 +172,11 @@ function validatedFields(body) {
     return { error: "Please select the spay or neuter status." };
   }
   const services = {
-    "Quick Question — Email · $5": { reply: "Email", amount: "$5" },
-    "Quick Question — Text · $5": { reply: "Text message", amount: "$5" },
-    "Detailed Guidance — Email · $10": { reply: "Email", amount: "$10" },
-    "Detailed Guidance — Text · $10": { reply: "Text message", amount: "$10" },
-    "Phone Support · $20": { reply: "Phone call", amount: "$20" },
+    "Quick Question — Email · $10": { reply: "Email", amount: "$10" },
+    "Quick Question — Text · $10": { reply: "Text message", amount: "$10" },
+    "Detailed Guidance — Email · $15": { reply: "Email", amount: "$15" },
+    "Detailed Guidance — Text · $15": { reply: "Text message", amount: "$15" },
+    "Phone Support · $25": { reply: "Phone call", amount: "$25" },
     "Free Community Support — Email": { reply: "Email", amount: "$0", community: true },
     "Free Community Support — Text": { reply: "Text message", amount: "$0", community: true },
   };
@@ -423,7 +423,7 @@ function paidOffer(record) {
   const amount = Number(amountText.replace(/[^0-9.]/g, ""));
   // Honor existing requests from the previous menu without offering them to new clients.
   const isPetAssist = record.recordName.startsWith("petassist-");
-  const allowedAmounts = new Set(isPetAssist ? Object.values(PETASSIST_SERVICES).map(service => service.amount) : [5, 10, 20, 30, 35]);
+  const allowedAmounts = new Set(isPetAssist ? Object.values(PETASSIST_SERVICES).map(service => service.amount) : [10, 15, 25, 5, 20, 30, 35]);
   if (!["Payment requested", "Paid"].includes(fieldValue(record, "paymentStatus")) || !allowedAmounts.has(amount)) return null;
   return {
     amount: amount.toFixed(2),

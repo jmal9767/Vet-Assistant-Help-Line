@@ -7,7 +7,7 @@ import { webcrypto } from 'node:crypto';
 const source = (await readFile(new URL('../cloudkit-worker.js', import.meta.url),'utf8')).replace(/^import .*;$/m,'const applePayDomainAssociation = "association";').replace('export default {','const worker = {').replace('export class PetAssistPayments','class PetAssistPayments');
 const key=await webcrypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify']);
 const pem=Buffer.from(await webcrypto.subtle.exportKey('pkcs8',key.privateKey)).toString('base64');
-const fixture={name:'Release test',email:'release@example.invalid',phone:'5555555555',species:'Dog',sex:'Unknown',reproductiveStatus:'Unknown',category:'Other',symptomOnset:'General question',symptomTrend:'Not applicable / general question',appetite:'Normal',drinking:'Normal',urination:'Normal',stool:'Normal',energy:'Normal',vomiting:'None',question:'How can I provide enrichment?',requestedService:'Quick Question — Email · $5',paymentMethod:'PayPal or Apple Pay',signedConsentName:'Release test',signedConsentAt:'2026-10-04T16:00:00Z',acceptedTerms:'yes',acceptedCommunicationPolicy:'yes'};
+const fixture={name:'Release test',email:'release@example.invalid',phone:'5555555555',species:'Dog',sex:'Unknown',reproductiveStatus:'Unknown',category:'Other',symptomOnset:'General question',symptomTrend:'Not applicable / general question',appetite:'Normal',drinking:'Normal',urination:'Normal',stool:'Normal',energy:'Normal',vomiting:'None',question:'How can I provide enrichment?',requestedService:'Quick Question — Email · $10',paymentMethod:'PayPal or Apple Pay',signedConsentName:'Release test',signedConsentAt:'2026-10-04T16:00:00Z',acceptedTerms:'yes',acceptedCommunicationPolicy:'yes'};
 const origin='https://intake.test';
 function setup(){
   const records=new Map(),files=new Map();
@@ -63,15 +63,15 @@ async function paidSetup(){const s=setup();assert.equal((await s.call('/intake',
 
 test('new menu persists server-priced, signed intake and a checkout link',async()=>{
   const s=setup();const r=await s.call('/intake',{...fixture,paymentAmount:'$1',paymentStatus:'Paid'});assert.equal(r.status,200);assert.match((await r.json()).checkoutURL,/\/pay\?question=question-1$/);
-  const fields=s.state.records.get('question-1').fields;assert.equal(fields.paymentAmount.value,'$5');assert.equal(fields.paymentStatus.value,'Payment requested');assert.equal(fields.signedConsentName.value,fixture.signedConsentName);
+  const fields=s.state.records.get('question-1').fields;assert.equal(fields.paymentAmount.value,'$10');assert.equal(fields.paymentStatus.value,'Payment requested');assert.equal(fields.signedConsentName.value,fixture.signedConsentName);
 });
 test('all seven service variants have the intended price and channel',async()=>{
-  const s=setup();const variants=[['Quick Question — Email · $5','$5','Email'],['Quick Question — Text · $5','$5','Text message'],['Detailed Guidance — Email · $10','$10','Email'],['Detailed Guidance — Text · $10','$10','Text message'],['Phone Support · $20','$20','Phone call'],['Free Community Support — Email','$0','Email'],['Free Community Support — Text','$0','Text message']];
+  const s=setup();const variants=[['Quick Question — Email · $10','$10','Email'],['Quick Question — Text · $10','$10','Text message'],['Detailed Guidance — Email · $15','$15','Email'],['Detailed Guidance — Text · $15','$15','Text message'],['Phone Support · $25','$25','Phone call'],['Free Community Support — Email','$0','Email'],['Free Community Support — Text','$0','Text message']];
   for(const [service,amount,reply] of variants){assert.equal((await s.call('/intake',{...fixture,requestedService:service})).status,200);const fields=[...s.state.records.values()].at(-1).fields;assert.equal(fields.paymentAmount.value,amount);assert.equal(fields.preferredReply.value,reply);}
 });
 test('Community Access bypasses payment regardless of supplied payment method',async()=>{const s=setup();const r=await s.call('/intake',{...fixture,requestedService:'Community Access — Email · $0',paymentMethod:'',phone:''});assert.equal(r.status,200);assert.equal((await r.json()).checkoutURL,'');assert.equal(s.state.records.get('question-1').fields.paymentStatus.value,'No payment required');});
 test('rejects stale services, missing consent, unsigned consent, emergencies, and missing phone',async()=>{
-  for(const patch of [{requestedService:'Quick email response · $10'},{acceptedTerms:'no'},{acceptedCommunicationPolicy:'no'},{signedConsentName:''},{signedConsentAt:'invalid'},{urination:'Not urinating'},{vomiting:'Repeated retching with little or nothing coming up'},{requestedService:'Phone Support · $20',phone:''}]){const s=setup();assert.equal((await s.call('/intake',{...fixture,...patch})).status,400);assert.equal(s.state.records.size,0);}
+  for(const patch of [{requestedService:'Quick email response · $15'},{acceptedTerms:'no'},{acceptedCommunicationPolicy:'no'},{signedConsentName:''},{signedConsentAt:'invalid'},{urination:'Not urinating'},{vomiting:'Repeated retching with little or nothing coming up'},{requestedService:'Phone Support · $25',phone:''}]){const s=setup();assert.equal((await s.call('/intake',{...fixture,...patch})).status,400);assert.equal(s.state.records.size,0);}
 });
 test('origin restrictions and rate limiting reject intake without saving',async()=>{const s=setup();assert.equal((await s.call('/intake',fixture,{Origin:'https://unrelated.test'})).status,403);s.env.INTAKE_RATE_LIMITER={async limit(){return {success:false};}};assert.equal((await s.call('/intake',fixture)).status,429);assert.equal(s.state.records.size,0);});
 test('advertised four 10 MB files fit; over-limit and five-file fixtures fail',()=>{const s=setup();s.context.files=Array.from({length:4},()=>({name:'fixture',size:10*1024*1024}));assert.equal(vm.runInContext('validateFiles(files)',s.context),null);s.context.files[0].size++;assert.match(vm.runInContext('validateFiles(files)',s.context),/too large/);s.context.files=Array.from({length:5},()=>({name:'fixture',size:1}));assert.match(vm.runInContext('validateFiles(files)',s.context),/4 files/);});
@@ -82,7 +82,7 @@ test('private uploads are readable with a valid signature and fail on tampering 
   const tampered=new URL(link);tampered.searchParams.set('signature','wrong');assert.equal((await s.worker.fetch(new Request(tampered),s.env)).status,401);tampered.searchParams.set('expires','1');assert.equal((await s.worker.fetch(new Request(tampered),s.env)).status,410);
 });
 test('failed CloudKit save removes newly uploaded orphan files',async()=>{const s=setup();s.state.failSave=true;const form=new FormData();for(const [k,v]of Object.entries(fixture))form.append(k,v);form.append('attachments',new File(['test'],'fixture.txt'));assert.equal((await s.worker.fetch(new Request('https://checkout.test/intake',{method:'POST',headers:{Origin:origin},body:form}),s.env)).status,502);assert.equal(s.state.files.size,0);});
-test('order uses the server amount and bounded stable idempotency key',async()=>{const s=await paidSetup();assert.equal(s.state.order.purchase_units[0].amount.value,'5.00');assert.match(s.state.order.purchase_units[0].invoice_id,/^paws-/);});
+test('order uses the server amount and bounded stable idempotency key',async()=>{const s=await paidSetup();assert.equal(s.state.order.purchase_units[0].amount.value,'10.00');assert.match(s.state.order.purchase_units[0].invoice_id,/^paws-/);});
 test('capture recovers after CloudKit failure and repeated paid requests never capture twice',async()=>{const s=await paidSetup();s.state.failSave=true;const pending=await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'});assert.equal(pending.status,202);assert.deepEqual(await pending.json(),{ok:true,status:'Paid',statusSyncPending:true});s.state.failSave=false;assert.equal((await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'})).status,200);assert.equal((await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'})).status,200);assert.equal(s.state.captures,1);assert.equal((await s.call('/api/paypal/orders',{question:'question-1'})).status,409);});
 test('capture rejects a different customer order and wrong captured amount',async()=>{let s=await paidSetup();s.state.order.purchase_units[0].custom_id='different-question';assert.equal((await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'})).status,409);assert.equal(s.state.captures,0);s=await paidSetup();s.state.wrongCapture=true;assert.equal((await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'})).status,502);assert.equal(s.state.records.get('question-1').fields.paymentStatus.value,'Payment requested');});
 test('verified completion webhook repairs payment status; failures stay retryable',async()=>{
@@ -109,7 +109,7 @@ test('older CloudKit schemas preserve missing fields and checkout status in a ve
   const s=setup();s.state.unsupportedFields=new Set(['breed','sex','paymentAmount','paymentStatus','paymentLink','signedConsentName']);
   const r=await s.call('/intake',{...fixture,breed:'Fictional mix'});assert.equal(r.status,200);assert.match((await r.json()).checkoutURL,/question-1/);
   const record=s.state.records.get('question-1');let packed=JSON.parse(record.fields.question.value);assert.equal(packed.question,fixture.question);assert.equal(packed.details.breed,'Fictional mix');assert.equal(packed.details.signedConsentName,fixture.signedConsentName);assert.equal(packed.details.paymentStatus,'Payment requested');assert.match(packed.details.paymentLink,/question-1/);
-  assert.equal((await s.call('/api/paypal/orders',{question:'question-1'})).status,200);assert.equal(s.state.order.purchase_units[0].amount.value,'5.00');assert.equal((await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'})).status,200);
+  assert.equal((await s.call('/api/paypal/orders',{question:'question-1'})).status,200);assert.equal(s.state.order.purchase_units[0].amount.value,'10.00');assert.equal((await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'})).status,200);
   packed=JSON.parse(record.fields.question.value);const updated=JSON.parse(s.state.records.get('question-1').fields.question.value);assert.equal(updated.details.paymentStatus,'Paid');assert.equal(updated.details.breed,'Fictional mix');assert.equal(updated.details.signedConsentName,fixture.signedConsentName);
   assert.equal((await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'})).status,200);assert.equal(s.state.captures,1);
 });
@@ -243,3 +243,22 @@ test('Apple Pay completion removes payment choices and cannot open a second sess
 });
 
 test('PayPal cancellation before payment preserves checkout choices',async()=>{const {elements,calls}=await checkoutFixture();calls.paypalOptions.onCancel();assert.match(elements.status.textContent,/cancelled/);assert.equal(elements['checkout-controls'].hidden,false);assert.equal(elements['checkout-next'].hidden,true);});
+
+test('historical unpaid requests retain their original price after the increase',async()=>{
+  for(const amount of [5,10,20,30,35]){
+    const s=setup();await s.call('/intake',fixture);s.state.records.get('question-1').fields.paymentAmount={value:'$'+amount};
+    const r=await s.call('/api/paypal/orders',{question:'question-1'});assert.equal(r.status,200);assert.equal(s.state.order.purchase_units[0].amount.value,amount.toFixed(2));
+  }
+});
+test('cached old paid menus are rejected before saving a new request',async()=>{
+  for(const service of ['Quick Question — Email · $5','Detailed Guidance — Text · $10','Phone Support · $20']){
+    const s=setup();assert.equal((await s.call('/intake',{...fixture,requestedService:service})).status,400);assert.equal(s.state.records.size,0);
+  }
+});
+test('frontend service labels match the updated checkout prices',async()=>{
+  const s=setup();assert.equal(vm.runInContext('amountFromService("Quick Question — Email · $10")',s.context),'$10');
+  const html=await readFile(new URL('../../index.html',import.meta.url),'utf8');
+  const fn=html.match(/function amountFromService\(service\) \{[\s\S]*?\n  \}/)[0];
+  assert.equal(vm.runInNewContext(fn+'\namountFromService("Quick Question — Email · $10")',{isFreeSupport:()=>false}),'$10');
+  for(const label of ['Quick Question — Email · $10','Detailed Guidance — Email · $15','Phone Support · $25'])assert.ok(html.includes('value="'+label+'"'));
+});

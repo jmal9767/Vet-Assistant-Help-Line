@@ -15,8 +15,8 @@ enum HelplineConfig {
     """
 
     static let costExplanation = """
-    Clients choose Quick Question for $5, Detailed Guidance for $10, Phone Support \
-    for $20, or Free Community Support and see the price before submitting. \
+    Clients choose Quick Question for $10, Detailed Guidance for $15, Phone Support \
+    for $25, or Free Community Support and see the price before submitting. \
     Paid requests continue to PayPal or Apple Pay checkout automatically. \
     Free Community Support requires no payment.
     """
@@ -57,13 +57,13 @@ enum HelplineConfig {
     static let priceMenu: [PriceSection] = [
         PriceSection(title: "Access options", items: [
             ServicePrice(service: "Quick Question",
-                         price: "$5",
+                         price: "$10",
                          detail: "A simple email or text response"),
             ServicePrice(service: "Detailed Guidance",
-                         price: "$10",
+                         price: "$15",
                          detail: "More time and explanation by email or text"),
             ServicePrice(service: "Phone Support",
-                         price: "$20",
+                         price: "$25",
                          detail: "Talk through your question by phone"),
             ServicePrice(service: "Free Community Support",
                          price: "Free",

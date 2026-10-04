@@ -1,6 +1,6 @@
 # PayPal and Apple Pay setup
 
-The client chooses **$5 Quick Question**, **$10 Detailed Guidance**, **$20 Phone Support**, or **Free Community Support** before submitting.
+The client chooses **$10 Quick Question**, **$15 Detailed Guidance**, **$25 Phone Support**, or **Free Community Support** before submitting.
 
 1. For **PayPal or Apple Pay**, the website opens the question-specific secure checkout after submission. A successful capture marks the CloudKit question **Paid** automatically.
 2. Free Community Support skips checkout and requires no payment.

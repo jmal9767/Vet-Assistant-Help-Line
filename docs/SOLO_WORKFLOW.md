@@ -20,7 +20,7 @@
 
 ## Payments
 
-The client chooses $5 Quick Question, $10 Detailed Guidance, $20 Phone Support, or Free Community Support before submitting. Paid options continue to checkout; Free Community Support requires no payment and no explanation. Card and bank information stays with the payment provider.
+The client chooses $10 Quick Question, $15 Detailed Guidance, $25 Phone Support, or Free Community Support before submitting. Paid options continue to checkout; Free Community Support requires no payment and no explanation. Card and bank information stays with the payment provider.
 
 ## Privacy and retention
 

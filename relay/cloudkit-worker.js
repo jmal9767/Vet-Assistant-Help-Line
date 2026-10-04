@@ -440,7 +440,7 @@ async function serveCheckout(url, env) {
 <script>const question=${safeQuestion}, amount=${safeAmount};
 const statusEl=document.getElementById('status');
 async function createOrder(){const r=await fetch('/api/paypal/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question})});const d=await r.json();if(!r.ok)throw new Error(d.error||'Could not start payment');return d.id}
-async function capture(orderID,method){const r=await fetch('/api/paypal/orders/'+encodeURIComponent(orderID)+'/capture',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question,method})});const d=await r.json();if(!r.ok)throw new Error(d.error||'Could not complete payment');statusEl.textContent='Payment received. Thank you!';return d}
+async function capture(orderID,method){const r=await fetch('/api/paypal/orders/'+encodeURIComponent(orderID)+'/capture',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question,method})});const d=await r.json();if(!r.ok)throw new Error(d.error||'Could not complete payment');statusEl.textContent=d.status==='Paid'?'Payment received. Thank you!':'Payment status: '+d.status+'. Please contact the care line with any questions.';return d}
 if(window.paypal && paypal.Buttons){paypal.Buttons({createOrder,onApprove:d=>capture(d.orderID,'PayPal'),onError:()=>{statusEl.textContent='Payment could not be completed. Please try again.'}}).render('#paypal-buttons').catch(()=>{statusEl.textContent='Checkout could not load. Please reload this page or contact the care line.'})}else{statusEl.textContent='Checkout could not load. Please reload this page or contact the care line.'}
 if(window.paypal&&paypal.Applepay&&window.ApplePaySession&&ApplePaySession.canMakePayments()){const applepay=paypal.Applepay();applepay.config().then(c=>{if(!c.isEligible)return;document.getElementById('applepay-container').innerHTML='<apple-pay-button id="applepay-button" buttonstyle="black" type="pay" locale="en-US"></apple-pay-button>';document.getElementById('applepay-button').onclick=()=>{const session=new ApplePaySession(4,{countryCode:c.countryCode,merchantCapabilities:c.merchantCapabilities,supportedNetworks:c.supportedNetworks,currencyCode:'USD',total:{label:'Paws & Whiskers Care Line',type:'final',amount}});session.onvalidatemerchant=e=>applepay.validateMerchant({validationUrl:e.validationURL,displayName:'Paws & Whiskers Care Line'}).then(v=>session.completeMerchantValidation(v.merchantSession)).catch(()=>session.abort());session.onpaymentauthorized=e=>createOrder().then(id=>applepay.confirmOrder({orderId:id,token:e.payment.token,billingContact:e.payment.billingContact}).then(()=>capture(id,'Apple Pay')).then(()=>session.completePayment(ApplePaySession.STATUS_SUCCESS))).catch(()=>session.completePayment(ApplePaySession.STATUS_FAILURE));session.begin()}}).catch(()=>{})}
 </script></body></html>`, { headers: securityHTMLHeaders() });
@@ -591,19 +591,26 @@ function escapeHTML(value) {
 async function storeAttachments(files, request, env) {
   const origin = new URL(request.url).origin;
   const stored = [];
-  for (const file of files) {
-    const id = crypto.randomUUID();
-    const key = `questions/${new Date().toISOString().slice(0, 10)}/${id}`;
-    await env.ATTACHMENTS_BUCKET.put(key, file.stream(), {
-      httpMetadata: { contentType: file.type || "application/octet-stream" },
-      customMetadata: { fileName: sanitizeFileName(file.name || "attachment") },
-    });
-    const expires = Math.floor(Date.now() / 1000) + ATTACHMENT_LINK_SECONDS;
-    const signature = await signAttachment(key, expires, env);
-    const url = `${origin}/attachments/${encodeURIComponent(key)}?expires=${expires}&signature=${signature}`;
-    stored.push({ key, name: file.name, type: file.type || "unknown type", size: file.size, url });
+  const keys = [];
+  try {
+    for (const file of files) {
+      const id = crypto.randomUUID();
+      const key = `questions/${new Date().toISOString().slice(0, 10)}/${id}`;
+      keys.push(key);
+      await env.ATTACHMENTS_BUCKET.put(key, file.stream(), {
+        httpMetadata: { contentType: file.type || "application/octet-stream" },
+        customMetadata: { fileName: sanitizeFileName(file.name || "attachment") },
+      });
+      const expires = Math.floor(Date.now() / 1000) + ATTACHMENT_LINK_SECONDS;
+      const signature = await signAttachment(key, expires, env);
+      const url = `${origin}/attachments/${encodeURIComponent(key)}?expires=${expires}&signature=${signature}`;
+      stored.push({ key, name: file.name, type: file.type || "unknown type", size: file.size, url });
+    }
+    return stored;
+  } catch (error) {
+    if (keys.length) await env.ATTACHMENTS_BUCKET.delete(keys);
+    throw error;
   }
-  return stored;
 }
 
 async function serveAttachment(url, env) {

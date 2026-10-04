@@ -90,7 +90,7 @@ Keep `eckey.pem` / `eckey-pkcs8.pem` private — never commit them to the repo.
 
 The local [`relay/wrangler.jsonc`](../relay/wrangler.jsonc) now selects the
 existing relay, the correct container, the Development environment, and the
-website origin. This file is prepared locally; the Worker has not been deployed.
+website origin. The existing Worker is deployed and live intake submissions have been verified. Use the release instructions for subsequent deployments.
 
 With Node.js/npm installed, open Terminal in the repository and run:
 
@@ -129,11 +129,11 @@ and [adding secrets](https://developers.cloudflare.com/workers/configuration/sec
 In `index.html`, set:
 
 ```js
-var WORKER_URL = "https://vet-helpline.<you>.workers.dev";
+var WORKER_URL = "https://vet-helpline-development.dkjmmz6whh.workers.dev";
 ```
 
 Optionally set `HELPLINE_EMAIL` as a fallback shown if a submission fails.
-Commit and push — GitHub Pages redeploys automatically.
+Build and deploy the Cloudflare-hosted intake using `docs/RELEASE.md`.
 
 ## 6. Test end-to-end
 

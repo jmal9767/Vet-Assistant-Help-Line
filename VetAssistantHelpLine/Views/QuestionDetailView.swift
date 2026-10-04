@@ -93,7 +93,7 @@ struct QuestionDetailView: View {
             }
             Button("Cancel", role: .cancel) { }
         } message: {
-            Text("This removes the CloudKit record and cannot be undone. Uploaded files expire separately after 30 days.")
+            Text("This removes the CloudKit record and cannot be undone. Uploaded files remain separate and follow the file retention schedule.")
         }
     }
 

@@ -10,7 +10,9 @@
   "rules": [
     {
       "type": "Text",
-      "globs": ["**/*.txt"],
+      "globs": [
+        "**/*.txt"
+      ],
       "fallthrough": true
     }
   ],
@@ -34,6 +36,22 @@
     {
       "binding": "ATTACHMENTS_BUCKET",
       "bucket_name": "vet-helpline-private-attachments"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "PETASSIST_PAYMENTS",
+        "class_name": "PetAssistPayments"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "petassist-v1",
+      "new_sqlite_classes": [
+        "PetAssistPayments"
+      ]
     }
   ]
 }

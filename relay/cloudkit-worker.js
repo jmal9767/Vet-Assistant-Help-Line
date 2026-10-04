@@ -32,6 +32,7 @@ export default {
 
 async function handleRequest(request, env) {
     const url = new URL(request.url);
+    if (url.pathname.startsWith("/petassist/")) return handlePetAssist(request, env, url);
 
     if (request.method === "GET" && url.pathname === "/.well-known/apple-developer-merchantid-domain-association") {
       return new Response(applePayDomainAssociation, {
@@ -371,6 +372,7 @@ function intakeEnvelope(value) {
 }
 
 async function fetchQuestionFromCloudKit(env, recordName) {
+  if (recordName.startsWith("petassist-")) return readPetAssistPayment(env, recordName);
   if (!/^[A-Za-z0-9_.:-]{1,255}$/.test(recordName)) return null;
   const path = `/database/1/${env.CLOUDKIT_CONTAINER}/${env.CLOUDKIT_ENVIRONMENT}/public/records/lookup`;
   const body = JSON.stringify({ records: [{ recordName }] });
@@ -383,6 +385,11 @@ async function fetchQuestionFromCloudKit(env, recordName) {
 }
 
 async function updateQuestionPayment(env, recordName, values) {
+  if (recordName.startsWith("petassist-")) {
+    const object = petAssistObject(env, recordName);
+    if (!object) return { ok: false };
+    return (await object.fetch("https://booking.invalid/payment", { method: "POST", body: JSON.stringify(values) })).json();
+  }
   // Compare-and-save prevents a delayed completion from overwriting a concurrent refund.
   for (let attempt = 0; attempt < 3; attempt++) {
     const current = await fetchQuestionFromCloudKit(env, recordName);
@@ -415,7 +422,8 @@ function paidOffer(record) {
   const amountText = fieldValue(record, "paymentAmount");
   const amount = Number(amountText.replace(/[^0-9.]/g, ""));
   // Honor existing requests from the previous menu without offering them to new clients.
-  const allowedAmounts = new Set([5, 10, 20, 30, 35]);
+  const isPetAssist = record.recordName.startsWith("petassist-");
+  const allowedAmounts = new Set(isPetAssist ? Object.values(PETASSIST_SERVICES).map(service => service.amount) : [5, 10, 20, 30, 35]);
   if (!["Payment requested", "Paid"].includes(fieldValue(record, "paymentStatus")) || !allowedAmounts.has(amount)) return null;
   return {
     amount: amount.toFixed(2),
@@ -436,10 +444,11 @@ async function serveCheckout(url, env) {
   const safeQuestion = JSON.stringify(recordName).replace(/</g, "\\u003c");
   const safeAmount = JSON.stringify(offer.amount);
   const safeService = escapeHTML(offer.service);
+  const brand = recordName.startsWith("petassist-") ? "PetAssist Local" : "Paws & Whiskers Care Line";
   const sdkURL = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(env.PAYPAL_CLIENT_ID)}&currency=USD&components=buttons,applepay`;
   return new Response(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Secure payment</title><script src="${sdkURL}"></script><script src="https://applepay.cdn-apple.com/jsapi/1.latest/apple-pay-sdk.js"></script>
-<style>body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f7fa;color:#132238;margin:0}.card{max-width:520px;margin:32px auto;background:white;border-radius:18px;padding:24px;box-shadow:0 10px 35px #13223818}.brand{color:#173f67}h1{font-size:1.6rem}.amount{font-size:2rem;font-weight:800;margin:.35rem 0 1rem}.note{color:#536579;line-height:1.45}#applepay-container{margin:14px 0}apple-pay-button{--apple-pay-button-width:100%;--apple-pay-button-height:48px;--apple-pay-button-border-radius:8px}#status{font-weight:650;margin-top:16px}</style></head><body><main class="card"><div class="brand">🐾 Paws & Whiskers Care Line</div><h1>${safeService}</h1><div class="amount">$${offer.amount}</div><p class="note">Choose PayPal or Apple Pay. Your question will be marked paid automatically after payment succeeds.</p><div id="paypal-buttons"></div><div id="applepay-container"></div><p id="status" role="status"></p></main>
+<style>body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f7fa;color:#132238;margin:0}.card{max-width:520px;margin:32px auto;background:white;border-radius:18px;padding:24px;box-shadow:0 10px 35px #13223818}.brand{color:#173f67}h1{font-size:1.6rem}.amount{font-size:2rem;font-weight:800;margin:.35rem 0 1rem}.note{color:#536579;line-height:1.45}#applepay-container{margin:14px 0}apple-pay-button{--apple-pay-button-width:100%;--apple-pay-button-height:48px;--apple-pay-button-border-radius:8px}#status{font-weight:650;margin-top:16px}</style></head><body><main class="card"><div class="brand">🐾 ${brand}</div><h1>${safeService}</h1><div class="amount">$${offer.amount}</div><p class="note">Choose PayPal or Apple Pay. Payment status updates automatically after payment succeeds.</p><div id="paypal-buttons"></div><div id="applepay-container"></div><p id="status" role="status"></p></main>
 <script>const question=${safeQuestion}, amount=${safeAmount};
 const statusEl=document.getElementById('status');
 async function createOrder(){const r=await fetch('/api/paypal/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question})});const d=await r.json();if(!r.ok)throw new Error(d.error||'Could not start payment');return d.id}
@@ -463,7 +472,7 @@ async function createPayPalOrder(request, env) {
     headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json", "PayPal-Request-Id": await payPalRequestID(`paws:${recordName}`) },
     body: JSON.stringify({ intent: "CAPTURE", purchase_units: [{
       custom_id: recordName,
-      invoice_id: `paws-${recordName}`.slice(0, 127),
+      invoice_id: `${recordName.startsWith("petassist-") ? "petassist" : "paws"}-${recordName}`.slice(0, 127),
       description: offer.service.slice(0, 127),
       amount: { currency_code: "USD", value: offer.amount },
     }] }),
@@ -761,4 +770,78 @@ function toBase64URL(bytes) {
 function fromBase64URL(value) {
   const base64 = value.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((value.length + 3) % 4);
   return Uint8Array.from(atob(base64), (character) => character.charCodeAt(0));
+}
+
+const PETASSIST_SERVICES = {
+  nailTrim: { title: "Nail Trim", amount: 35 },
+  medAdmin: { title: "Medication Administration", amount: 45 },
+  labCollection: { title: "Lab Sample Collection", amount: 55 },
+  wellnessCheck: { title: "Wellness Check", amount: 65 },
+};
+function petAssistObject(env, recordName) {
+  return /^petassist-[a-f0-9]{32}$/.test(recordName) && env.PETASSIST_PAYMENTS
+    ? env.PETASSIST_PAYMENTS.get(env.PETASSIST_PAYMENTS.idFromName(recordName)) : null;
+}
+async function readPetAssistPayment(env, recordName) {
+  const object = petAssistObject(env, recordName);
+  return object ? (await object.fetch("https://booking.invalid/record")).json() : null;
+}
+function petAssistReceipt(record, requestURL) {
+  const token = record.recordName.slice("petassist-".length);
+  return { token, service: fieldValue(record,"requestedService"), amount: fieldValue(record,"paymentAmount"), status: fieldValue(record,"paymentStatus"), method: fieldValue(record,"paymentMethod"), checkoutURL: `${new URL(requestURL).origin}/petassist/pay?token=${token}` };
+}
+async function handlePetAssist(request, env, url) {
+  const cors = { ...corsHeaders(request, env), "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" };
+  if (request.headers.has("Origin") && !isAllowedOrigin(request, env)) return json({ error: "Origin not allowed" }, 403, cors);
+  if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
+  if (!env.PETASSIST_PAYMENTS) return json({ error: "PetAssist payments are being connected" }, 503, cors);
+  if (request.method === "POST" && url.pathname === "/petassist/bookings") {
+    if (!(await allowIntakeRequest(request, env))) return json({ error: "Please wait before trying again" }, 429, cors);
+    if (Number(request.headers.get("Content-Length") || 0) > 4096) return json({ error: "Request too large" }, 413, cors);
+    const input = await safeJSON(request);
+    const service = Object.hasOwn(PETASSIST_SERVICES, input?.service || "") ? PETASSIST_SERVICES[input.service] : null;
+    if (!service || !/^[a-f0-9]{32}$/.test(input?.token || "")) return json({ error: "Invalid booking" }, 400, cors);
+    const recordName = `petassist-${input.token}`;
+    const object = petAssistObject(env, recordName);
+    const created = await object.fetch("https://booking.invalid/create", { method: "POST", body: JSON.stringify({recordName, serviceID:input.service, service:service.title, amount:service.amount}) });
+    if (!created.ok) return json({ error: "The booking details changed. Create a new booking." }, 409, cors);
+    return json(petAssistReceipt(await created.json(), request.url), 200, cors);
+  }
+  const token = url.pathname === "/petassist/pay" ? url.searchParams.get("token") : url.pathname.match(/^\/petassist\/bookings\/([a-f0-9]{32})$/)?.[1];
+  if (request.method !== "GET" || !/^[a-f0-9]{32}$/.test(token || "")) return json({ error: "Not found" }, 404, cors);
+  const record = await readPetAssistPayment(env, `petassist-${token}`);
+  if (!record) return json({ error: "Booking not found" }, 404, cors);
+  if (url.pathname === "/petassist/pay") {
+    if (["Refunded","Partially refunded"].includes(fieldValue(record,"paymentStatus"))) return checkoutMessage("Payment refunded", "This payment has been refunded. Contact info@bayareaapps.com with any questions.", 200);
+    const checkout = new URL(request.url); checkout.search = `?question=petassist-${token}`;
+    return serveCheckout(checkout, env);
+  }
+  return json(petAssistReceipt(record, request.url), 200, cors);
+}
+export class PetAssistPayments {
+  constructor(state) { this.state = state; }
+  async fetch(request) {
+    const path = new URL(request.url).pathname;
+    if (path === "/record") return Response.json(await this.state.storage.get("record") || null);
+    const input = await request.json();
+    return this.state.storage.transaction(async txn => {
+      let record = await txn.get("record");
+      if (path === "/create") {
+        if (record) return Response.json(record, { status: record.serviceID === input.serviceID ? 200 : 409 });
+        const fields = Object.fromEntries(Object.entries({ requestedService:input.service, paymentAmount:`$${input.amount}`, paymentStatus:"Payment requested", paymentMethod:"PayPal or Apple Pay", sourceChannel:"PetAssist Local" }).map(([key,value])=>[key,{value}]));
+        record = { recordName:input.recordName, recordType:"PetAssistPayment", recordChangeTag:"1", serviceID:input.serviceID, fields };
+        await txn.put("record",record); return Response.json(record);
+      }
+      if (path !== "/payment" || !record) return Response.json({ok:false});
+      const current = record.fields.paymentStatus.value;
+      const incoming = input.paymentStatus;
+      if (!['Paid','Refunded','Partially refunded'].includes(incoming)) return Response.json({ok:false});
+      if ((incoming === 'Paid' && !['Payment requested','Paid'].includes(current)) || (incoming === 'Partially refunded' && current === 'Refunded')) return Response.json({ok:true,paymentStatus:current});
+      record.fields.paymentStatus = {value:incoming};
+      if (input.paymentMethod) record.fields.paymentMethod = {value:String(input.paymentMethod)};
+      record.recordChangeTag = String(Number(record.recordChangeTag)+1);
+      await txn.put('record',record);
+      return Response.json({ok:true,paymentStatus:incoming});
+    });
+  }
 }

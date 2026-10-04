@@ -35,6 +35,7 @@ function setup(){
     }
     if(path==='/v2/checkout/orders'){state.order={...JSON.parse(options.body),id:'ORDER123',status:'APPROVED'};return Response.json(state.order);}
     if(path==='/v2/checkout/orders/ORDER123')return Response.json(state.order);
+    if(path==='/v2/payments/captures/CAPTURE123')return Response.json({id:'CAPTURE123',supplementary_data:{related_ids:{order_id:'ORDER123'}}});
     if(path==='/v2/checkout/orders/ORDER123/capture'){
       state.captures++;
       state.order.status='COMPLETED';
@@ -80,6 +81,20 @@ test('verified completion webhook repairs payment status; failures stay retryabl
 });
 test('refund reconciliation reports storage failures and delayed completion does not resurrect a refund',async()=>{const s=await paidSetup();await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'});const event={event_type:'PAYMENT.CAPTURE.REFUNDED',resource:{supplementary_data:{related_ids:{order_id:'ORDER123'}}}};s.state.failSave=true;assert.equal((await s.call('/paypal/webhook',event)).status,503);s.state.failSave=false;assert.equal((await s.call('/paypal/webhook',event)).status,200);event.event_type='PAYMENT.CAPTURE.COMPLETED';assert.equal((await s.call('/paypal/webhook',event)).status,200);assert.equal(s.state.records.get('question-1').fields.paymentStatus.value,'Refunded');});
 test('upstream exceptions return a clear 503 with matching CORS',async()=>{const s=setup();s.state.networkFails=true;const r=await s.call('/intake',fixture);assert.equal(r.status,503);assert.equal(r.headers.get('Access-Control-Allow-Origin'),origin);assert.ok(!(await r.text()).includes('mock-secret'));});
+test('real refund resource shape resolves its capture and reconciles the order',async()=>{
+  const s=await paidSetup();await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'});
+  s.state.order.purchase_units[0].payments.captures[0].status='REFUNDED';
+  const event={event_type:'PAYMENT.CAPTURE.REFUNDED',resource:{id:'REFUND123',links:[{rel:'up',href:'https://api.sandbox.paypal.com/v2/payments/captures/CAPTURE123'}]}};
+  assert.equal((await s.call('/paypal/webhook',event)).status,200);
+  assert.equal(s.state.records.get('question-1').fields.paymentStatus.value,'Refunded');
+});
+test('refund capture links cannot send credentials to another host or environment',async()=>{
+  for(const href of ['https://attacker.invalid/v2/payments/captures/CAPTURE123','https://api.paypal.com/v2/payments/captures/CAPTURE123','https://api.sandbox.paypal.com/v2/payments/captures/CAPTURE123?redirect=1']){
+    const s=await paidSetup();const event={event_type:'PAYMENT.CAPTURE.REFUNDED',resource:{links:[{rel:'up',href}]}};
+    assert.equal((await s.call('/paypal/webhook',event)).status,502);
+    assert.equal(s.state.records.get('question-1').fields.paymentStatus.value,'Payment requested');
+  }
+});
 test('older CloudKit schemas preserve missing fields and checkout status in a versioned envelope',async()=>{
   const s=setup();s.state.unsupportedFields=new Set(['breed','sex','paymentAmount','paymentStatus','paymentLink','signedConsentName']);
   const r=await s.call('/intake',{...fixture,breed:'Fictional mix'});assert.equal(r.status,200);assert.match((await r.json()).checkoutURL,/question-1/);

@@ -5,7 +5,6 @@ import UserNotifications
 struct SettingsView: View {
     @Environment(QuestionStore.self) private var store
     @Environment(\.openURL) private var openURL
-    @AppStorage("setup.helplineEmail") private var helplineEmail = ""
     @AppStorage("setup.cashAppLink") private var cashAppLink = ""
     @State private var notificationStatus = "Checking…"
 
@@ -15,11 +14,10 @@ struct SettingsView: View {
                 VStack(spacing: 16) {
                     InfoTile {
                         SectionHeader("Contact", subtitle: "These are the only details you may need to change.")
-                        TextField("Public care-line email", text: $helplineEmail)
-                            .keyboardType(.emailAddress)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
-                            .textFieldStyle(.roundedBorder)
+                        CompactLabel(title: "Reply email", value: HelplineConfig.replyEmail, icon: "envelope.fill")
+                        Text("Add this mailbox to iPhone Mail. Before sending, check that From shows this address and your signature contains no personal contact details.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
                         settingsField("Cash App for Business link", text: $cashAppLink)
                     }
 

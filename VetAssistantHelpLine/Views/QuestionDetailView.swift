@@ -1,4 +1,5 @@
 import SwiftUI
+import MessageUI
 
 private enum ServiceOffer: String, CaseIterable, Identifiable {
     case quickEmail = "Quick Question — Email · $5"
@@ -38,11 +39,11 @@ private enum PaymentChoice: String, CaseIterable, Identifiable {
 struct QuestionDetailView: View {
     @Environment(QuestionStore.self) private var store
     @Environment(\.openURL) private var openURL
-    @AppStorage("setup.helplineEmail") private var helplineEmail = ""
     @AppStorage("setup.cashAppLink") private var cashAppLink = ""
 
     let question: ClientQuestion
     @State private var showMailError = false
+    @State private var emailDraft: BusinessEmailDraft?
     @State private var showArchiveConfirmation = false
     @State private var showDeleteConfirmation = false
 
@@ -79,7 +80,13 @@ struct QuestionDetailView: View {
         .alert("Couldn't open Mail", isPresented: $showMailError) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text("No email app is set up on this device.")
+            Text("Set up info@bayareaapps.com in iPhone Mail before replying. No message has been sent.")
+        }
+        .sheet(item: $emailDraft) { draft in
+            BusinessMailComposer(draft: draft) { failed in
+                emailDraft = nil
+                showMailError = failed
+            }
         }
         .confirmationDialog("Archive this question?", isPresented: $showArchiveConfirmation) {
             Button("Archive", role: .destructive) {
@@ -151,15 +158,9 @@ struct QuestionDetailView: View {
                 }
 
                 Button {
-                    if let url = replyURL {
-                        openURL(url) { accepted in
-                            if !accepted { showMailError = true }
-                        }
-                    } else {
-                        showMailError = true
-                    }
+                    prepareEmail(replyURL)
                 } label: {
-                    Label("Reply by Email From Public Mailbox", systemImage: "envelope.fill")
+                    Label("Prepare Email Reply", systemImage: "envelope.fill")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
@@ -197,7 +198,10 @@ struct QuestionDetailView: View {
             Button {
                 Task {
                     await store.updatePayment(status: "Payment requested", amount: question.paymentAmount, link: selectedPaymentLink, for: question)
-                    if let offerMessageURL { openURL(offerMessageURL) }
+                    if let offerMessageURL {
+                        if offerMessageURL.scheme == "mailto" { prepareEmail(offerMessageURL) }
+                        else { openURL(offerMessageURL) }
+                    }
                 }
             } label: {
                 Label("Prepare Payment Message", systemImage: "paperplane.fill")
@@ -392,14 +396,20 @@ struct QuestionDetailView: View {
     }
 
     private var publicReplyAddressText: String {
-        guard !publicHelpLineEmail.isEmpty else {
-            return "Set a public care-line email in Settings before replying. Mail cannot hide a personal sender by itself."
-        }
-        return "\(publicHelpLineEmail) should be the only email address clients see."
+        return "Before sending, check From is \(publicHelpLineEmail). If it shows a personal address, cancel and set up the business mailbox in iPhone Mail."
     }
 
     private var publicHelpLineEmail: String {
-        helplineEmail.trimmingCharacters(in: .whitespacesAndNewlines)
+        HelplineConfig.replyEmail
+    }
+
+    private func prepareEmail(_ url: URL?) {
+        guard MFMailComposeViewController.canSendMail(), let url,
+              let draft = BusinessEmailDraft(mailto: url) else {
+            showMailError = true
+            return
+        }
+        emailDraft = draft
     }
 
     private var fullDate: String {

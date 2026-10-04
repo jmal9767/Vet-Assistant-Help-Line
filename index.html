@@ -211,15 +211,15 @@
   <section class="card">
     <h2>How it works</h2>
     <div class="promise-grid">
-      <div class="promise"><strong>1. Choose what works for you</strong>Select a small-fee option or Community Access at $0. No explanation is required for Community Access.</div>
-      <div class="promise"><strong>2. Send your question</strong>Paid options continue to checkout. Community Access skips payment and sends your question directly.</div>
-      <div class="promise"><strong>3. Get your reply</strong>Your answer comes through the option you selected. Community Access receives the same respectful service without a payment requirement.</div>
+      <div class="promise"><strong>1. Choose what works for you</strong>Select a small-fee option or Free Community Support. No explanation is required for Free Community Support.</div>
+      <div class="promise"><strong>2. Send your question</strong>Paid options continue to checkout. Free Community Support skips payment and sends your question directly.</div>
+      <div class="promise"><strong>3. Get your reply</strong>Your answer comes through the option you selected. Free Community Support receives the same respectful service without a payment requirement.</div>
     </div>
   </section>
 
   <section class="card">
     <h2>What it costs</h2>
-    <p>Choose the option that works for you today. Paid options are kept intentionally small, and <strong>Community Access — $0</strong> is available with no explanation required.</p>
+    <p>Choose the option that works for you today. Paid options are kept intentionally small, and <strong>Free Community Support — Free</strong> is available with no explanation required.</p>
     <p>If your dog or cat needs diagnosis, medication advice, treatment, or urgent care, contact a licensed veterinarian instead.</p>
   </section>
 
@@ -230,10 +230,10 @@
       <li><strong>Quick Question — $5:</strong> for a simple question that needs a short response by email or text.</li>
       <li><strong>Detailed Guidance — $10:</strong> for a question that needs more time and explanation by email or text.</li>
       <li><strong>Phone Support — $20:</strong> for when you would rather talk through your question by phone.</li>
-      <li><strong>Community Access — $0:</strong> no-cost access is always available when needed. No explanation required.</li>
+      <li><strong>Free Community Support — Free:</strong> no-cost access is always available when needed. No explanation required.</li>
     </ul>
     <p><strong>📎 Private file uploads are included:</strong> up to 4 files of any type, 10 MB per file.</p>
-    <p class="note">Choose what works for you. Paid options continue to secure checkout after submission. Community Access does not require payment.</p>
+    <p class="note">Choose what works for you. Paid options continue to secure checkout after submission. Free Community Support does not require payment.</p>
   </section>
 
   <section class="card">
@@ -259,8 +259,8 @@
         <option value="Detailed Guidance — Email · $10">Detailed Guidance — Email · $10</option>
         <option value="Detailed Guidance — Text · $10">Detailed Guidance — Text · $10</option>
         <option value="Phone Support · $20">Phone Support · $20</option>
-        <option value="Community Access — Email · $0">Community Access — Email · $0</option>
-        <option value="Community Access — Text · $0">Community Access — Text · $0</option>
+        <option value="Free Community Support — Email">Free Community Support — Email</option>
+        <option value="Free Community Support — Text">Free Community Support — Text</option>
       </select>
       <p class="note" id="serviceNote">Pick an option first. The form will adjust based on email, text, or phone.</p>
 
@@ -280,9 +280,8 @@
       <div id="paymentFields"><label for="paymentMethod">Preferred payment method</label>
       <select id="paymentMethod">
         <option>PayPal or Apple Pay</option>
-        <option>Cash App</option>
       </select>
-      <p class="note">PayPal and Apple Pay continue to secure checkout automatically. If you choose Cash App, its payment link is sent separately and confirmed manually.</p></div>
+      <p class="note">Paid requests continue to secure checkout automatically. No separate payment message is needed.</p></div>
 
       <!-- Honeypot: humans never see or fill this. -->
       <div style="position:absolute; left:-9999px;" aria-hidden="true">
@@ -430,7 +429,7 @@
   // ⚙️ SETUP: replace with your deployed Cloudflare Worker URL (see docs/CLOUDKIT_SETUP.md).
   // Until then, submissions fall back to a pre-filled email to HELPLINE_EMAIL.
   var WORKER_URL = "https://vet-helpline-development.dkjmmz6whh.workers.dev";
-  var HELPLINE_EMAIL = "jahmal9767@gmail.com";
+  var HELPLINE_EMAIL = "info@bayareaapps.com";
 
   document.getElementById("continueButton").addEventListener("click", function () {
     document.body.classList.add("intake-ready");
@@ -473,8 +472,8 @@
       question: document.getElementById("question").value.trim(),
       sourceChannel: "Website",
       conversationStatus: "Needs response",
-      paymentStatus: isCommunityAccess(document.getElementById("requestedService").value) ? "No payment required" : "Payment requested",
-      paymentMethod: isCommunityAccess(document.getElementById("requestedService").value) ? "Community Access" : document.getElementById("paymentMethod").value,
+      paymentStatus: isFreeSupport(document.getElementById("requestedService").value) ? "No payment required" : "Payment requested",
+      paymentMethod: isFreeSupport(document.getElementById("requestedService").value) ? "Free Community Support" : document.getElementById("paymentMethod").value,
       paymentAmount: amountFromService(document.getElementById("requestedService").value),
       paymentLink: "",
       signedConsentName: document.getElementById("signedConsentName").value.trim(),
@@ -612,9 +611,9 @@
       var heading = document.createElement("h2");
       heading.textContent = "✅ Question sent!";
       var message = document.createElement("p");
-      message.textContent = isCommunityAccess(payload.requestedService)
-        ? "Thanks, " + payload.name + ". Your Community Access request for " + (payload.petName || "your dog or cat") + " was received. No payment is required."
-        : "Thanks, " + payload.name + ". Your " + payload.requestedService + " request for " + (payload.petName || "your dog or cat") + " was received. Watch " + payload.email + " for the Cash App payment link, then for your reply.";
+      message.textContent = isFreeSupport(payload.requestedService)
+        ? "Thanks, " + payload.name + ". Your Free Community Support request for " + (payload.petName || "your dog or cat") + " was received. No payment is required."
+        : "Thanks, " + payload.name + ". Your " + payload.requestedService + " request for " + (payload.petName || "your dog or cat") + " was received. Complete checkout before your paid response. Your payment status will update automatically.";
       section.append(heading, message);
     }).catch(function (error) {
       window.clearTimeout(timeout);
@@ -658,11 +657,12 @@
   }
 
   function amountFromService(service) {
+    if (isFreeSupport(service)) return "Free";
     var match = String(service).match(/\$\d+/);
     return match ? match[0] : "Confirm";
   }
 
-  function isCommunityAccess(service) { return String(service).indexOf("Community Access") === 0; }
+  function isFreeSupport(service) { return String(service).indexOf("Free Community Support") === 0; }
 
   function replyMethodFromService(service) {
     if (service.toLowerCase().indexOf("text") !== -1) return "Text message";
@@ -685,17 +685,17 @@
       return;
     }
     fields.classList.remove("hidden");
-    if (isCommunityAccess(service)) {
+    if (isFreeSupport(service)) {
       paymentFields.classList.add("hidden");
-      note.textContent = "Community Access is $0. No payment and no explanation are required.";
+      note.textContent = "Free Community Support is free. No payment and no explanation are required.";
     } else {
       paymentFields.classList.remove("hidden");
     }
     if (method === "Email") {
-      note.textContent = isCommunityAccess(service) ? "Community Access is $0. You'll receive your reply by email. No explanation required." : "You'll receive written help by email for the displayed price.";
+      note.textContent = isFreeSupport(service) ? "Free Community Support is free. You'll receive your reply by email. No explanation required." : "You'll receive written help by email for the displayed price.";
       phoneNote.textContent = "Optional for email replies.";
     } else if (method === "Text message") {
-      note.textContent = isCommunityAccess(service) ? "Community Access is $0. You'll receive your reply by text, so your phone number is required. No explanation required." : "You'll receive help by text message, so your phone number is required.";
+      note.textContent = isFreeSupport(service) ? "Free Community Support is free. You'll receive your reply by text, so your phone number is required. No explanation required." : "You'll receive help by text message, so your phone number is required.";
       phoneNote.textContent = "Required for this text-message service.";
     } else {
       note.textContent = "You'll schedule or receive a phone call, so your phone number is required.";

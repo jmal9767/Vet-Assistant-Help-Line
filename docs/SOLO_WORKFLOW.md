@@ -7,7 +7,7 @@
 3. Confirm the client-selected service and payment status in the question.
 4. Review the question and private files. Files may be any type, up to four files and 10 MB each. Download unfamiliar file types only when you recognize and trust the client submission.
 5. Decide whether the request is within the educational scope. Refer diagnosis, medication, dosing, treatment, prognosis, diagnostic interpretation, and other clinical decisions to a licensed veterinarian; refund a paid request when you cannot provide the selected service.
-6. For paid options, confirm payment before beginning the response. Community Access requires no payment. PayPal and Apple Pay update automatically; Cash App is confirmed manually.
+6. For paid options, confirm payment before beginning the response. Free Community Support requires no payment. PayPal and Apple Pay update automatically. No payment-link messages or manual payment-status changes are needed.
 7. Send the response through the selected channel. Add the standard disclaimer and mark the question Answered.
 8. Archive completed questions. Archived questions remain available in the Inbox’s Archived filter.
 
@@ -20,7 +20,7 @@
 
 ## Payments
 
-The client chooses $5 Quick Question, $10 Detailed Guidance, $20 Phone Support, or Community Access at $0 before submitting. Paid options continue to checkout; Community Access requires no payment and no explanation. Card and bank information stays with the payment provider.
+The client chooses $5 Quick Question, $10 Detailed Guidance, $20 Phone Support, or Free Community Support before submitting. Paid options continue to checkout; Free Community Support requires no payment and no explanation. Card and bank information stays with the payment provider.
 
 ## Privacy and retention
 

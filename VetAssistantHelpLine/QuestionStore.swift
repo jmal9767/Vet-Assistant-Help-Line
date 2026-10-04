@@ -58,20 +58,6 @@ final class QuestionStore {
         await save(question.record, failureMessage: "Couldn't update the question")
     }
 
-    func updatePayment(status: String, amount: String? = nil, link: String? = nil, for question: ClientQuestion) async {
-        question.setString(status, for: "paymentStatus")
-        if let amount { question.setString(amount, for: "paymentAmount") }
-        if let link { question.setString(link, for: "paymentLink") }
-        await save(question.record, failureMessage: "Couldn't update the payment")
-    }
-
-    func requestPayment(amount: String, link: String, for question: ClientQuestion) async {
-        question.setString("Payment requested", for: "paymentStatus")
-        question.setString(amount, for: "paymentAmount")
-        question.setString(link, for: "paymentLink")
-        await save(question.record, failureMessage: "Couldn't save the payment request")
-    }
-
     func deletePermanently(_ question: ClientQuestion) async {
         do {
             try await database.deleteRecord(withID: question.id)

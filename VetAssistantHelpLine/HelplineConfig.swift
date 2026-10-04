@@ -16,9 +16,9 @@ enum HelplineConfig {
 
     static let costExplanation = """
     Clients choose Quick Question for $5, Detailed Guidance for $10, Phone Support \
-    for $20, or Community Access for $0 and see the price before submitting. \
-    PayPal and Apple Pay continue to secure checkout; Cash App payments are \
-    confirmed manually. Community Access requires no payment.
+    for $20, or Free Community Support and see the price before submitting. \
+    Paid requests continue to PayPal or Apple Pay checkout automatically. \
+    Free Community Support requires no payment.
     """
 
     // The three steps shown on the shareable card and welcome page.
@@ -65,8 +65,8 @@ enum HelplineConfig {
             ServicePrice(service: "Phone Support",
                          price: "$20",
                          detail: "Talk through your question by phone"),
-            ServicePrice(service: "Community Access",
-                         price: "$0",
+            ServicePrice(service: "Free Community Support",
+                         price: "Free",
                          detail: "No-cost access when needed; no explanation required")
         ]),
         PriceSection(title: "Private file uploads", items: [

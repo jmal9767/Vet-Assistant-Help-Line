@@ -55,7 +55,7 @@ test('new menu persists server-priced, signed intake and a checkout link',async(
   const fields=s.state.records.get('question-1').fields;assert.equal(fields.paymentAmount.value,'$5');assert.equal(fields.paymentStatus.value,'Payment requested');assert.equal(fields.signedConsentName.value,fixture.signedConsentName);
 });
 test('all seven service variants have the intended price and channel',async()=>{
-  const s=setup();const variants=[['Quick Question — Email · $5','$5','Email'],['Quick Question — Text · $5','$5','Text message'],['Detailed Guidance — Email · $10','$10','Email'],['Detailed Guidance — Text · $10','$10','Text message'],['Phone Support · $20','$20','Phone call'],['Community Access — Email · $0','$0','Email'],['Community Access — Text · $0','$0','Text message']];
+  const s=setup();const variants=[['Quick Question — Email · $5','$5','Email'],['Quick Question — Text · $5','$5','Text message'],['Detailed Guidance — Email · $10','$10','Email'],['Detailed Guidance — Text · $10','$10','Text message'],['Phone Support · $20','$20','Phone call'],['Free Community Support — Email','$0','Email'],['Free Community Support — Text','$0','Text message']];
   for(const [service,amount,reply] of variants){assert.equal((await s.call('/intake',{...fixture,requestedService:service})).status,200);const fields=[...s.state.records.values()].at(-1).fields;assert.equal(fields.paymentAmount.value,amount);assert.equal(fields.preferredReply.value,reply);}
 });
 test('Community Access bypasses payment regardless of supplied payment method',async()=>{const s=setup();const r=await s.call('/intake',{...fixture,requestedService:'Community Access — Email · $0',paymentMethod:'',phone:''});assert.equal(r.status,200);assert.equal((await r.json()).checkoutURL,'');assert.equal(s.state.records.get('question-1').fields.paymentStatus.value,'No payment required');});
@@ -95,3 +95,15 @@ test('concurrent refund wins over completion using a conditional record update',
 test('partial refund is recorded and cannot downgrade a full refund',async()=>{const s=await paidSetup();await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'});const event={event_type:'PAYMENT.CAPTURE.REFUNDED',resource:{supplementary_data:{related_ids:{order_id:'ORDER123'}}}};s.state.order.purchase_units[0].payments.captures[0].status='PARTIALLY_REFUNDED';assert.equal((await s.call('/paypal/webhook',event)).status,200);assert.equal(s.state.records.get('question-1').fields.paymentStatus.value,'Partially refunded');s.state.order.purchase_units[0].payments.captures[0].status='REFUNDED';await s.call('/paypal/webhook',event);s.state.order.purchase_units[0].payments.captures[0].status='PARTIALLY_REFUNDED';await s.call('/paypal/webhook',event);assert.equal(s.state.records.get('question-1').fields.paymentStatus.value,'Refunded');});
 
 test('a failed second upload rolls back the complete batch before creating a question',async()=>{const s=setup();const put=s.env.ATTACHMENTS_BUCKET.put;let calls=0;s.env.ATTACHMENTS_BUCKET.put=async(...args)=>{await put(...args);if(++calls===2)throw new Error('upload interrupted');};const form=new FormData();for(const [k,v]of Object.entries(fixture))form.append(k,v);form.append('attachments',new File(['one'],'one.txt'));form.append('attachments',new File(['two'],'two.txt'));assert.equal((await s.worker.fetch(new Request('https://checkout.test/intake',{method:'POST',headers:{Origin:origin},body:form}),s.env)).status,503);assert.equal(s.state.files.size,0);assert.equal(s.state.records.size,0);});
+
+test('cached free labels normalize without checkout; manual payment is rejected',async()=>{
+  const s=setup();
+  const free=await s.call('/intake',{...fixture,requestedService:'Community Access — Text · $0',paymentMethod:'Cash App'});
+  assert.equal(free.status,200);assert.equal((await free.json()).checkoutURL,'');
+  const fields=s.state.records.get('question-1').fields;
+  assert.equal(fields.requestedService.value,'Free Community Support — Text');
+  assert.equal(fields.paymentAmount.value,'$0');assert.equal(fields.paymentMethod.value,'Free Community Support');
+  const count=s.state.records.size;
+  assert.equal((await s.call('/intake',{...fixture,paymentMethod:'Cash App'})).status,400);
+  assert.equal(s.state.records.size,count);
+});

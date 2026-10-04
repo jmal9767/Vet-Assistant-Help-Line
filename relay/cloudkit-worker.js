@@ -176,9 +176,12 @@ function validatedFields(body) {
     "Detailed Guidance — Email · $10": { reply: "Email", amount: "$10" },
     "Detailed Guidance — Text · $10": { reply: "Text message", amount: "$10" },
     "Phone Support · $20": { reply: "Phone call", amount: "$20" },
-    "Community Access — Email · $0": { reply: "Email", amount: "$0", community: true },
-    "Community Access — Text · $0": { reply: "Text message", amount: "$0", community: true },
+    "Free Community Support — Email": { reply: "Email", amount: "$0", community: true },
+    "Free Community Support — Text": { reply: "Text message", amount: "$0", community: true },
   };
+  fields.requestedService = fields.requestedService
+    .replace("Community Access — Email · $0", "Free Community Support — Email")
+    .replace("Community Access — Text · $0", "Free Community Support — Text");
   const selectedService = services[fields.requestedService];
   if (!selectedService) return { error: "The service menu may have changed. Reload the care-line page and choose a current option." };
   fields.preferredReply = selectedService.reply;
@@ -196,9 +199,9 @@ function validatedFields(body) {
   fields.conversationStatus = "Needs response";
   fields.paymentStatus = selectedService.community ? "No payment required" : "Payment requested";
   if (selectedService.community) {
-    fields.paymentMethod = "Community Access";
-  } else if (!["PayPal or Apple Pay", "Cash App"].includes(fields.paymentMethod)) {
-    return { error: "Please choose a valid payment method." };
+    fields.paymentMethod = "Free Community Support";
+  } else if (fields.paymentMethod !== "PayPal or Apple Pay") {
+    return { error: "Paid requests use PayPal or Apple Pay checkout. Reload the page to use the current payment options." };
   }
   fields.paymentAmount = selectedService.amount;
   fields.paymentLink = "";

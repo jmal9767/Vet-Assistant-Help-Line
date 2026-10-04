@@ -29,10 +29,15 @@ final class QuestionStore {
             let query = CKQuery(recordType: ClientQuestion.recordType, predicate: NSPredicate(value: true))
             query.sortDescriptors = [NSSortDescriptor(key: "submittedAt", ascending: false)]
             var records: [CKRecord] = []
+            var firstRecordError: Error?
             var (matches, cursor) = try await database.records(matching: query, resultsLimit: 100)
             while true {
                 for (_, result) in matches {
-                    records.append(try result.get())
+                    switch result {
+                    case let .success(record): records.append(record)
+                    case let .failure(error):
+                        if firstRecordError == nil { firstRecordError = error }
+                    }
                 }
                 guard let next = cursor else { break }
                 (matches, cursor) = try await database.records(continuingMatchFrom: next, resultsLimit: 100)
@@ -40,7 +45,7 @@ final class QuestionStore {
             let decoded = records.map(ClientQuestion.init)
             questions = decoded.filter { $0.status != .archived }
             archivedQuestions = decoded.filter { $0.status == .archived }
-            errorMessage = nil
+            errorMessage = firstRecordError.map { "Some questions couldn’t be loaded: \($0.localizedDescription). Pull to refresh to try again." }
         } catch {
             errorMessage = "Couldn't load questions: \(error.localizedDescription)"
         }

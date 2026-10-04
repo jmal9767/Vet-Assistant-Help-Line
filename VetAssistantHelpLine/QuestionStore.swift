@@ -9,6 +9,8 @@ final class QuestionStore {
     private(set) var archivedQuestions: [ClientQuestion] = []
     private(set) var isLoading = false
     var errorMessage: String?
+    private(set) var notificationSetupError: String?
+    private(set) var notificationSetupComplete = false
 
     private let database = CKContainer.default().publicCloudDatabase
     private static let subscriptionID = "new-question-alerts"
@@ -30,7 +32,7 @@ final class QuestionStore {
             var (matches, cursor) = try await database.records(matching: query, resultsLimit: 100)
             while true {
                 for (_, result) in matches {
-                    if case let .success(record) = result { records.append(record) }
+                    records.append(try result.get())
                 }
                 guard let next = cursor else { break }
                 (matches, cursor) = try await database.records(continuingMatchFrom: next, resultsLimit: 100)
@@ -89,10 +91,14 @@ final class QuestionStore {
     func ensureSubscription() async {
         do {
             _ = try await database.subscription(for: Self.subscriptionID)
+            notificationSetupComplete = true
+            notificationSetupError = nil
             return
         } catch let error as CKError where error.code == .unknownItem {
             // Create it below.
         } catch {
+            notificationSetupComplete = false
+            notificationSetupError = "Couldn’t set up Inbox alerts: \(error.localizedDescription)"
             return
         }
 
@@ -108,6 +114,13 @@ final class QuestionStore {
         info.soundName = "default"
         info.shouldBadge = true
         subscription.notificationInfo = info
-        do { _ = try await database.save(subscription) } catch { }
+        do {
+            _ = try await database.save(subscription)
+            notificationSetupComplete = true
+            notificationSetupError = nil
+        } catch {
+            notificationSetupComplete = false
+            notificationSetupError = "Couldn’t set up Inbox alerts: \(error.localizedDescription)"
+        }
     }
 }

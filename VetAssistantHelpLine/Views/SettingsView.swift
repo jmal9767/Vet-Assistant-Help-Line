@@ -3,6 +3,7 @@ import UIKit
 import UserNotifications
 
 struct SettingsView: View {
+    @Environment(QuestionStore.self) private var store
     @Environment(\.openURL) private var openURL
     @AppStorage("setup.helplineEmail") private var helplineEmail = ""
     @AppStorage("setup.cashAppLink") private var cashAppLink = ""
@@ -25,6 +26,11 @@ struct SettingsView: View {
                     InfoTile {
                         SectionHeader("Notifications", subtitle: "Receive an alert when a client submits a question.")
                         CompactLabel(title: "Permission", value: notificationStatus, icon: "bell.fill")
+                        CompactLabel(title: "Inbox alerts", value: store.notificationSetupComplete ? "Connected" : "Not connected yet", icon: "tray.fill")
+                        if let message = store.notificationSetupError {
+                            Text(message).font(.footnote).foregroundStyle(AppPalette.danger)
+                            Button("Retry Inbox Alerts") { Task { await store.ensureSubscription() } }
+                        }
                         Button {
                             requestNotifications()
                         } label: {
@@ -51,7 +57,10 @@ struct SettingsView: View {
             }
             .background(AppPalette.appBackground.ignoresSafeArea())
             .navigationTitle("Settings")
-            .task { await updateNotificationStatus() }
+            .task {
+                await updateNotificationStatus()
+                await store.ensureSubscription()
+            }
         }
     }
 

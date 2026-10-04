@@ -858,6 +858,7 @@ async function handlePetAssist(request, env, url) {
   if (request.headers.has("Origin") && !isAllowedOrigin(request, env)) return json({ error: "Origin not allowed" }, 403, cors);
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
   if (!env.PETASSIST_PAYMENTS) return json({ error: "PetAssist payments are being connected" }, 503, cors);
+  if (url.pathname === "/petassist/device-connection" && request.method === "POST") return ownerDeviceConnection(request, env, cors);
   if (url.pathname.startsWith("/petassist/operator/") || url.pathname.startsWith("/petassist/client/") || url.pathname === "/petassist/requests") return handleVisits(request, env, url, cors);
   if (request.method === "POST" && url.pathname === "/petassist/bookings") {
     if (!await secretMatches((request.headers.get("Authorization") || "").replace(/^Bearer /, ""), env.PETASSIST_OPERATOR_KEY)) return json({ error: "Use the website visit request form. The business confirms visits before requesting payment." }, 401, cors);
@@ -899,6 +900,14 @@ export class PetAssistPayments {
     const input = await request.json();
     return this.state.storage.transaction(async txn => {
       let record = await txn.get("record");
+      if (path === "/device-proof") {
+        const used = await txn.get("device-nonces") || [];
+        if (used.some(item => item.nonce === input.nonce)) return Response.json({ok:false},{status:409});
+        const active = used.filter(item => item.timestamp >= Date.now() - 120000);
+        if (active.length >= 100) return Response.json({ok:false},{status:429});
+        active.push({nonce:input.nonce,timestamp:Date.now()}); await txn.put("device-nonces",active);
+        return Response.json({ok:true});
+      }
       if (path === "/index-add") { await txn.put("visit:"+input.token,true); return Response.json({ok:true}); }
       if (path === "/visit-create") {
         if (record) return Response.json(record, {status:record.clientAccess===input.clientAccess?200:409});
@@ -1035,4 +1044,21 @@ async function handleVisits(request,env,url,cors) {
     return json(visitSummary(await result.json(),request.url,true),200,cors);
   }
   return json({error:"Method not allowed"},405,cors);
+}
+
+async function ownerDeviceConnection(request, env, cors) {
+  const rejected = () => json({error:"This iPhone is not authorized for business access."},401,cors);
+  if (!env.PETASSIST_DEVICE_PUBLIC_KEY || !env.PETASSIST_OPERATOR_KEY) return rejected();
+  const input = await limitedVisitJSON(request);
+  if (!input || typeof input.publicKey !== "string" || !await secretMatches(input.publicKey,env.PETASSIST_DEVICE_PUBLIC_KEY.trim()) || !/^[a-f0-9]{32}$/.test(input.nonce || "") || !/^\d{10}$/.test(input.timestamp || "") || Math.abs(Date.now()-Number(input.timestamp)*1000)>60000) return rejected();
+  try {
+    const decode = text => Uint8Array.from(atob(text),char=>char.charCodeAt(0));
+    const signature = decode(input.signature || ""); if(signature.length !== 64)return rejected();
+    const key = await crypto.subtle.importKey("raw",decode(input.publicKey),{name:"ECDSA",namedCurve:"P-256"},false,["verify"]);
+    const payload = new TextEncoder().encode("PawsVisitsDevice/v1\n"+input.publicKey+"\n"+input.nonce+"\n"+input.timestamp);
+    if(!await crypto.subtle.verify({name:"ECDSA",hash:"SHA-256"},key,signature,payload))return rejected();
+    const proof = await visitsIndex(env).fetch("https://booking.invalid/device-proof",{method:"POST",body:JSON.stringify({nonce:input.nonce})});
+    if(!proof.ok)return rejected();
+    return json({connectionKey:env.PETASSIST_OPERATOR_KEY},200,{...cors,"Cache-Control":"no-store"});
+  } catch { return rejected(); }
 }

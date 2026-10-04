@@ -136,17 +136,17 @@ test('cached free labels normalize without checkout; manual payment is rejected'
 const petToken='a'.repeat(32);
 test('PetAssist quotes enforce service prices, remain separate and survive repeat requests',async()=>{
   const s=setup();const body={token:petToken,service:'wellnessCheck',amount:'0.01',status:'Paid'};
-  let r=await s.call('/petassist/bookings',body);assert.equal(r.status,200);let receipt=await r.json();assert.equal(receipt.amount,'$65');assert.equal(receipt.status,'Payment requested');assert.equal(s.state.records.size,0);
-  assert.equal((await s.call('/petassist/bookings',body)).status,200);
-  assert.equal((await s.call('/petassist/bookings',{...body,service:'nailTrim'})).status,409);
-  assert.equal((await s.call('/petassist/bookings',{...body,service:'__proto__',token:'b'.repeat(32)})).status,400);
+  let r=await s.call('/petassist/bookings',body,operatorHeaders);assert.equal(r.status,200);let receipt=await r.json();assert.equal(receipt.amount,'$65');assert.equal(receipt.status,'Payment requested');assert.equal(s.state.records.size,0);
+  assert.equal((await s.call('/petassist/bookings',body,operatorHeaders)).status,200);
+  assert.equal((await s.call('/petassist/bookings',{...body,service:'nailTrim'},operatorHeaders)).status,409);
+  assert.equal((await s.call('/petassist/bookings',{...body,service:'__proto__',token:'b'.repeat(32)},operatorHeaders)).status,400);
   assert.equal((await s.call('/petassist/bookings',body,{Origin:'https://attacker.invalid'})).status,403);
   r=await s.worker.fetch(new Request('https://checkout.test/petassist/bookings/'+petToken),s.env);assert.equal(r.status,200);assert.equal((await r.json()).amount,'$65');
   assert.equal((await s.worker.fetch(new Request('https://checkout.test/petassist/bookings/'+'c'.repeat(32)),s.env)).status,404);
 });
 test('PetAssist uses common capture and refund verification without resurrecting refunded payments',async()=>{
   const s=setup(),question='petassist-'+petToken;
-  await s.call('/petassist/bookings',{token:petToken,service:'nailTrim'});
+  await s.call('/petassist/bookings',{token:petToken,service:'nailTrim'},operatorHeaders);
   assert.equal((await s.call('/api/paypal/orders',{question})).status,200);assert.match(s.state.order.purchase_units[0].invoice_id,/^petassist-/);
   assert.equal((await s.call('/api/paypal/orders/ORDER123/capture',{question})).status,200);
   assert.equal((await s.call('/api/paypal/orders/ORDER123/capture',{question})).status,200);assert.equal(s.state.captures,1);
@@ -326,4 +326,9 @@ test("removing client details revokes access and checkout while retaining verifi
 test("private visit browser preflight permits bearer authorization",async()=>{
  const s=setup();const response=await s.worker.fetch(new Request("https://checkout.test/petassist/client/visits/"+visitFixture.token,{method:"OPTIONS",headers:{Origin:origin,"Access-Control-Request-Headers":"authorization"}}),s.env);
  assert.equal(response.status,204);assert.match(response.headers.get("Access-Control-Allow-Headers"),/Authorization/);
+});
+
+test("legacy quote creation cannot bypass business confirmation anonymously",async()=>{
+ const s=setup();assert.equal((await s.call("/petassist/bookings",{token:"1".repeat(32),service:"nailTrim"})).status,401);
+ assert.equal((await visitGet(s,"/petassist/bookings/"+"1".repeat(32))).status,404);
 });

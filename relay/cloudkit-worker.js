@@ -860,6 +860,7 @@ async function handlePetAssist(request, env, url) {
   if (!env.PETASSIST_PAYMENTS) return json({ error: "PetAssist payments are being connected" }, 503, cors);
   if (url.pathname.startsWith("/petassist/operator/") || url.pathname.startsWith("/petassist/client/") || url.pathname === "/petassist/requests") return handleVisits(request, env, url, cors);
   if (request.method === "POST" && url.pathname === "/petassist/bookings") {
+    if (!await secretMatches((request.headers.get("Authorization") || "").replace(/^Bearer /, ""), env.PETASSIST_OPERATOR_KEY)) return json({ error: "Use the website visit request form. The business confirms visits before requesting payment." }, 401, cors);
     if (!(await allowIntakeRequest(request, env))) return json({ error: "Please wait before trying again" }, 429, cors);
     if (Number(request.headers.get("Content-Length") || 0) > 4096) return json({ error: "Request too large" }, 413, cors);
     const input = await safeJSON(request);

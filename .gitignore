@@ -69,3 +69,4 @@ node_modules/
 .dev.vars*
 .env*
 eckey*.pem
+site-dist/

@@ -32,7 +32,7 @@ struct PaymentsView: View {
                             HStack(spacing: 10) {
                                 MetricPill(title: "Pending", value: "\(pendingQuestions.count)", icon: "clock.fill", tint: AppPalette.warmGold)
                                 MetricPill(title: "Paid", value: "\(paidQuestions.count)", icon: "checkmark.circle.fill", tint: AppPalette.clinicGreen)
-                                MetricPill(title: "Refunded", value: "\(refundedCount)", icon: "arrow.uturn.backward.circle.fill", tint: AppPalette.brand)
+                                MetricPill(title: "Refunds", value: "\(refundedCount)", icon: "arrow.uturn.backward.circle.fill", tint: AppPalette.brand)
                             }
                         }
 
@@ -76,7 +76,7 @@ struct PaymentsView: View {
     }
 
     private var refundedCount: Int {
-        paymentQuestions.filter { $0.paymentStatus == "Refunded" }.count
+        paymentQuestions.filter { ["Refunded", "Partially refunded"].contains($0.paymentStatus) }.count
     }
 }
 
@@ -140,7 +140,7 @@ private struct PaymentRow: View {
     private var iconName: String {
         switch question.paymentStatus {
         case "Paid": "checkmark.circle.fill"
-        case "Refunded": "arrow.uturn.backward.circle.fill"
+        case "Refunded", "Partially refunded": "arrow.uturn.backward.circle.fill"
         case "Referred — no charge": "cross.case.fill"
         case "Payment requested": "paperplane.fill"
         default: "clock.fill"
@@ -150,7 +150,7 @@ private struct PaymentRow: View {
     private var tint: Color {
         switch question.paymentStatus {
         case "Paid": AppPalette.clinicGreen
-        case "Refunded": AppPalette.brand
+        case "Refunded", "Partially refunded": AppPalette.brand
         case "Referred — no charge": AppPalette.brand
         case "Payment requested": AppPalette.warmGold
         default: AppPalette.danger

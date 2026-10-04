@@ -520,6 +520,10 @@
       alert(oversizedFile.name + " is too large. Please keep each file under 10 MB.");
       return;
     }
+    if (files.reduce(function (total, file) { return total + file.size; }, 0) > 40 * 1024 * 1024) {
+      alert("Please keep the combined files at 40 MB or less.");
+      return;
+    }
     if (payload.urgency === "I may need an emergency vet") {
       alert("Please contact an emergency veterinarian now instead of submitting a paid request.");
       return;
@@ -582,7 +586,10 @@
     button.textContent = "Sending…";
 
     var controller = new AbortController();
-    var timeout = window.setTimeout(function () { controller.abort(); }, 25000);
+    // Allow large attachments to upload over a slow mobile connection.
+    var uploadBytes = files.reduce(function (total, file) { return total + file.size; }, 0);
+    var timeoutMs = Math.max(25000, 30000 + Math.ceil(uploadBytes / (128 * 1024)) * 1000);
+    var timeout = window.setTimeout(function () { controller.abort(); }, timeoutMs);
     fetch(WORKER_URL, {
       method: "POST",
       body: submissionBody(payload, files),
@@ -651,7 +658,7 @@
   }
 
   function amountFromService(service) {
-    var match = String(service).match(/\\$\\d+/);
+    var match = String(service).match(/\$\d+/);
     return match ? match[0] : "Confirm";
   }
 
@@ -669,6 +676,7 @@
     var paymentFields = document.getElementById("paymentFields");
     var fields = document.getElementById("questionnaireFields");
     var method = replyMethodFromService(service);
+    document.getElementById("phone").required = !!service && method !== "Email";
     if (!service) {
       note.textContent = "Pick an option first. The form will adjust based on email, text, or phone.";
       fields.classList.add("hidden");

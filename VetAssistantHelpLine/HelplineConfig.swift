@@ -14,9 +14,10 @@ enum HelplineConfig {
     """
 
     static let costExplanation = """
-    Clients choose the $10, $20, $30, or $35 service that fits the help they want and \
-    see the price before submitting. PayPal and Apple Pay continue to secure checkout; \
-    Cash App payments are confirmed manually.
+    Clients choose Quick Question for $5, Detailed Guidance for $10, Phone Support \
+    for $20, or Community Access for $0 and see the price before submitting. \
+    PayPal and Apple Pay continue to secure checkout; Cash App payments are \
+    confirmed manually. Community Access requires no payment.
     """
 
     // The three steps shown on the shareable card and welcome page.

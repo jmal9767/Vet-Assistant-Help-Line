@@ -1,0 +1,7 @@
+{
+  "name": "paws-whiskers-care-line",
+  "account_id": "7ab8b86286681040e1c9ebc8c2699220",
+  "compatibility_date": "2026-09-20",
+  "workers_dev": true,
+  "assets": { "directory": "./site-dist" }
+}

@@ -1,6 +1,6 @@
 # Deploy the care line
 
-The public intake and backend must use the same service menu: Quick Question $5, Detailed Guidance $10, Phone Support $20, Free Community Support — Free. Existing pending $30/$35 payment links remain valid for historical requests; new intake does not offer those services.
+The public intake and backend must use the same service menu: Quick Question $10, Detailed Guidance $15, Phone Support $25, Free Community Support — Free. Existing pending $5/$10/$20/$30/$35 payment links retain their original amounts and remain valid for historical requests; new intake does not offer those services.
 
 ## Validate
 

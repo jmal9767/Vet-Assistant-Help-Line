@@ -7,7 +7,7 @@ import { webcrypto } from 'node:crypto';
 const source = (await readFile(new URL('../cloudkit-worker.js', import.meta.url),'utf8')).replace(/^import .*;$/m,'const applePayDomainAssociation = "association";').replace('export default {','const worker = {').replace('export class PetAssistPayments','class PetAssistPayments');
 const key=await webcrypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify']);
 const pem=Buffer.from(await webcrypto.subtle.exportKey('pkcs8',key.privateKey)).toString('base64');
-const fixture={name:'Release test',email:'release@example.invalid',phone:'5555555555',species:'Dog',sex:'Unknown',reproductiveStatus:'Unknown',category:'Other',symptomOnset:'General question',symptomTrend:'Not applicable / general question',appetite:'Normal',drinking:'Normal',urination:'Normal',stool:'Normal',energy:'Normal',vomiting:'None',question:'How can I provide enrichment?',requestedService:'Quick Question — Email · $5',paymentMethod:'PayPal or Apple Pay',signedConsentName:'Release test',signedConsentAt:'2026-10-04T16:00:00Z',acceptedTerms:'yes',acceptedCommunicationPolicy:'yes'};
+const fixture={name:'Release test',email:'release@example.invalid',phone:'5555555555',species:'Dog',sex:'Unknown',reproductiveStatus:'Unknown',category:'Other',symptomOnset:'General question',symptomTrend:'Not applicable / general question',appetite:'Normal',drinking:'Normal',urination:'Normal',stool:'Normal',energy:'Normal',vomiting:'None',question:'How can I provide enrichment?',requestedService:'Quick Question — Email · $10',paymentMethod:'PayPal or Apple Pay',signedConsentName:'Release test',signedConsentAt:'2026-10-04T16:00:00Z',acceptedTerms:'yes',acceptedCommunicationPolicy:'yes'};
 const origin='https://intake.test';
 function setup(){
   const records=new Map(),files=new Map();
@@ -63,15 +63,15 @@ async function paidSetup(){const s=setup();assert.equal((await s.call('/intake',
 
 test('new menu persists server-priced, signed intake and a checkout link',async()=>{
   const s=setup();const r=await s.call('/intake',{...fixture,paymentAmount:'$1',paymentStatus:'Paid'});assert.equal(r.status,200);assert.match((await r.json()).checkoutURL,/\/pay\?question=question-1$/);
-  const fields=s.state.records.get('question-1').fields;assert.equal(fields.paymentAmount.value,'$5');assert.equal(fields.paymentStatus.value,'Payment requested');assert.equal(fields.signedConsentName.value,fixture.signedConsentName);
+  const fields=s.state.records.get('question-1').fields;assert.equal(fields.paymentAmount.value,'$10');assert.equal(fields.paymentStatus.value,'Payment requested');assert.equal(fields.signedConsentName.value,fixture.signedConsentName);
 });
 test('all seven service variants have the intended price and channel',async()=>{
-  const s=setup();const variants=[['Quick Question — Email · $5','$5','Email'],['Quick Question — Text · $5','$5','Text message'],['Detailed Guidance — Email · $10','$10','Email'],['Detailed Guidance — Text · $10','$10','Text message'],['Phone Support · $20','$20','Phone call'],['Free Community Support — Email','$0','Email'],['Free Community Support — Text','$0','Text message']];
+  const s=setup();const variants=[['Quick Question — Email · $10','$10','Email'],['Quick Question — Text · $10','$10','Text message'],['Detailed Guidance — Email · $15','$15','Email'],['Detailed Guidance — Text · $15','$15','Text message'],['Phone Support · $25','$25','Phone call'],['Free Community Support — Email','$0','Email'],['Free Community Support — Text','$0','Text message']];
   for(const [service,amount,reply] of variants){assert.equal((await s.call('/intake',{...fixture,requestedService:service})).status,200);const fields=[...s.state.records.values()].at(-1).fields;assert.equal(fields.paymentAmount.value,amount);assert.equal(fields.preferredReply.value,reply);}
 });
 test('Community Access bypasses payment regardless of supplied payment method',async()=>{const s=setup();const r=await s.call('/intake',{...fixture,requestedService:'Community Access — Email · $0',paymentMethod:'',phone:''});assert.equal(r.status,200);assert.equal((await r.json()).checkoutURL,'');assert.equal(s.state.records.get('question-1').fields.paymentStatus.value,'No payment required');});
 test('rejects stale services, missing consent, unsigned consent, emergencies, and missing phone',async()=>{
-  for(const patch of [{requestedService:'Quick email response · $10'},{acceptedTerms:'no'},{acceptedCommunicationPolicy:'no'},{signedConsentName:''},{signedConsentAt:'invalid'},{urination:'Not urinating'},{vomiting:'Repeated retching with little or nothing coming up'},{requestedService:'Phone Support · $20',phone:''}]){const s=setup();assert.equal((await s.call('/intake',{...fixture,...patch})).status,400);assert.equal(s.state.records.size,0);}
+  for(const patch of [{requestedService:'Quick email response · $15'},{acceptedTerms:'no'},{acceptedCommunicationPolicy:'no'},{signedConsentName:''},{signedConsentAt:'invalid'},{urination:'Not urinating'},{vomiting:'Repeated retching with little or nothing coming up'},{requestedService:'Phone Support · $25',phone:''}]){const s=setup();assert.equal((await s.call('/intake',{...fixture,...patch})).status,400);assert.equal(s.state.records.size,0);}
 });
 test('origin restrictions and rate limiting reject intake without saving',async()=>{const s=setup();assert.equal((await s.call('/intake',fixture,{Origin:'https://unrelated.test'})).status,403);s.env.INTAKE_RATE_LIMITER={async limit(){return {success:false};}};assert.equal((await s.call('/intake',fixture)).status,429);assert.equal(s.state.records.size,0);});
 test('advertised four 10 MB files fit; over-limit and five-file fixtures fail',()=>{const s=setup();s.context.files=Array.from({length:4},()=>({name:'fixture',size:10*1024*1024}));assert.equal(vm.runInContext('validateFiles(files)',s.context),null);s.context.files[0].size++;assert.match(vm.runInContext('validateFiles(files)',s.context),/too large/);s.context.files=Array.from({length:5},()=>({name:'fixture',size:1}));assert.match(vm.runInContext('validateFiles(files)',s.context),/4 files/);});
@@ -82,8 +82,8 @@ test('private uploads are readable with a valid signature and fail on tampering 
   const tampered=new URL(link);tampered.searchParams.set('signature','wrong');assert.equal((await s.worker.fetch(new Request(tampered),s.env)).status,401);tampered.searchParams.set('expires','1');assert.equal((await s.worker.fetch(new Request(tampered),s.env)).status,410);
 });
 test('failed CloudKit save removes newly uploaded orphan files',async()=>{const s=setup();s.state.failSave=true;const form=new FormData();for(const [k,v]of Object.entries(fixture))form.append(k,v);form.append('attachments',new File(['test'],'fixture.txt'));assert.equal((await s.worker.fetch(new Request('https://checkout.test/intake',{method:'POST',headers:{Origin:origin},body:form}),s.env)).status,502);assert.equal(s.state.files.size,0);});
-test('order uses the server amount and bounded stable idempotency key',async()=>{const s=await paidSetup();assert.equal(s.state.order.purchase_units[0].amount.value,'5.00');assert.match(s.state.order.purchase_units[0].invoice_id,/^paws-/);});
-test('capture recovers after CloudKit failure and repeated paid requests never capture twice',async()=>{const s=await paidSetup();s.state.failSave=true;assert.equal((await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'})).status,502);s.state.failSave=false;assert.equal((await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'})).status,200);assert.equal((await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'})).status,200);assert.equal(s.state.captures,1);assert.equal((await s.call('/api/paypal/orders',{question:'question-1'})).status,409);});
+test('order uses the server amount and bounded stable idempotency key',async()=>{const s=await paidSetup();assert.equal(s.state.order.purchase_units[0].amount.value,'10.00');assert.match(s.state.order.purchase_units[0].invoice_id,/^paws-/);});
+test('capture recovers after CloudKit failure and repeated paid requests never capture twice',async()=>{const s=await paidSetup();s.state.failSave=true;const pending=await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'});assert.equal(pending.status,202);assert.deepEqual(await pending.json(),{ok:true,status:'Paid',statusSyncPending:true});s.state.failSave=false;assert.equal((await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'})).status,200);assert.equal((await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'})).status,200);assert.equal(s.state.captures,1);assert.equal((await s.call('/api/paypal/orders',{question:'question-1'})).status,409);});
 test('capture rejects a different customer order and wrong captured amount',async()=>{let s=await paidSetup();s.state.order.purchase_units[0].custom_id='different-question';assert.equal((await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'})).status,409);assert.equal(s.state.captures,0);s=await paidSetup();s.state.wrongCapture=true;assert.equal((await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'})).status,502);assert.equal(s.state.records.get('question-1').fields.paymentStatus.value,'Payment requested');});
 test('verified completion webhook repairs payment status; failures stay retryable',async()=>{
   const s=await paidSetup();s.state.failSave=true;await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1',method:'Apple Pay'});const event={event_type:'PAYMENT.CAPTURE.COMPLETED',resource:{supplementary_data:{related_ids:{order_id:'ORDER123'}}}};
@@ -109,7 +109,7 @@ test('older CloudKit schemas preserve missing fields and checkout status in a ve
   const s=setup();s.state.unsupportedFields=new Set(['breed','sex','paymentAmount','paymentStatus','paymentLink','signedConsentName']);
   const r=await s.call('/intake',{...fixture,breed:'Fictional mix'});assert.equal(r.status,200);assert.match((await r.json()).checkoutURL,/question-1/);
   const record=s.state.records.get('question-1');let packed=JSON.parse(record.fields.question.value);assert.equal(packed.question,fixture.question);assert.equal(packed.details.breed,'Fictional mix');assert.equal(packed.details.signedConsentName,fixture.signedConsentName);assert.equal(packed.details.paymentStatus,'Payment requested');assert.match(packed.details.paymentLink,/question-1/);
-  assert.equal((await s.call('/api/paypal/orders',{question:'question-1'})).status,200);assert.equal(s.state.order.purchase_units[0].amount.value,'5.00');assert.equal((await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'})).status,200);
+  assert.equal((await s.call('/api/paypal/orders',{question:'question-1'})).status,200);assert.equal(s.state.order.purchase_units[0].amount.value,'10.00');assert.equal((await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'})).status,200);
   packed=JSON.parse(record.fields.question.value);const updated=JSON.parse(s.state.records.get('question-1').fields.question.value);assert.equal(updated.details.paymentStatus,'Paid');assert.equal(updated.details.breed,'Fictional mix');assert.equal(updated.details.signedConsentName,fixture.signedConsentName);
   assert.equal((await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'})).status,200);assert.equal(s.state.captures,1);
 });
@@ -156,4 +156,109 @@ test('PetAssist uses common capture and refund verification without resurrecting
   assert.equal((await s.call('/paypal/webhook',event)).status,200);
   await s.call('/paypal/webhook',{event_type:'PAYMENT.CAPTURE.COMPLETED',resource:{supplementary_data:{related_ids:{order_id:'ORDER123'}}}});
   r=await s.worker.fetch(new Request('https://checkout.test/petassist/bookings/'+petToken),s.env);assert.equal((await r.json()).status,'Refunded');
+});
+
+async function checkoutFixture(patch = {}) {
+  const s = setup();
+  await s.call('/intake', fixture);
+  const response = await s.worker.fetch(new Request('https://checkout.test/pay?question=question-1'), s.env);
+  const html = await response.text();
+  const script = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)][0][1];
+  const elements = Object.fromEntries(['status','applepay-status','applepay-container','applepay-button','paypal-buttons','checkout-controls','checkout-title','checkout-note','checkout-next'].map(id=>[id,{textContent:'',innerHTML:'',hidden:id==='checkout-next',focus(){this.focused=true;}}]));
+  const calls = { sessions: [], orders: 0, captures: 0, confirmations: 0 };
+  class AppleSession {
+    static STATUS_SUCCESS = 1; static STATUS_FAILURE = 0;
+    static canMakePayments() { return !patch.unsupported; }
+    constructor(version, request) { if(patch.startFails) throw new Error('start'); this.request=request;calls.sessions.push(this); }
+    begin() { this.begun = true; }
+    abort() { this.aborted = true; }
+    completeMerchantValidation(session) { this.merchantSession = session; }
+    completePayment(status) { this.status = status; }
+  }
+  const applepay = {
+    async config() { if(patch.configFails) throw new Error('config');return {isEligible:!patch.ineligible,countryCode:'US',merchantCapabilities:['supports3DS'],supportedNetworks:['visa']}; },
+    async validateMerchant() { if(patch.validationFails) throw new Error('validation');return {merchantSession:{valid:true}}; },
+    async confirmOrder(input) { calls.confirmations++;calls.confirmInput=input;if(patch.confirmFails) throw new Error('declined'); }
+  };
+  const paypal = { Applepay:()=>applepay, Buttons(options){calls.paypalOptions=options;return {render:async()=>{}};} };
+  const context = vm.createContext({document:{getElementById:id=>elements[id]},window:{paypal,ApplePaySession:AppleSession},paypal,ApplePaySession:AppleSession,fetch:async(path,options)=>{
+    if(path.endsWith('/capture')){calls.captures++;return Response.json({status:'Paid',statusSyncPending:!!patch.syncPending});}
+    calls.orders++;return Response.json({id:'ORDER123'});
+  }});
+  vm.runInContext(script,context);
+  await vm.runInContext('setupApplePay()',context);
+  return {s,response,html,elements,calls};
+}
+
+test('checkout permits Apple Pay frames/images and PayPal provider subdomains',async()=>{
+  const {response}=await checkoutFixture();const csp=response.headers.get('Content-Security-Policy');
+  const directives=Object.fromEntries(csp.split(';').map(value=>{const [name,...sources]=value.trim().split(/\s+/);return [name,sources];}));
+  assert.ok(directives['frame-src'].includes('https://applepay.cdn-apple.com'));
+  assert.ok(directives['img-src'].includes('https://applepay.cdn-apple.com'));
+  for(const name of ['script-src','frame-src','connect-src','img-src'])assert.ok(directives[name].includes('https://*.paypal.com'));
+  assert.equal(directives['default-src'].join(' '),"'self'");
+});
+test('Apple Pay verification file is returned as a binary download without redirect',async()=>{
+  const s=setup();const r=await s.worker.fetch(new Request('https://checkout.test/.well-known/apple-developer-merchantid-domain-association'),s.env);
+  assert.equal(r.status,200);assert.equal(r.headers.get('Content-Type'),'application/octet-stream');assert.equal(await r.text(),'association');
+});
+test('Apple Pay validates merchant, requests billing address, confirms token and captures payment',async()=>{
+  const {elements,calls}=await checkoutFixture({syncPending:true});elements['applepay-button'].onclick();elements['applepay-button'].onclick();
+  assert.equal(calls.sessions.length,1);const session=calls.sessions[0];assert.equal(session.begun,true);
+  assert.deepEqual(Array.from(session.request.requiredBillingContactFields),['postalAddress']);
+  await session.onvalidatemerchant({validationURL:'https://apple-pay-gateway.apple.com/session'});assert.equal(session.merchantSession.valid,true);
+  await session.onpaymentauthorized({payment:{token:{test:true},billingContact:{postalCode:'00000'}}});
+  assert.equal(calls.orders,1);assert.equal(calls.confirmations,1);assert.equal(calls.captures,1);assert.equal(calls.confirmInput.orderId,'ORDER123');assert.equal(session.status,1);assert.match(elements.status.textContent,/Payment received.*updating/);
+});
+for(const [name,patch,expected]of [
+  ['unavailable device',{unsupported:true},/unavailable in this browser/],
+  ['ineligible merchant',{ineligible:true},/currently unavailable/],
+  ['configuration failure',{configFails:true},/could not load/],
+])test('Apple Pay explains '+name+' and preserves the PayPal checkout',async()=>{
+  const {elements,calls}=await checkoutFixture(patch);assert.match(elements['applepay-status'].textContent,expected);assert.equal(calls.sessions.length,0);assert.ok(calls.paypalOptions.createOrder);
+});
+test('Apple Pay merchant validation failure explains the error and aborts before creating an order',async()=>{
+  const {elements,calls}=await checkoutFixture({validationFails:true});elements['applepay-button'].onclick();const session=calls.sessions[0];await session.onvalidatemerchant({validationURL:'https://apple.test'});
+  assert.equal(session.aborted,true);assert.equal(calls.orders,0);assert.match(elements['applepay-status'].textContent,/could not verify/);
+});
+test('Apple Pay declined confirmation never captures or reports success',async()=>{
+  const {elements,calls}=await checkoutFixture({confirmFails:true});elements['applepay-button'].onclick();const session=calls.sessions[0];await session.onpaymentauthorized({payment:{token:{},billingContact:{}}});
+  assert.equal(calls.captures,0);assert.equal(session.status,0);assert.match(elements['applepay-status'].textContent,/could not complete/);
+});
+test('Apple Pay start and cancellation errors leave checkout usable',async()=>{
+  let f=await checkoutFixture({startFails:true});f.elements['applepay-button'].onclick();assert.match(f.elements['applepay-status'].textContent,/could not open/);
+  f=await checkoutFixture();f.elements['applepay-button'].onclick();f.calls.sessions[0].oncancel();assert.match(f.elements['applepay-status'].textContent,/cancelled/);f.elements['applepay-button'].onclick();assert.equal(f.calls.sessions.length,2);
+});
+test('PayPal approval ends checkout and blocks another order',async()=>{
+  const {elements,calls}=await checkoutFixture();assert.equal(await calls.paypalOptions.createOrder(),'ORDER123');await calls.paypalOptions.onApprove({orderID:'ORDER123'});assert.equal(calls.captures,1);assert.match(elements.status.textContent,/Payment received/);calls.paypalOptions.onCancel();assert.match(elements.status.textContent,/Payment received/);assert.equal(elements['checkout-controls'].hidden,true);assert.equal(elements['checkout-next'].hidden,false);assert.equal(elements['checkout-title'].textContent,'Payment received');assert.equal(elements.status.focused,true);await assert.rejects(calls.paypalOptions.createOrder(),/already paid/);assert.equal(calls.orders,1);
+});
+
+
+test('paid request revisits show confirmation and new question link without any payment SDK',async()=>{
+  const s=await paidSetup();await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'});
+  const r=await s.worker.fetch(new Request('https://checkout.test/pay?question=question-1'),s.env);const html=await r.text();assert.equal(r.status,200);assert.match(html,/This request is already paid/);assert.match(html,/Ask another question/);assert.match(html,/https:\/\/paws-whiskers-care-line.dkjmmz6whh.workers.dev\/#askSection/);assert.doesNotMatch(html,/paypal-buttons|applepay-button|<script/);assert.equal((await s.call('/api/paypal/orders',{question:'question-1'})).status,409);
+});
+test('Apple Pay completion removes payment choices and cannot open a second session',async()=>{
+  const {elements,calls}=await checkoutFixture();const click=elements['applepay-button'].onclick;click();await calls.sessions[0].onpaymentauthorized({payment:{token:{},billingContact:{}}});assert.equal(elements['checkout-controls'].hidden,true);assert.equal(elements['paypal-buttons'].innerHTML,'');assert.equal(elements['applepay-container'].innerHTML,'');assert.equal(elements['checkout-next'].hidden,false);click();assert.equal(calls.sessions.length,1);assert.match(elements['checkout-note'].textContent,/Your question and payment have been received/);
+});
+
+test('PayPal cancellation before payment preserves checkout choices',async()=>{const {elements,calls}=await checkoutFixture();calls.paypalOptions.onCancel();assert.match(elements.status.textContent,/cancelled/);assert.equal(elements['checkout-controls'].hidden,false);assert.equal(elements['checkout-next'].hidden,true);});
+
+test('historical unpaid requests retain their original price after the increase',async()=>{
+  for(const amount of [5,10,20,30,35]){
+    const s=setup();await s.call('/intake',fixture);s.state.records.get('question-1').fields.paymentAmount={value:'$'+amount};
+    const r=await s.call('/api/paypal/orders',{question:'question-1'});assert.equal(r.status,200);assert.equal(s.state.order.purchase_units[0].amount.value,amount.toFixed(2));
+  }
+});
+test('cached old paid menus are rejected before saving a new request',async()=>{
+  for(const service of ['Quick Question — Email · $5','Detailed Guidance — Text · $10','Phone Support · $20']){
+    const s=setup();assert.equal((await s.call('/intake',{...fixture,requestedService:service})).status,400);assert.equal(s.state.records.size,0);
+  }
+});
+test('frontend service labels match the updated checkout prices',async()=>{
+  const s=setup();assert.equal(vm.runInContext('amountFromService("Quick Question — Email · $10")',s.context),'$10');
+  const html=await readFile(new URL('../../index.html',import.meta.url),'utf8');
+  const fn=html.match(/function amountFromService\(service\) \{[\s\S]*?\n  \}/)[0];
+  assert.equal(vm.runInNewContext(fn+'\namountFromService("Quick Question — Email · $10")',{isFreeSupport:()=>false}),'$10');
+  for(const label of ['Quick Question — Email · $10','Detailed Guidance — Email · $15','Phone Support · $25'])assert.ok(html.includes('value="'+label+'"'));
 });

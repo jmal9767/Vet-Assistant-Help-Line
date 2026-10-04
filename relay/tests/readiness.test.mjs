@@ -12,7 +12,7 @@ const origin='https://intake.test';
 function setup(){
   const records=new Map(),files=new Map();
   const state={records,files,order:null,captures:0,failSave:false,verifyStatus:200,wrongCapture:false,networkFails:false,failEnrichment:false,completionConflict:false,unsupportedFields:new Set()};
-  const env={CLOUDKIT_CONTAINER:'test',CLOUDKIT_ENVIRONMENT:'development',CLOUDKIT_KEY_ID:'test',CLOUDKIT_PRIVATE_KEY:`-----BEGIN PRIVATE KEY-----\n${pem}\n-----END PRIVATE KEY-----`,PAYPAL_CLIENT_ID:'mock-client',PAYPAL_CLIENT_SECRET:'mock-secret',PAYPAL_WEBHOOK_ID:'mock-webhook',ATTACHMENT_SIGNING_SECRET:'mock-signing',ALLOWED_ORIGIN:origin,PAYPAL_ENVIRONMENT:'sandbox',ATTACHMENTS_BUCKET:{
+  const env={CLOUDKIT_CONTAINER:'test',CLOUDKIT_ENVIRONMENT:'development',CLOUDKIT_KEY_ID:'test',CLOUDKIT_PRIVATE_KEY:`-----BEGIN PRIVATE KEY-----\n${pem}\n-----END PRIVATE KEY-----`,PAYPAL_CLIENT_ID:'mock-client',PAYPAL_CLIENT_SECRET:'mock-secret',PAYPAL_WEBHOOK_ID:'mock-webhook',ATTACHMENT_SIGNING_SECRET:'mock-signing',ALLOWED_ORIGIN:origin,PETASSIST_OPERATOR_KEY:'c'.repeat(64),PAYPAL_ENVIRONMENT:'sandbox',ATTACHMENTS_BUCKET:{
     async put(name,stream,meta){files.set(name,{data:await new Response(stream).arrayBuffer(),meta});},
     async get(name){const file=files.get(name);return file?{body:file.data,customMetadata:file.meta.customMetadata,writeHttpMetadata(headers){headers.set('Content-Type',file.meta.httpMetadata.contentType);}}:null;},
     async delete(names){for(const name of Array.isArray(names)?names:[names])files.delete(name);}
@@ -51,7 +51,7 @@ function setup(){
   env.PETASSIST_PAYMENTS={idFromName:name=>name,get(name){
     if(!objects.has(name)){
       const entries=new Map();let chain=Promise.resolve();
-      const storage={async get(key){return structuredClone(entries.get(key));},async put(key,value){entries.set(key,structuredClone(value));},transaction(action){const result=chain.then(()=>action(storage));chain=result.catch(()=>{});return result;}};
+      const storage={async get(key){return structuredClone(entries.get(key));},async put(key,value){entries.set(key,structuredClone(value));},async list(options){return new Map([...entries.entries()].filter(([key])=>key.startsWith(options.prefix||'') && (!options.startAfter || key>options.startAfter)).sort(([a],[b])=>a.localeCompare(b)).slice(0,options.limit||100));},transaction(action){const result=chain.then(()=>action(storage));chain=result.catch(()=>{});return result;}};
       const object=new PaymentObject({storage});objects.set(name,{fetch:(url,options)=>object.fetch(new Request(url,options))});
     }
     return objects.get(name);
@@ -261,4 +261,69 @@ test('frontend service labels match the updated checkout prices',async()=>{
   const fn=html.match(/function amountFromService\(service\) \{[\s\S]*?\n  \}/)[0];
   assert.equal(vm.runInNewContext(fn+'\namountFromService("Quick Question — Email · $10")',{isFreeSupport:()=>false}),'$10');
   for(const label of ['Quick Question — Email · $10','Detailed Guidance — Email · $15','Phone Support · $25'])assert.ok(html.includes('value="'+label+'"'));
+});
+
+
+const visitFixture={token:"d".repeat(32),clientAccess:"e".repeat(64),service:"nailTrim",clientName:"Test client",email:"visit@example.invalid",phone:"",petName:"Test pet",species:"Dog",address:"Test address",notes:"Website request",preferredAt:new Date(Date.now()+86400000).toISOString(),acceptedPrivacy:true};
+const operatorHeaders={Authorization:"Bearer "+"c".repeat(64)};
+async function visitGet(s,path,headers={}){return s.worker.fetch(new Request("https://checkout.test"+path,{headers}),s.env);}
+async function visitPatch(s,token,input,headers=operatorHeaders){return s.worker.fetch(new Request("https://checkout.test/petassist/operator/visits/"+token,{method:"PATCH",headers:{...headers,"Content-Type":"application/json"},body:JSON.stringify(input)}),s.env);}
+test("website visits enter a protected inbox without exposing client details in checkout",async()=>{
+ const s=setup();const result=await s.call("/petassist/requests",visitFixture);assert.equal(result.status,200);
+ assert.equal((await s.call("/petassist/requests",visitFixture)).status,200);
+ assert.equal((await visitGet(s,"/petassist/operator/visits")).status,401);
+ assert.equal((await visitGet(s,"/petassist/operator/visits",{Authorization:"Bearer wrong"})).status,401);
+ let page=await (await visitGet(s,"/petassist/operator/visits",operatorHeaders)).json();assert.equal(page.visits.length,1);assert.equal(page.visits[0].clientName,"Test client");
+ const publicReceipt=await (await visitGet(s,"/petassist/bookings/"+visitFixture.token)).json();assert.ok(!JSON.stringify(publicReceipt).includes("visit@example.invalid"));assert.ok(!JSON.stringify(publicReceipt).includes("Test address"));
+ assert.equal((await s.call("/api/paypal/orders",{question:"petassist-"+visitFixture.token})).status,400);
+ const refused=await visitPatch(s,visitFixture.token,{status:"accepted",expectedVersion:page.visits[0].version});assert.equal(refused.status,400);
+ const accepted=await visitPatch(s,visitFixture.token,{status:"accepted",scheduledAt:visitFixture.preferredAt,expectedVersion:page.visits[0].version});assert.equal(accepted.status,200);
+ assert.equal((await s.call("/api/paypal/orders",{question:"petassist-"+visitFixture.token})).status,200);assert.equal(s.state.order.purchase_units[0].amount.value,"35.00");
+ assert.equal((await visitPatch(s,visitFixture.token,{status:"cancelled",expectedVersion:"1"})).status,409);
+ page=await (await visitGet(s,"/petassist/operator/visits",operatorHeaders)).json();
+ assert.equal((await visitPatch(s,visitFixture.token,{status:"cancelled",expectedVersion:page.visits[0].version})).status,200);
+ assert.equal((await s.call("/api/paypal/orders",{question:"petassist-"+visitFixture.token})).status,400);
+ assert.equal((await s.call("/api/paypal/orders/ORDER123/capture",{question:"petassist-"+visitFixture.token})).status,409);assert.equal(s.state.captures,0);
+ assert.match(await (await visitGet(s,"/petassist/pay?token="+visitFixture.token)).text(),/Visit cancelled/);
+});
+test("client conversation needs its separate access key and preserves the business identity",async()=>{
+ const s=setup();await s.call("/petassist/requests",visitFixture);const path="/petassist/client/visits/"+visitFixture.token;
+ assert.equal((await visitGet(s,path)).status,401);assert.equal((await visitGet(s,path,{Authorization:"Bearer "+visitFixture.token})).status,401);
+ const clientHeaders={Authorization:"Bearer "+visitFixture.clientAccess};
+ assert.equal((await s.call(path+"/messages",{text:"Can we confirm the time?",sender:"business"},clientHeaders)).status,200);
+ assert.equal((await s.call("/petassist/operator/visits/"+visitFixture.token+"/messages",{text:"Confirmed through our business.",sender:"client"},operatorHeaders)).status,200);
+ const visit=await (await visitGet(s,path,clientHeaders)).json();assert.equal(visit.messages.length,2);assert.equal(visit.messages[0].sender,"client");assert.equal(visit.messages[1].sender,"business");assert.ok(!("email" in visit));assert.ok(!("clientLink" in visit));
+ const other={...visitFixture,token:"f".repeat(32),clientAccess:"a".repeat(64)};await s.call("/petassist/requests",other);
+ assert.equal((await visitGet(s,"/petassist/client/visits/"+other.token,clientHeaders)).status,401);
+ assert.equal((await s.call(path+"/messages",{text:" "},clientHeaders)).status,400);
+});
+test("visit form rejects invalid contact, dates, origin and consent before storage",async()=>{
+ for(const patch of [{email:"bad"},{clientName:""},{petName:""},{address:""},{preferredAt:"invalid"},{preferredAt:"2020-01-01"},{acceptedPrivacy:false},{service:"__proto__"},{clientAccess:"short"}]){
+  const s=setup();assert.equal((await s.call("/petassist/requests",{...visitFixture,...patch})).status,400);
+  assert.equal((await (await visitGet(s,"/petassist/operator/visits",operatorHeaders)).json()).visits.length,0);
+ }
+ const s=setup();assert.equal((await s.call("/petassist/requests",visitFixture,{Origin:"https://wrong.test"})).status,403);
+});
+test("appointment progress is separate from payment and invalid transitions do not alter history",async()=>{
+ const s=setup();await s.call("/petassist/requests",visitFixture);let v=(await (await visitGet(s,"/petassist/operator/visits",operatorHeaders)).json()).visits[0];
+ assert.equal((await visitPatch(s,v.token,{status:"completed",expectedVersion:v.version})).status,409);
+ for(const status of ["accepted","en-route","in-progress","completed"]){const r=await visitPatch(s,v.token,{status,expectedVersion:v.version,...(status==="accepted"?{scheduledAt:visitFixture.preferredAt}:{})});assert.equal(r.status,200);v=await r.json();assert.equal(v.status,"Payment requested");}
+ assert.equal((await visitPatch(s,v.token,{status:"accepted",expectedVersion:v.version})).status,409);
+});
+
+test("removing client details revokes access and checkout while retaining verified payment history",async()=>{
+ const s=setup(); await s.call("/petassist/requests",visitFixture);
+ const record=await (await visitGet(s,"/petassist/operator/visits/"+visitFixture.token,operatorHeaders)).json();
+ const remove=(headers,version)=>s.worker.fetch(new Request("https://checkout.test/petassist/operator/visits/"+visitFixture.token,{method:"DELETE",headers:{...headers,"Content-Type":"application/json"},body:JSON.stringify({expectedVersion:version})}),s.env);
+ assert.equal((await remove({},record.version)).status,401);
+ assert.equal((await remove(operatorHeaders,"stale")).status,409);
+ assert.equal((await remove(operatorHeaders,record.version)).status,200);
+ assert.equal((await visitGet(s,"/petassist/client/visits/"+visitFixture.token,{Authorization:"Bearer "+visitFixture.clientAccess})).status,404);
+ assert.equal((await (await visitGet(s,"/petassist/operator/visits",operatorHeaders)).json()).visits.length,0);
+ assert.equal((await s.call("/api/paypal/orders",{question:"petassist-"+visitFixture.token})).status,400);
+ assert.equal((await visitGet(s,"/petassist/bookings/"+visitFixture.token)).status,200);
+});
+test("private visit browser preflight permits bearer authorization",async()=>{
+ const s=setup();const response=await s.worker.fetch(new Request("https://checkout.test/petassist/client/visits/"+visitFixture.token,{method:"OPTIONS",headers:{Origin:origin,"Access-Control-Request-Headers":"authorization"}}),s.env);
+ assert.equal(response.status,204);assert.match(response.headers.get("Access-Control-Allow-Headers"),/Authorization/);
 });

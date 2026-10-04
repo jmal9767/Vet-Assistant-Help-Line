@@ -423,6 +423,7 @@ function paidOffer(record) {
   const amount = Number(amountText.replace(/[^0-9.]/g, ""));
   // Honor existing requests from the previous menu without offering them to new clients.
   const isPetAssist = record.recordName.startsWith("petassist-");
+  if (isPetAssist && record.visitStatus && !["accepted", "en-route", "in-progress", "completed"].includes(record.visitStatus)) return null;
   const allowedAmounts = new Set(isPetAssist ? Object.values(PETASSIST_SERVICES).map(service => service.amount) : [10, 15, 25, 5, 20, 30, 35]);
   if (!["Payment requested", "Paid"].includes(fieldValue(record, "paymentStatus")) || !allowedAmounts.has(amount)) return null;
   return {
@@ -444,7 +445,7 @@ async function serveCheckout(url, env) {
   const safeQuestion = JSON.stringify(recordName).replace(/</g, "\\u003c");
   const safeAmount = JSON.stringify(offer.amount);
   const safeService = escapeHTML(offer.service);
-  const brand = recordName.startsWith("petassist-") ? "PetAssist Local" : "Paws & Whiskers Care Line";
+  const brand = recordName.startsWith("petassist-") ? "Paws & Whiskers Visits" : "Paws & Whiskers Care Line";
   const sdkURL = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(env.PAYPAL_CLIENT_ID)}&currency=USD&components=buttons,applepay`;
   return new Response(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Secure payment</title><script src="${sdkURL}"></script><script src="https://applepay.cdn-apple.com/jsapi/1.latest/apple-pay-sdk.js"></script>
@@ -459,7 +460,7 @@ function finishCheckout(d){
   document.getElementById('paypal-buttons').innerHTML='';
   document.getElementById('applepay-container').innerHTML='';
   document.getElementById('checkout-title').textContent=d.status==='Paid'?'Payment received':'Payment status updated';
-  document.getElementById('checkout-note').textContent=question.startsWith('petassist-')?'Your booking payment is complete. Return to the PetAssist app to view your booking.':'Your question and payment have been received. Your reply will arrive through the method you selected.';
+  document.getElementById('checkout-note').textContent=question.startsWith('petassist-')?'Your visit payment is complete. Return to your private visit page for appointment updates.':'Your question and payment have been received. Your reply will arrive through the method you selected.';
   document.getElementById('checkout-next').hidden=false;
   statusEl.focus();
 }
@@ -507,13 +508,13 @@ setupApplePay();
 function checkoutNextAction(recordName, hidden = false) {
   const isPetAssist = recordName.startsWith("petassist-");
   const href = isPetAssist ? "https://bayareaapps.com/petassist-local/" : "https://paws-whiskers-care-line.dkjmmz6whh.workers.dev/#askSection";
-  const label = isPetAssist ? "Return to PetAssist Local" : "Ask another question";
+  const label = isPetAssist ? "Return to Paws & Whiskers Visits" : "Ask another question";
   return `<p id="checkout-next"${hidden ? " hidden" : ""}><a href="${href}" style="display:inline-block;background:#173f67;color:white;padding:14px 20px;border-radius:10px;text-decoration:none;font-weight:650">${label}</a></p>`;
 }
 
 function paidCheckoutConfirmation(record) {
   const isPetAssist = record.recordName.startsWith("petassist-");
-  const next = isPetAssist ? "Return to the PetAssist app to view your booking." : "Your reply will arrive through the method you selected. To submit a new question, use the button below.";
+  const next = isPetAssist ? "Keep your private visit link for appointment updates and messages. Contact info@bayareaapps.com if you need help." : "Your reply will arrive through the method you selected. To submit a new question, use the button below.";
   return new Response(`<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Payment received</title><style>body{font-family:-apple-system,sans-serif;max-width:540px;margin:48px auto;padding:20px;color:#132238;line-height:1.6}h1{color:#173f67}</style></head><body><main><h1>Payment received</h1><p>This request is already paid. Thank you!</p><p>${next}</p>${checkoutNextAction(record.recordName)}</main></body></html>`, { headers: securityHTMLHeaders() });
 }
 
@@ -853,10 +854,11 @@ function petAssistReceipt(record, requestURL) {
   return { token, service: fieldValue(record,"requestedService"), amount: fieldValue(record,"paymentAmount"), status: fieldValue(record,"paymentStatus"), method: fieldValue(record,"paymentMethod"), checkoutURL: `${new URL(requestURL).origin}/petassist/pay?token=${token}` };
 }
 async function handlePetAssist(request, env, url) {
-  const cors = { ...corsHeaders(request, env), "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" };
+  const cors = { ...corsHeaders(request, env), "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS", "Access-Control-Allow-Headers": "Content-Type, Authorization", "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" };
   if (request.headers.has("Origin") && !isAllowedOrigin(request, env)) return json({ error: "Origin not allowed" }, 403, cors);
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
   if (!env.PETASSIST_PAYMENTS) return json({ error: "PetAssist payments are being connected" }, 503, cors);
+  if (url.pathname.startsWith("/petassist/operator/") || url.pathname.startsWith("/petassist/client/") || url.pathname === "/petassist/requests") return handleVisits(request, env, url, cors);
   if (request.method === "POST" && url.pathname === "/petassist/bookings") {
     if (!(await allowIntakeRequest(request, env))) return json({ error: "Please wait before trying again" }, 429, cors);
     if (Number(request.headers.get("Content-Length") || 0) > 4096) return json({ error: "Request too large" }, 413, cors);
@@ -874,6 +876,8 @@ async function handlePetAssist(request, env, url) {
   const record = await readPetAssistPayment(env, `petassist-${token}`);
   if (!record) return json({ error: "Booking not found" }, 404, cors);
   if (url.pathname === "/petassist/pay") {
+    if (record.visitStatus === "cancelled") return checkoutMessage("Visit cancelled", "This appointment has been cancelled. Contact info@bayareaapps.com about any payment or refund questions.", 200);
+    if (record.visitStatus === "requested") return checkoutMessage("Awaiting appointment confirmation", "We will confirm availability before requesting payment. Use your private visit page for updates.", 200);
     if (["Refunded","Partially refunded"].includes(fieldValue(record,"paymentStatus"))) return checkoutMessage("Payment refunded", "This payment has been refunded. Contact info@bayareaapps.com with any questions.", 200);
     const checkout = new URL(request.url); checkout.search = `?question=petassist-${token}`;
     return serveCheckout(checkout, env);
@@ -885,9 +889,47 @@ export class PetAssistPayments {
   async fetch(request) {
     const path = new URL(request.url).pathname;
     if (path === "/record") return Response.json(await this.state.storage.get("record") || null);
+    if (path === "/index") {
+      const query = new URL(request.url).searchParams;
+      const entries = await this.state.storage.list({prefix:"visit:", limit:101, ...(query.get("cursor") ? {startAfter:query.get("cursor")} : {})});
+      const keys = [...entries.keys()];
+      return Response.json({tokens:keys.slice(0,100).map(key=>key.slice(6)), cursor:keys.length>100?keys[99]:null});
+    }
     const input = await request.json();
     return this.state.storage.transaction(async txn => {
       let record = await txn.get("record");
+      if (path === "/index-add") { await txn.put("visit:"+input.token,true); return Response.json({ok:true}); }
+      if (path === "/visit-create") {
+        if (record) return Response.json(record, {status:record.clientAccess===input.clientAccess?200:409});
+        const fields = Object.fromEntries(Object.entries({requestedService:input.serviceTitle,paymentAmount:"$"+input.amount,paymentStatus:"Payment requested",paymentMethod:"PayPal or Apple Pay",sourceChannel:"Paws & Whiskers Visits"}).map(([key,value])=>[key,{value}]));
+        record={recordName:"petassist-"+input.token,recordType:"PetAssistPayment",recordChangeTag:"1",serviceID:input.service,fields,visitStatus:"requested",createdAt:new Date().toISOString(),clientAccess:input.clientAccess,details:input.details,messages:[]};
+        await txn.put("record",record); return Response.json(record);
+      }
+      if (path === "/redact") {
+        if (!record?.details) return Response.json({error:"Visit not found"},{status:404});
+        if (input.expectedVersion !== record.recordChangeTag) return Response.json({error:"This visit changed. Refresh before removing client details."},{status:409});
+        delete record.details; delete record.clientAccess; record.messages=[]; record.visitStatus="cancelled";
+        record.recordChangeTag=String(Number(record.recordChangeTag)+1);
+        await txn.put("record",record); return Response.json({ok:true});
+      }
+      if (path === "/visit-update" || path === "/message") {
+        if (!record?.details) return Response.json({error:"Visit not found"},{status:404});
+        if (path === "/message") {
+          if (record.messages.length >= 500) return Response.json({error:"This conversation is full. Contact info@bayareaapps.com."},{status:409});
+          record.messages.push({id:crypto.randomUUID(),sender:input.sender,text:input.text,createdAt:new Date().toISOString()});
+        } else {
+          if (input.expectedVersion !== record.recordChangeTag) return Response.json({error:"This visit changed. Refresh before saving."},{status:409});
+          const next=input.status;
+          const transitions={requested:["accepted","cancelled"],accepted:["accepted","en-route","cancelled"],"en-route":["in-progress","cancelled"],"in-progress":["completed","cancelled"],completed:[],cancelled:[]};
+          if (!transitions[record.visitStatus]?.includes(next)) return Response.json({error:"Invalid appointment change"},{status:409});
+          if (input.scheduledAt) record.details.scheduledAt=input.scheduledAt;
+          if (next==="accepted" && !record.details.scheduledAt) return Response.json({error:"Choose an appointment time"},{status:400});
+          record.visitStatus=next;
+          if(next==="completed") record.completedAt=new Date().toISOString();
+        }
+        record.recordChangeTag=String(Number(record.recordChangeTag)+1);
+        await txn.put("record",record);return Response.json(record);
+      }
       if (path === "/create") {
         if (record) return Response.json(record, { status: record.serviceID === input.serviceID ? 200 : 409 });
         const fields = Object.fromEntries(Object.entries({ requestedService:input.service, paymentAmount:`$${input.amount}`, paymentStatus:"Payment requested", paymentMethod:"PayPal or Apple Pay", sourceChannel:"PetAssist Local" }).map(([key,value])=>[key,{value}]));
@@ -906,4 +948,90 @@ export class PetAssistPayments {
       return Response.json({ok:true,paymentStatus:incoming});
     });
   }
+}
+
+
+async function secretMatches(provided, expected) {
+  if (!provided || !expected) return false;
+  const digest = value => crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  const [a,b] = await Promise.all([digest(provided),digest(expected)]);
+  const left=new Uint8Array(a),right=new Uint8Array(b);let diff=0;
+  for(let i=0;i<left.length;i++)diff|=left[i]^right[i];
+  return diff===0;
+}
+function visitsIndex(env) { return env.PETASSIST_PAYMENTS.get(env.PETASSIST_PAYMENTS.idFromName("private-visits-index")); }
+function visitSummary(record, requestURL, operator=false) {
+  const receipt=petAssistReceipt(record,requestURL);
+  const summary={...receipt,serviceID:record.serviceID,visitStatus:record.visitStatus,version:record.recordChangeTag,createdAt:record.createdAt,preferredAt:record.details.preferredAt,scheduledAt:record.details.scheduledAt||null,petName:record.details.petName,messages:record.messages||[]};
+  if(operator)Object.assign(summary,record.details,{clientLink:"https://bayareaapps.com/petassist-local/#visit="+receipt.token+"."+record.clientAccess});
+  return summary;
+}
+async function limitedVisitJSON(request) {
+  const text=await request.text();
+  if(new TextEncoder().encode(text).length>16000)return null;
+  try{const value=JSON.parse(text);return value && typeof value === "object" && !Array.isArray(value)?value:null;}catch{return null;}
+}
+async function handleVisits(request,env,url,cors) {
+  const isOperator=url.pathname.startsWith("/petassist/operator/");
+  const bearer=(request.headers.get("Authorization")||"").replace(/^Bearer /,"");
+  if(isOperator && !await secretMatches(bearer,env.PETASSIST_OPERATOR_KEY))return json({error:"Connect your business app to access visits."},401,cors);
+  if(url.pathname==="/petassist/operator/visits" && request.method==="GET") {
+    const cursor=url.searchParams.get("cursor")||"";
+    if(cursor && !/^visit:[a-f0-9]{32}$/.test(cursor))return json({error:"Invalid page"},400,cors);
+    const page=await (await visitsIndex(env).fetch("https://booking.invalid/index?cursor="+encodeURIComponent(cursor))).json();
+    const records=await Promise.all(page.tokens.map(token=>readPetAssistPayment(env,"petassist-"+token)));
+    return json({visits:records.filter(record=>record?.details).map(record=>visitSummary(record,request.url,true)),cursor:page.cursor},200,cors);
+  }
+  if(url.pathname==="/petassist/requests" && request.method==="POST") {
+    if(!(await allowIntakeRequest(request,env)))return json({error:"Please wait a minute before trying again."},429,cors);
+    const input=await limitedVisitJSON(request);
+    if(input?.website)return json({ok:true},200,cors);
+    const service=Object.hasOwn(PETASSIST_SERVICES,input?.service||"")?PETASSIST_SERVICES[input.service]:null;
+    if(!service || !/^[a-f0-9]{32}$/.test(input?.token||"") || !/^[a-f0-9]{64}$/.test(input?.clientAccess||"") || input.acceptedPrivacy!==true)return json({error:"Check your service selection and accept the privacy notice."},400,cors);
+    const limits={clientName:100,email:200,phone:40,petName:100,species:60,address:500,notes:2000};const details={};
+    for(const [key,max] of Object.entries(limits)) {
+      const value=typeof input[key]==="string"?input[key].trim():"";
+      if(value.length>max || /[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(value))return json({error:"Please shorten the "+key+" field."},400,cors);
+      details[key]=value;
+    }
+    if(!details.clientName || !details.petName || !details.address || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(details.email))return json({error:"Enter your name, email, pet name and visit address."},400,cors);
+    const date=new Date(input.preferredAt);if(!Number.isFinite(date.getTime()) || date.getTime()<Date.now() || date.getTime()>Date.now()+366*86400000)return json({error:"Choose a preferred visit time within the next year."},400,cors);
+    details.preferredAt=date.toISOString();
+    const object=petAssistObject(env,"petassist-"+input.token);
+    const created=await object.fetch("https://booking.invalid/visit-create",{method:"POST",body:JSON.stringify({...input,details,serviceTitle:service.title,amount:service.amount})});
+    if(!created.ok)return json({error:"This request reference is already in use. Reload the form."},409,cors);
+    const indexed=await visitsIndex(env).fetch("https://booking.invalid/index-add",{method:"POST",body:JSON.stringify({token:input.token})});
+    if(!indexed.ok)return json({error:"The request could not be delivered. Please retry."},503,cors);
+    return json({ok:true,token:input.token,clientLink:"https://bayareaapps.com/petassist-local/#visit="+input.token+"."+input.clientAccess},200,cors);
+  }
+  const match=url.pathname.match(/^\/petassist\/(operator|client)\/visits\/([a-f0-9]{32})(?:\/(messages))?$/);
+  if(!match)return json({error:"Not found"},404,cors);
+  const object=petAssistObject(env,"petassist-"+match[2]);
+  const record=await readPetAssistPayment(env,"petassist-"+match[2]);
+  if(!record?.details)return json({error:"Visit not found"},404,cors);
+  if(!isOperator && !await secretMatches(bearer,record.clientAccess))return json({error:"Open your private visit link to access this page."},401,cors);
+  if(request.method==="GET" && !match[3])return json(visitSummary(record,request.url,isOperator),200,cors);
+  if(isOperator && request.method==="DELETE" && !match[3]) {
+    const input=await limitedVisitJSON(request);
+    if(typeof input?.expectedVersion!=="string")return json({error:"Refresh this visit before removing client details."},400,cors);
+    const result=await object.fetch("https://booking.invalid/redact",{method:"POST",body:JSON.stringify({expectedVersion:input.expectedVersion})});
+    return json(await result.json(),result.status,cors);
+  }
+  if(request.method==="POST" && match[3]) {
+    if(!isOperator && !(await allowIntakeRequest(request,env)))return json({error:"Please wait before sending another message."},429,cors);
+    const input=await limitedVisitJSON(request);const text=typeof input?.text==="string"?input.text.trim():"";
+    if(!text || text.length>2000)return json({error:"Enter a message of up to 2,000 characters."},400,cors);
+    const result=await object.fetch("https://booking.invalid/message",{method:"POST",body:JSON.stringify({text,sender:isOperator?"business":"client"})});
+    if(!result.ok)return json(await result.json(),result.status,cors);
+    return json(visitSummary(await result.json(),request.url,isOperator),200,cors);
+  }
+  if(isOperator && request.method==="PATCH" && !match[3]) {
+    const input=await limitedVisitJSON(request);
+    if(!input || typeof input.expectedVersion!=="string")return json({error:"Refresh this visit before saving."},400,cors);
+    if(input.scheduledAt && (!Number.isFinite(new Date(input.scheduledAt).getTime()) || new Date(input.scheduledAt).getTime()<Date.now()))return json({error:"Choose a future appointment time."},400,cors);
+    const result=await object.fetch("https://booking.invalid/visit-update",{method:"POST",body:JSON.stringify({status:input.status,scheduledAt:input.scheduledAt,expectedVersion:input.expectedVersion})});
+    if(!result.ok)return json(await result.json(),result.status,cors);
+    return json(visitSummary(await result.json(),request.url,true),200,cors);
+  }
+  return json({error:"Method not allowed"},405,cors);
 }

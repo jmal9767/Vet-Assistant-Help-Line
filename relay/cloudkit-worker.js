@@ -18,11 +18,19 @@ const MAX_LENGTHS = {
 };
 const MAX_FILES = 4;
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
-const MAX_TOTAL_BYTES = 30 * 1024 * 1024;
+const MAX_TOTAL_BYTES = 40 * 1024 * 1024;
 const ATTACHMENT_LINK_SECONDS = 30 * 24 * 60 * 60;
 
 export default {
   async fetch(request, env) {
+    try { return await handleRequest(request, env); }
+    catch {
+      return json({ error: "The service is temporarily unavailable. Please try again shortly." }, 503, corsHeaders(request, env));
+    }
+  },
+};
+
+async function handleRequest(request, env) {
     const url = new URL(request.url);
 
     if (request.method === "GET" && url.pathname === "/.well-known/apple-developer-merchantid-domain-association") {
@@ -110,7 +118,10 @@ export default {
     if (storedFiles.length) fields.attachmentSummary = storedFiles.map(formatStoredFile).join("\n");
 
     const result = await saveQuestionToCloudKit(env, cloudKitCreateBody(fields));
-    if (!result.ok) return json({ error: "Could not save the question" }, 502, cors);
+    if (!result.ok) {
+      if (storedFiles.length) await env.ATTACHMENTS_BUCKET.delete(storedFiles.map(file => file.key));
+      return json({ error: "Could not save the question" }, 502, cors);
+    }
 
     const checkoutURL = fields.paymentStatus === "Payment requested" && fields.paymentMethod === "PayPal or Apple Pay" && result.recordName
       ? `${url.origin}/pay?question=${encodeURIComponent(result.recordName)}`
@@ -119,8 +130,7 @@ export default {
       await updateQuestionPayment(env, result.recordName, { paymentLink: checkoutURL });
     }
     return json({ ok: true, recordName: result.recordName, checkoutURL }, 200, cors);
-  },
-};
+}
 
 function moderateClientMessage(message) {
   const text = String(message || "").toLowerCase();
@@ -147,6 +157,7 @@ function validatedFields(body) {
   }
   if (!/^\S+@\S+\.\S+$/.test(fields.email)) return { error: "Please enter a valid email address." };
   if (!["Dog", "Cat"].includes(fields.species)) return { error: "This service accepts questions about dogs and cats only." };
+  if (!fields.signedConsentName || !fields.signedConsentAt || !Number.isFinite(Date.parse(fields.signedConsentAt))) return { error: "Please type your name to sign the consent statement." };
   if (!["Female", "Male", "Unknown"].includes(fields.sex)) return { error: "Please select the dog or cat's sex." };
   if (!["Spayed", "Neutered", "Not spayed or neutered", "Unknown"].includes(fields.reproductiveStatus)) {
     return { error: "Please select the spay or neuter status." };
@@ -161,7 +172,7 @@ function validatedFields(body) {
     "Community Access — Text · $0": { reply: "Text message", amount: "$0", community: true },
   };
   const selectedService = services[fields.requestedService];
-  if (!selectedService) return { error: "Please choose a valid service." };
+  if (!selectedService) return { error: "The service menu may have changed. Reload the care-line page and choose a current option." };
   fields.preferredReply = selectedService.reply;
   if (["Text message", "Phone call"].includes(fields.preferredReply) && fields.phone.replace(/\D/g, "").length < 7) {
     return { error: "Please enter a valid phone number for text or phone service." };
@@ -193,7 +204,7 @@ function validateFiles(files) {
     total += file.size;
     if (file.size > MAX_FILE_BYTES) return `${file.name} is too large. Keep each file under 10 MB.`;
   }
-  if (total > MAX_TOTAL_BYTES) return "The combined files must be under 30 MB.";
+  if (total > MAX_TOTAL_BYTES) return "The combined files must be 40 MB or less.";
   return null;
 }
 
@@ -344,8 +355,9 @@ function fieldValue(record, name) {
 function paidOffer(record) {
   const amountText = fieldValue(record, "paymentAmount");
   const amount = Number(amountText.replace(/[^0-9.]/g, ""));
-  const allowedAmounts = new Set([5, 10, 20]);
-  if (fieldValue(record, "paymentStatus") !== "Payment requested" || !allowedAmounts.has(amount)) return null;
+  // Honor existing requests from the previous menu without offering them to new clients.
+  const allowedAmounts = new Set([5, 10, 20, 30, 35]);
+  if (!["Payment requested", "Paid"].includes(fieldValue(record, "paymentStatus")) || !allowedAmounts.has(amount)) return null;
   return {
     amount: amount.toFixed(2),
     service: fieldValue(record, "requestedService") || "Paws & Whiskers Care Line service",
@@ -357,6 +369,7 @@ async function serveCheckout(url, env) {
   const record = await fetchQuestionFromCloudKit(env, recordName);
   const offer = record && paidOffer(record);
   if (!offer) return checkoutMessage("Payment link unavailable", "This payment request is no longer available. Please contact the care line.", 404);
+  if (fieldValue(record, "paymentStatus") === "Paid") return checkoutMessage("Payment received", "This request is already paid. Thank you!", 200);
   if (!env.PAYPAL_CLIENT_ID || !env.PAYPAL_CLIENT_SECRET) {
     return checkoutMessage("Checkout is being connected", "Please contact the care line for a payment link.", 503);
   }
@@ -372,7 +385,7 @@ async function serveCheckout(url, env) {
 const statusEl=document.getElementById('status');
 async function createOrder(){const r=await fetch('/api/paypal/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question})});const d=await r.json();if(!r.ok)throw new Error(d.error||'Could not start payment');return d.id}
 async function capture(orderID,method){const r=await fetch('/api/paypal/orders/'+encodeURIComponent(orderID)+'/capture',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question,method})});const d=await r.json();if(!r.ok)throw new Error(d.error||'Could not complete payment');statusEl.textContent='Payment received. Thank you!';return d}
-paypal.Buttons({createOrder,onApprove:d=>capture(d.orderID,'PayPal'),onError:()=>{statusEl.textContent='Payment could not be completed. Please try again.'}}).render('#paypal-buttons');
+if(window.paypal && paypal.Buttons){paypal.Buttons({createOrder,onApprove:d=>capture(d.orderID,'PayPal'),onError:()=>{statusEl.textContent='Payment could not be completed. Please try again.'}}).render('#paypal-buttons').catch(()=>{statusEl.textContent='Checkout could not load. Please reload this page or contact the care line.'})}else{statusEl.textContent='Checkout could not load. Please reload this page or contact the care line.'}
 if(window.ApplePaySession&&ApplePaySession.canMakePayments()){const applepay=paypal.Applepay();applepay.config().then(c=>{if(!c.isEligible)return;document.getElementById('applepay-container').innerHTML='<apple-pay-button id="applepay-button" buttonstyle="black" type="pay" locale="en-US"></apple-pay-button>';document.getElementById('applepay-button').onclick=()=>{const session=new ApplePaySession(4,{countryCode:c.countryCode,merchantCapabilities:c.merchantCapabilities,supportedNetworks:c.supportedNetworks,currencyCode:'USD',total:{label:'Paws & Whiskers Care Line',type:'final',amount}});session.onvalidatemerchant=e=>applepay.validateMerchant({validationUrl:e.validationURL,displayName:'Paws & Whiskers Care Line'}).then(v=>session.completeMerchantValidation(v.merchantSession)).catch(()=>session.abort());session.onpaymentauthorized=e=>createOrder().then(id=>applepay.confirmOrder({orderId:id,token:e.payment.token,billingContact:e.payment.billingContact}).then(()=>capture(id,'Apple Pay')).then(()=>session.completePayment(ApplePaySession.STATUS_SUCCESS))).catch(()=>session.completePayment(ApplePaySession.STATUS_FAILURE));session.begin()}}).catch(()=>{})}
 </script></body></html>`, { headers: securityHTMLHeaders() });
 }
@@ -383,13 +396,15 @@ async function createPayPalOrder(request, env) {
   const record = await fetchQuestionFromCloudKit(env, recordName);
   const offer = record && paidOffer(record);
   if (!offer) return json({ error: "Invalid payment request" }, 400);
+  if (fieldValue(record, "paymentStatus") === "Paid") return json({ error: "This request is already paid" }, 409);
   const token = await payPalAccessToken(env);
   if (!token) return json({ error: "Payment service is not configured" }, 503);
   const response = await fetch(`${payPalAPIBase(env)}/v2/checkout/orders`, {
     method: "POST",
-    headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json", "PayPal-Request-Id": `question-${recordName}` },
+    headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json", "PayPal-Request-Id": await payPalRequestID(`paws:${recordName}`) },
     body: JSON.stringify({ intent: "CAPTURE", purchase_units: [{
       custom_id: recordName,
+      invoice_id: `paws-${recordName}`.slice(0, 127),
       description: offer.service.slice(0, 127),
       amount: { currency_code: "USD", value: offer.amount },
     }] }),
@@ -410,16 +425,19 @@ async function capturePayPalOrder(request, env, orderID) {
   const unit = order.purchase_units?.[0];
   const record = await fetchQuestionFromCloudKit(env, recordName);
   const offer = record && paidOffer(record);
-  if (!orderResponse.ok || !offer || unit?.custom_id !== recordName || unit?.amount?.value !== offer.amount || unit?.amount?.currency_code !== "USD") {
+  if (!orderResponse.ok || order.purchase_units?.length !== 1 || !offer || unit?.custom_id !== recordName || unit?.amount?.value !== offer.amount || unit?.amount?.currency_code !== "USD") {
     return json({ error: "Payment details did not match" }, 409);
   }
 
-  const response = await fetch(`${payPalAPIBase(env)}/v2/checkout/orders/${orderID}/capture`, {
+  if (fieldValue(record, "paymentStatus") === "Paid") {
+    return completedCapture(order, offer.amount) ? json({ ok: true, status: "Paid" }, 200) : json({ error: "This request is already paid" }, 409);
+  }
+  const response = order.status === "COMPLETED" ? null : await fetch(`${payPalAPIBase(env)}/v2/checkout/orders/${orderID}/capture`, {
     method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", "PayPal-Request-Id": `capture-${orderID}` },
   });
-  const result = await response.json();
-  const capture = result.purchase_units?.[0]?.payments?.captures?.[0];
-  if (!response.ok || capture?.status !== "COMPLETED") return json({ error: "Payment was not completed" }, 502);
+  const result = response ? await response.json() : order;
+  const capture = completedCapture(result, offer.amount);
+  if ((response && !response.ok) || !capture) return json({ error: "Payment was not completed" }, 502);
   const update = await updateQuestionPayment(env, recordName, { paymentStatus: "Paid", paymentMethod: method });
   if (!update.ok) return json({ error: "Payment succeeded, but the app status could not be refreshed" }, 502);
   return json({ ok: true, status: "Paid" }, 200);
@@ -430,6 +448,7 @@ async function handlePayPalWebhook(request, env) {
   const event = await safeJSON(request);
   if (!event) return json({ error: "Invalid event" }, 400);
   const token = await payPalAccessToken(env);
+  if (!token) return json({ error: "Payment service is unavailable" }, 503);
   const verifyResponse = await fetch(`${payPalAPIBase(env)}/v1/notifications/verify-webhook-signature`, {
     method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -443,15 +462,44 @@ async function handlePayPalWebhook(request, env) {
     }),
   });
   const verification = await verifyResponse.json();
-  if (verification.verification_status !== "SUCCESS") return json({ error: "Invalid signature" }, 401);
-  if (!["PAYMENT.CAPTURE.REFUNDED", "PAYMENT.CAPTURE.REVERSED"].includes(event.event_type)) return json({ ok: true }, 200);
+  if (!verifyResponse.ok || verification.verification_status !== "SUCCESS") return json({ error: "Invalid signature" }, 401);
+  if (!["PAYMENT.CAPTURE.COMPLETED", "PAYMENT.CAPTURE.REFUNDED", "PAYMENT.CAPTURE.REVERSED"].includes(event.event_type)) return json({ ok: true }, 200);
   const orderID = event.resource?.supplementary_data?.related_ids?.order_id;
   if (!orderID) return json({ ok: true }, 200);
   const orderResponse = await fetch(`${payPalAPIBase(env)}/v2/checkout/orders/${orderID}`, { headers: { Authorization: `Bearer ${token}` } });
   const order = await orderResponse.json();
+  if (!orderResponse.ok) return json({ error: "Payment lookup failed" }, 502);
   const recordName = order.purchase_units?.[0]?.custom_id;
-  if (recordName) await updateQuestionPayment(env, recordName, { paymentStatus: "Refunded" });
+  if (!recordName || order.purchase_units?.length !== 1) return json({ error: "Payment details did not match" }, 409);
+  const record = await fetchQuestionFromCloudKit(env, recordName);
+  if (!record) return json({ error: "Payment record not found" }, 503);
+  const amount = Number(fieldValue(record, "paymentAmount").replace(/[^0-9.]/g, "")).toFixed(2);
+  if (order.purchase_units[0].amount?.value !== amount || order.purchase_units[0].amount?.currency_code !== "USD") return json({ error: "Payment details did not match" }, 409);
+  if (event.event_type === "PAYMENT.CAPTURE.COMPLETED") {
+    if (!["Payment requested", "Paid"].includes(fieldValue(record, "paymentStatus"))) return json({ ok: true }, 200);
+    if (!completedCapture(order, amount)) return json({ error: "Payment details did not match" }, 409);
+    const currentMethod = fieldValue(record, "paymentMethod");
+    const update = await updateQuestionPayment(env, recordName, { paymentStatus: "Paid", paymentMethod: currentMethod === "Apple Pay" ? "Apple Pay" : "PayPal or Apple Pay" });
+    if (!update.ok) return json({ error: "Payment record could not be updated" }, 503);
+    return json({ ok: true }, 200);
+  }
+  const partial = order.purchase_units[0].payments?.captures?.some(capture => capture.status === "PARTIALLY_REFUNDED");
+  const update = await updateQuestionPayment(env, recordName, { paymentStatus: partial ? "Partially refunded" : "Refunded" });
+  if (!update.ok) return json({ error: "Payment record could not be updated" }, 503);
   return json({ ok: true }, 200);
+}
+
+function completedCapture(order, amount) {
+  const units = order.purchase_units;
+  const captures = units?.[0]?.payments?.captures;
+  return units?.length === 1 && captures?.length === 1 && captures[0].status === "COMPLETED"
+    && captures[0].amount?.currency_code === "USD" && captures[0].amount?.value === amount
+    ? captures[0] : null;
+}
+
+async function payPalRequestID(value) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, "0")).join("").slice(0, 32);
 }
 
 async function payPalAccessToken(env) {
@@ -497,7 +545,7 @@ async function storeAttachments(files, request, env) {
     const expires = Math.floor(Date.now() / 1000) + ATTACHMENT_LINK_SECONDS;
     const signature = await signAttachment(key, expires, env);
     const url = `${origin}/attachments/${encodeURIComponent(key)}?expires=${expires}&signature=${signature}`;
-    stored.push({ name: file.name, type: file.type || "unknown type", size: file.size, url });
+    stored.push({ key, name: file.name, type: file.type || "unknown type", size: file.size, url });
   }
   return stored;
 }

@@ -17,4 +17,6 @@ Add these secrets to `vet-helpline-development`:
 - `PAYPAL_CLIENT_SECRET` — Live PayPal REST app secret.
 - `PAYPAL_WEBHOOK_ID` — ID for a webhook pointed at `https://vet-helpline-development.dkjmmz6whh.workers.dev/paypal/webhook`.
 
-Set `PAYPAL_ENVIRONMENT` to `live` after sandbox testing. Subscribe the webhook to `PAYMENT.CAPTURE.REFUNDED` and `PAYMENT.CAPTURE.REVERSED`. Enable Apple Pay for the PayPal app and register the Worker checkout domain in PayPal before live Apple Pay testing.
+Set `PAYPAL_ENVIRONMENT` to `live` after sandbox testing. Subscribe the webhook to `PAYMENT.CAPTURE.COMPLETED`, `PAYMENT.CAPTURE.REFUNDED`, and `PAYMENT.CAPTURE.REVERSED`. Completion webhooks recover a successful capture when the browser closes or the CloudKit update fails. Capture retries reuse an already completed order and never charge it again. Storage failures return a retryable error to PayPal. Enable Apple Pay for the PayPal app and register the Worker checkout domain in PayPal before live Apple Pay testing.
+
+Run `npm test` and `npm run check` in `relay` before deploying. The tests use fictional records and mocked providers; a sandbox buyer approval and capture are still required to verify the merchant integration.

@@ -187,6 +187,7 @@ struct QuestionDetailView: View {
             CompactLabel(title: "Signed consent", value: signedConsentText, icon: "signature")
 
             CompactLabel(title: "Selected service", value: question.requestedService, icon: "checkmark.circle.fill")
+            if question.paymentAmount != "$0" {
             CompactLabel(
                 title: selectedPayment.rawValue,
                 value: selectedPaymentLink.isEmpty ? "Add your Cash App for Business link in Settings before sending it." : selectedPaymentLink,
@@ -195,7 +196,7 @@ struct QuestionDetailView: View {
 
             Button {
                 Task {
-                    await store.updatePayment(status: "Payment requested", amount: selectedOffer.amount, link: selectedPaymentLink, for: question)
+                    await store.updatePayment(status: "Payment requested", amount: question.paymentAmount, link: selectedPaymentLink, for: question)
                     if let offerMessageURL { openURL(offerMessageURL) }
                 }
             } label: {
@@ -204,7 +205,8 @@ struct QuestionDetailView: View {
             }
             .buttonStyle(.borderedProminent)
             .tint(AppPalette.brand)
-            .disabled(selectedPaymentLink.isEmpty || (selectedOffer.needsPhone && question.phone == nil))
+            .disabled(question.paymentStatus != "Payment requested" || selectedPaymentLink.isEmpty || (selectedOffer.needsPhone && question.phone == nil))
+            }
 
             if let link = question.paymentLink, !link.isEmpty, let paymentURL = URL(string: link) {
                 Link(destination: paymentURL) {
@@ -335,7 +337,7 @@ struct QuestionDetailView: View {
         if let offer = ServiceOffer(rawValue: question.requestedService) { return offer }
         switch question.preferredReply {
         case "Text message": return .quickText
-        case "Phone call": return .phoneConversation
+        case "Phone call": return .phoneSupport
         default: return .quickEmail
         }
     }
@@ -358,8 +360,8 @@ struct QuestionDetailView: View {
     }
 
     private var offerMessageURL: URL? {
-        let paymentSentence = "The price is \(selectedOffer.amount). Pay with \(selectedPayment.rawValue) here: \(selectedPaymentLink). " + (selectedPayment == .cashApp ? "Please tell me after you send it so I can confirm it." : "My app will confirm the payment automatically.")
-        let message = "Hi \(question.name), you selected \(selectedOffer.rawValue) for \(petDisplayName). \(paymentSentence)"
+        let paymentSentence = "The price is \(question.paymentAmount). Pay with \(selectedPayment.rawValue) here: \(selectedPaymentLink). " + (selectedPayment == .cashApp ? "Please tell me after you send it so I can confirm it." : "My app will confirm the payment automatically.")
+        let message = "Hi \(question.name), you selected \(question.requestedService) for \(petDisplayName). \(paymentSentence)"
 
         if selectedOffer.replyMethod != "Email", let phone = question.phone {
             var components = URLComponents()

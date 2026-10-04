@@ -80,8 +80,9 @@ final class QuestionStore {
             _ = try await database.save(record)
             await refresh()
         } catch {
-            errorMessage = "\(failureMessage): \(error.localizedDescription)"
+            let message = "\(failureMessage): \(error.localizedDescription)"
             await refresh()
+            errorMessage = message
         }
     }
 

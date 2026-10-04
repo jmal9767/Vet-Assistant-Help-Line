@@ -117,7 +117,13 @@ async function handleRequest(request, env) {
     const storedFiles = await storeAttachments(uploadedFiles, request, env);
     if (storedFiles.length) fields.attachmentSummary = storedFiles.map(formatStoredFile).join("\n");
 
-    const result = await saveQuestionToCloudKit(env, cloudKitCreateBody(fields));
+    let result;
+    try {
+      result = await saveQuestionToCloudKit(env, cloudKitCreateBody(fields));
+    } catch (error) {
+      if (storedFiles.length) await env.ATTACHMENTS_BUCKET.delete(storedFiles.map(file => file.key));
+      throw error;
+    }
     if (!result.ok) {
       if (storedFiles.length) await env.ATTACHMENTS_BUCKET.delete(storedFiles.map(file => file.key));
       return json({ error: "Could not save the question" }, 502, cors);
@@ -127,7 +133,9 @@ async function handleRequest(request, env) {
       ? `${url.origin}/pay?question=${encodeURIComponent(result.recordName)}`
       : "";
     if (checkoutURL) {
-      await updateQuestionPayment(env, result.recordName, { paymentLink: checkoutURL });
+      // Intake is already committed; optional link enrichment must not invite a duplicate submission.
+      try { await updateQuestionPayment(env, result.recordName, { paymentLink: checkoutURL }); }
+      catch { console.error("Checkout link enrichment unavailable"); }
     }
     return json({ ok: true, recordName: result.recordName, checkoutURL }, 200, cors);
 }
@@ -342,7 +350,7 @@ async function saveQuestionToCloudKit(env, requestBody) {
     if (migrated) continue;
     // Log only public schema field names and provider codes, never client values or credentials.
     console.error('CloudKit write rejected', JSON.stringify({ status: response.status, codes: failures.map(item => item.serverErrorCode), fields: Object.keys(MAX_LENGTHS).filter(name => new RegExp('\\b'+name+'\\b').test(reasons)) }));
-    return { ok: false, status: response.status };
+    return { ok: false, status: response.status, conflict: failures.some(item => item.serverErrorCode === "CONFLICT") };
   }
   return {
     ok: Boolean(record) && !result.records?.some((item) => item.serverErrorCode),
@@ -372,13 +380,27 @@ async function fetchQuestionFromCloudKit(env, recordName) {
 }
 
 async function updateQuestionPayment(env, recordName, values) {
-  const fields = {};
-  for (const [key, value] of Object.entries(values)) fields[key] = { value: String(value) };
-  const body = JSON.stringify({ operations: [{
-    operationType: "forceUpdate",
-    record: { recordType: "Question", recordName, fields },
-  }] });
-  return saveQuestionToCloudKit(env, body);
+  // Compare-and-save prevents a delayed completion from overwriting a concurrent refund.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const current = await fetchQuestionFromCloudKit(env, recordName);
+    if (!current?.recordChangeTag) return { ok: false };
+    const status = fieldValue(current, "paymentStatus");
+    if (values.paymentStatus === "Paid" && !["Payment requested", "Paid"].includes(status)) {
+      return { ok: true, paymentStatus: status };
+    }
+    if (values.paymentStatus === "Partially refunded" && status === "Refunded") {
+      return { ok: true, paymentStatus: status };
+    }
+    const fields = {};
+    for (const [key, value] of Object.entries(values)) fields[key] = { value: String(value) };
+    const body = JSON.stringify({ operations: [{
+      operationType: "update",
+      record: { recordType: "Question", recordName, recordChangeTag: current.recordChangeTag, fields },
+    }] });
+    const result = await saveQuestionToCloudKit(env, body);
+    if (!result.conflict) return { ...result, paymentStatus: values.paymentStatus || status };
+  }
+  return { ok: false };
 }
 
 function fieldValue(record, name) {
@@ -420,7 +442,7 @@ const statusEl=document.getElementById('status');
 async function createOrder(){const r=await fetch('/api/paypal/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question})});const d=await r.json();if(!r.ok)throw new Error(d.error||'Could not start payment');return d.id}
 async function capture(orderID,method){const r=await fetch('/api/paypal/orders/'+encodeURIComponent(orderID)+'/capture',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question,method})});const d=await r.json();if(!r.ok)throw new Error(d.error||'Could not complete payment');statusEl.textContent='Payment received. Thank you!';return d}
 if(window.paypal && paypal.Buttons){paypal.Buttons({createOrder,onApprove:d=>capture(d.orderID,'PayPal'),onError:()=>{statusEl.textContent='Payment could not be completed. Please try again.'}}).render('#paypal-buttons').catch(()=>{statusEl.textContent='Checkout could not load. Please reload this page or contact the care line.'})}else{statusEl.textContent='Checkout could not load. Please reload this page or contact the care line.'}
-if(window.ApplePaySession&&ApplePaySession.canMakePayments()){const applepay=paypal.Applepay();applepay.config().then(c=>{if(!c.isEligible)return;document.getElementById('applepay-container').innerHTML='<apple-pay-button id="applepay-button" buttonstyle="black" type="pay" locale="en-US"></apple-pay-button>';document.getElementById('applepay-button').onclick=()=>{const session=new ApplePaySession(4,{countryCode:c.countryCode,merchantCapabilities:c.merchantCapabilities,supportedNetworks:c.supportedNetworks,currencyCode:'USD',total:{label:'Paws & Whiskers Care Line',type:'final',amount}});session.onvalidatemerchant=e=>applepay.validateMerchant({validationUrl:e.validationURL,displayName:'Paws & Whiskers Care Line'}).then(v=>session.completeMerchantValidation(v.merchantSession)).catch(()=>session.abort());session.onpaymentauthorized=e=>createOrder().then(id=>applepay.confirmOrder({orderId:id,token:e.payment.token,billingContact:e.payment.billingContact}).then(()=>capture(id,'Apple Pay')).then(()=>session.completePayment(ApplePaySession.STATUS_SUCCESS))).catch(()=>session.completePayment(ApplePaySession.STATUS_FAILURE));session.begin()}}).catch(()=>{})}
+if(window.paypal&&paypal.Applepay&&window.ApplePaySession&&ApplePaySession.canMakePayments()){const applepay=paypal.Applepay();applepay.config().then(c=>{if(!c.isEligible)return;document.getElementById('applepay-container').innerHTML='<apple-pay-button id="applepay-button" buttonstyle="black" type="pay" locale="en-US"></apple-pay-button>';document.getElementById('applepay-button').onclick=()=>{const session=new ApplePaySession(4,{countryCode:c.countryCode,merchantCapabilities:c.merchantCapabilities,supportedNetworks:c.supportedNetworks,currencyCode:'USD',total:{label:'Paws & Whiskers Care Line',type:'final',amount}});session.onvalidatemerchant=e=>applepay.validateMerchant({validationUrl:e.validationURL,displayName:'Paws & Whiskers Care Line'}).then(v=>session.completeMerchantValidation(v.merchantSession)).catch(()=>session.abort());session.onpaymentauthorized=e=>createOrder().then(id=>applepay.confirmOrder({orderId:id,token:e.payment.token,billingContact:e.payment.billingContact}).then(()=>capture(id,'Apple Pay')).then(()=>session.completePayment(ApplePaySession.STATUS_SUCCESS))).catch(()=>session.completePayment(ApplePaySession.STATUS_FAILURE));session.begin()}}).catch(()=>{})}
 </script></body></html>`, { headers: securityHTMLHeaders() });
 }
 
@@ -474,7 +496,7 @@ async function capturePayPalOrder(request, env, orderID) {
   if ((response && !response.ok) || !capture) return json({ error: "Payment was not completed" }, 502);
   const update = await updateQuestionPayment(env, recordName, { paymentStatus: "Paid", paymentMethod: method });
   if (!update.ok) return json({ error: "Payment succeeded, but the app status could not be refreshed" }, 502);
-  return json({ ok: true, status: "Paid" }, 200);
+  return json({ ok: true, status: update.paymentStatus }, 200);
 }
 
 async function handlePayPalWebhook(request, env) {

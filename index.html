@@ -586,7 +586,10 @@
     button.textContent = "Sending…";
 
     var controller = new AbortController();
-    var timeout = window.setTimeout(function () { controller.abort(); }, 25000);
+    // Allow large attachments to upload over a slow mobile connection.
+    var uploadBytes = files.reduce(function (total, file) { return total + file.size; }, 0);
+    var timeoutMs = Math.max(25000, 30000 + Math.ceil(uploadBytes / (128 * 1024)) * 1000);
+    var timeout = window.setTimeout(function () { controller.abort(); }, timeoutMs);
     fetch(WORKER_URL, {
       method: "POST",
       body: submissionBody(payload, files),

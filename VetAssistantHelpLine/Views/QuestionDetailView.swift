@@ -325,7 +325,7 @@ struct QuestionDetailView: View {
     private var paymentTint: Color {
         switch question.paymentStatus {
         case "Paid": AppPalette.clinicGreen
-        case "Refunded": AppPalette.brand
+        case "Refunded", "Partially refunded": AppPalette.brand
         case "Payment requested": AppPalette.warmGold
         case "Referred — no charge": AppPalette.brand
         case "Reviewing": AppPalette.warmGold

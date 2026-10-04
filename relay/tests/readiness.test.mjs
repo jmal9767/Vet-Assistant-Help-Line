@@ -11,7 +11,7 @@ const fixture={name:'Release test',email:'release@example.invalid',phone:'555555
 const origin='https://intake.test';
 function setup(){
   const records=new Map(),files=new Map();
-  const state={records,files,order:null,captures:0,failSave:false,verifyStatus:200,wrongCapture:false,networkFails:false,unsupportedFields:new Set()};
+  const state={records,files,order:null,captures:0,failSave:false,verifyStatus:200,wrongCapture:false,networkFails:false,failEnrichment:false,completionConflict:false,unsupportedFields:new Set()};
   const env={CLOUDKIT_CONTAINER:'test',CLOUDKIT_ENVIRONMENT:'development',CLOUDKIT_KEY_ID:'test',CLOUDKIT_PRIVATE_KEY:`-----BEGIN PRIVATE KEY-----\n${pem}\n-----END PRIVATE KEY-----`,PAYPAL_CLIENT_ID:'mock-client',PAYPAL_CLIENT_SECRET:'mock-secret',PAYPAL_WEBHOOK_ID:'mock-webhook',ATTACHMENT_SIGNING_SECRET:'mock-signing',ALLOWED_ORIGIN:origin,PAYPAL_ENVIRONMENT:'sandbox',ATTACHMENTS_BUCKET:{
     async put(name,stream,meta){files.set(name,{data:await new Response(stream).arrayBuffer(),meta});},
     async get(name){const file=files.get(name);return file?{body:file.data,customMetadata:file.meta.customMetadata,writeHttpMetadata(headers){headers.set('Content-Type',file.meta.httpMetadata.contentType);}}:null;},
@@ -26,9 +26,11 @@ function setup(){
     if(path.endsWith('/records/modify')){
       if(state.failSave)return Response.json({records:[{serverErrorCode:'FAILED'}]});
       const input=JSON.parse(options.body),saved=[];
+      if(state.failEnrichment && input.operations[0].operationType === "update")throw new Error("enrichment unavailable");
+      if(state.completionConflict && input.operations[0].record.fields.paymentStatus?.value === "Paid"){state.completionConflict=false;const old=records.get(input.operations[0].record.recordName);records.set(old.recordName,{...old,recordChangeTag:String(Number(old.recordChangeTag)+1),fields:{...old.fields,paymentStatus:{value:"Refunded"}}});}
       const unsupported=input.operations.flatMap(op=>Object.keys(op.record.fields)).find(name=>state.unsupportedFields.has(name));
       if(unsupported)return Response.json({records:[{serverErrorCode:'BAD_REQUEST',reason:`Field '${unsupported}' is not defined for record type Question.`}]});
-      for(const op of input.operations){const id=op.record.recordName||`question-${records.size+1}`;const previous=records.get(id);const record={recordName:id,recordType:'Question',fields:{...previous?.fields,...op.record.fields}};records.set(id,record);saved.push(record);}
+      for(const op of input.operations){const id=op.record.recordName||`question-${records.size+1}`;const previous=records.get(id);if(op.operationType === "update" && op.record.recordChangeTag !== previous?.recordChangeTag)return Response.json({records:[{serverErrorCode:"CONFLICT"}]});const record={recordName:id,recordChangeTag:String(Number(previous?.recordChangeTag||0)+1),recordType:'Question',fields:{...previous?.fields,...op.record.fields}};records.set(id,record);saved.push(record);}
       return Response.json({records:saved});
     }
     if(path==='/v2/checkout/orders'){state.order={...JSON.parse(options.body),id:'ORDER123',status:'APPROVED'};return Response.json(state.order);}
@@ -86,3 +88,8 @@ test('older CloudKit schemas preserve missing fields and checkout status in a ve
   packed=JSON.parse(record.fields.question.value);const updated=JSON.parse(s.state.records.get('question-1').fields.question.value);assert.equal(updated.details.paymentStatus,'Paid');assert.equal(updated.details.breed,'Fictional mix');assert.equal(updated.details.signedConsentName,fixture.signedConsentName);
   assert.equal((await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'})).status,200);assert.equal(s.state.captures,1);
 });
+
+test('a thrown CloudKit save cleans up uploads',async()=>{const s=setup();s.state.networkFails=true;const form=new FormData();for(const [k,v]of Object.entries(fixture))form.append(k,v);form.append('attachments',new File(['test'],'fixture.txt'));assert.equal((await s.worker.fetch(new Request('https://checkout.test/intake',{method:'POST',headers:{Origin:origin},body:form}),s.env)).status,503);assert.equal(s.state.files.size,0);});
+test('committed intake remains successful when optional checkout enrichment throws',async()=>{const s=setup();s.state.failEnrichment=true;const r=await s.call('/intake',fixture);assert.equal(r.status,200);assert.match((await r.json()).checkoutURL,/question-1/);assert.equal(s.state.records.size,1);});
+test('concurrent refund wins over completion using a conditional record update',async()=>{const s=await paidSetup();s.state.completionConflict=true;const r=await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'});assert.equal(r.status,200);assert.equal((await r.json()).status,'Refunded');assert.equal(s.state.records.get('question-1').fields.paymentStatus.value,'Refunded');assert.equal(s.state.captures,1);});
+test('partial refund is recorded and cannot downgrade a full refund',async()=>{const s=await paidSetup();await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'});const event={event_type:'PAYMENT.CAPTURE.REFUNDED',resource:{supplementary_data:{related_ids:{order_id:'ORDER123'}}}};s.state.order.purchase_units[0].payments.captures[0].status='PARTIALLY_REFUNDED';assert.equal((await s.call('/paypal/webhook',event)).status,200);assert.equal(s.state.records.get('question-1').fields.paymentStatus.value,'Partially refunded');s.state.order.purchase_units[0].payments.captures[0].status='REFUNDED';await s.call('/paypal/webhook',event);s.state.order.purchase_units[0].payments.captures[0].status='PARTIALLY_REFUNDED';await s.call('/paypal/webhook',event);assert.equal(s.state.records.get('question-1').fields.paymentStatus.value,'Refunded');});

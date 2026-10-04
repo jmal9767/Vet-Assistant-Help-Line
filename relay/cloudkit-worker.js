@@ -859,7 +859,7 @@ async function handlePetAssist(request, env, url) {
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
   if (!env.PETASSIST_PAYMENTS) return json({ error: "PetAssist payments are being connected" }, 503, cors);
   if (url.pathname === "/petassist/device-connection" && request.method === "POST") return ownerDeviceConnection(request, env, cors);
-  if (url.pathname.startsWith("/petassist/operator/") || url.pathname.startsWith("/petassist/client/") || url.pathname === "/petassist/requests") return handleVisits(request, env, url, cors);
+  if (url.pathname.startsWith("/petassist/operator/") || url.pathname.startsWith("/petassist/client/") || url.pathname === "/petassist/requests" || url.pathname === "/petassist/service-area") return handleVisits(request, env, url, cors);
   if (request.method === "POST" && url.pathname === "/petassist/bookings") {
     if (!await secretMatches((request.headers.get("Authorization") || "").replace(/^Bearer /, ""), env.PETASSIST_OPERATOR_KEY)) return json({ error: "Use the website visit request form. The business confirms visits before requesting payment." }, 401, cors);
     if (!(await allowIntakeRequest(request, env))) return json({ error: "Please wait before trying again" }, 429, cors);
@@ -890,6 +890,7 @@ export class PetAssistPayments {
   constructor(state) { this.state = state; }
   async fetch(request) {
     const path = new URL(request.url).pathname;
+    if (path === "/service-area") return Response.json(await this.state.storage.get("service-area") || null);
     if (path === "/record") return Response.json(await this.state.storage.get("record") || null);
     if (path === "/index") {
       const query = new URL(request.url).searchParams;
@@ -908,6 +909,7 @@ export class PetAssistPayments {
         active.push({nonce:input.nonce,timestamp:Date.now()}); await txn.put("device-nonces",active);
         return Response.json({ok:true});
       }
+      if (path === "/service-area-save") { await txn.put("service-area",input); return Response.json(input); }
       if (path === "/index-add") { await txn.put("visit:"+input.token,true); return Response.json({ok:true}); }
       if (path === "/visit-create") {
         if (record) return Response.json(record, {status:record.clientAccess===input.clientAccess?200:409});
@@ -922,9 +924,12 @@ export class PetAssistPayments {
         record.recordChangeTag=String(Number(record.recordChangeTag)+1);
         await txn.put("record",record); return Response.json({ok:true});
       }
-      if (path === "/visit-update" || path === "/message") {
+      if (path === "/visit-update" || path === "/message" || path === "/location") {
         if (!record?.details) return Response.json({error:"Visit not found"},{status:404});
-        if (path === "/message") {
+        if (path === "/location") {
+          if (input.expectedVersion !== record.recordChangeTag) return Response.json({error:"This visit changed. Refresh before saving its location."},{status:409});
+          if (input.location) record.details.location=input.location; else delete record.details.location;
+        } else if (path === "/message") {
           if (record.messages.length >= 500) return Response.json({error:"This conversation is full. Contact info@bayareaapps.com."},{status:409});
           record.messages.push({id:crypto.randomUUID(),sender:input.sender,text:input.text,createdAt:new Date().toISOString()});
         } else {
@@ -970,9 +975,18 @@ async function secretMatches(provided, expected) {
   return diff===0;
 }
 function visitsIndex(env) { return env.PETASSIST_PAYMENTS.get(env.PETASSIST_PAYMENTS.idFromName("private-visits-index")); }
-function visitSummary(record, requestURL, operator=false) {
+function validVisitLocation(value) {
+  return value && typeof value.latitude === "number" && typeof value.longitude === "number" && Number.isFinite(value.latitude) && Number.isFinite(value.longitude) && Math.abs(value.latitude)<=90 && Math.abs(value.longitude)<=180;
+}
+function distanceMiles(a,b) {
+  if(!validVisitLocation(a) || !validVisitLocation(b))return null;
+  const rad=value=>value*Math.PI/180;
+  const h=Math.sin(rad(b.latitude-a.latitude)/2)**2+Math.cos(rad(a.latitude))*Math.cos(rad(b.latitude))*Math.sin(rad(b.longitude-a.longitude)/2)**2;
+  return Math.round(3958.7613*2*Math.asin(Math.sqrt(Math.min(1,Math.max(0,h))))*10)/10;
+}
+function visitSummary(record, requestURL, operator=false, serviceArea=null) {
   const receipt=petAssistReceipt(record,requestURL);
-  const summary={...receipt,serviceID:record.serviceID,visitStatus:record.visitStatus,version:record.recordChangeTag,createdAt:record.createdAt,preferredAt:record.details.preferredAt,scheduledAt:record.details.scheduledAt||null,petName:record.details.petName,messages:record.messages||[]};
+  const summary={...receipt,serviceID:record.serviceID,visitStatus:record.visitStatus,version:record.recordChangeTag,createdAt:record.createdAt,preferredAt:record.details.preferredAt,scheduledAt:record.details.scheduledAt||null,petName:record.details.petName,address:record.details.address,location:record.details.location||null,serviceArea,distanceMiles:distanceMiles(serviceArea,record.details.location),messages:record.messages||[]};
   if(operator)Object.assign(summary,record.details,{clientLink:"https://bayareaapps.com/petassist-local/#visit="+receipt.token+"."+record.clientAccess});
   return summary;
 }
@@ -985,12 +999,21 @@ async function handleVisits(request,env,url,cors) {
   const isOperator=url.pathname.startsWith("/petassist/operator/");
   const bearer=(request.headers.get("Authorization")||"").replace(/^Bearer /,"");
   if(isOperator && !await secretMatches(bearer,env.PETASSIST_OPERATOR_KEY))return json({error:"Connect your business app to access visits."},401,cors);
+  const serviceArea=await (await visitsIndex(env).fetch("https://booking.invalid/service-area")).json();
+  if(url.pathname==="/petassist/service-area" && request.method==="GET")return json(serviceArea,200,cors);
+  if(url.pathname==="/petassist/operator/service-area" && request.method==="PATCH") {
+    const input=await limitedVisitJSON(request);
+    if(!validVisitLocation(input) || typeof input.label!=="string" || !input.label.trim() || input.label.length>200 || /[\u0000-\u001f]/.test(input.label))return json({error:"Choose a public business city, ZIP code, or address."},400,cors);
+    const area={label:input.label.trim(),latitude:input.latitude,longitude:input.longitude};
+    const saved=await visitsIndex(env).fetch("https://booking.invalid/service-area-save",{method:"POST",body:JSON.stringify(area)});
+    return json(await saved.json(),200,cors);
+  }
   if(url.pathname==="/petassist/operator/visits" && request.method==="GET") {
     const cursor=url.searchParams.get("cursor")||"";
     if(cursor && !/^visit:[a-f0-9]{32}$/.test(cursor))return json({error:"Invalid page"},400,cors);
     const page=await (await visitsIndex(env).fetch("https://booking.invalid/index?cursor="+encodeURIComponent(cursor))).json();
     const records=await Promise.all(page.tokens.map(token=>readPetAssistPayment(env,"petassist-"+token)));
-    return json({visits:records.filter(record=>record?.details).map(record=>visitSummary(record,request.url,true)),cursor:page.cursor},200,cors);
+    return json({visits:records.filter(record=>record?.details).map(record=>visitSummary(record,request.url,true,serviceArea)),cursor:page.cursor},200,cors);
   }
   if(url.pathname==="/petassist/requests" && request.method==="POST") {
     if(!(await allowIntakeRequest(request,env)))return json({error:"Please wait a minute before trying again."},429,cors);
@@ -1007,6 +1030,10 @@ async function handleVisits(request,env,url,cors) {
     if(!details.clientName || !details.petName || !details.address || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(details.email))return json({error:"Enter your name, email, pet name and visit address."},400,cors);
     const date=new Date(input.preferredAt);if(!Number.isFinite(date.getTime()) || date.getTime()<Date.now() || date.getTime()>Date.now()+366*86400000)return json({error:"Choose a preferred visit time within the next year."},400,cors);
     details.preferredAt=date.toISOString();
+    if(input.location!=null) {
+      if(!validVisitLocation(input.location) || input.locationConfirmed!==true)return json({error:"Confirm that the shared location is your visit address."},400,cors);
+      details.location={latitude:input.location.latitude,longitude:input.location.longitude,source:"client-shared"};
+    }
     const object=petAssistObject(env,"petassist-"+input.token);
     const created=await object.fetch("https://booking.invalid/visit-create",{method:"POST",body:JSON.stringify({...input,details,serviceTitle:service.title,amount:service.amount})});
     if(!created.ok)return json({error:"This request reference is already in use. Reload the form."},409,cors);
@@ -1014,26 +1041,35 @@ async function handleVisits(request,env,url,cors) {
     if(!indexed.ok)return json({error:"The request could not be delivered. Please retry."},503,cors);
     return json({ok:true,token:input.token,clientLink:"https://bayareaapps.com/petassist-local/#visit="+input.token+"."+input.clientAccess},200,cors);
   }
-  const match=url.pathname.match(/^\/petassist\/(operator|client)\/visits\/([a-f0-9]{32})(?:\/(messages))?$/);
+  const match=url.pathname.match(/^\/petassist\/(operator|client)\/visits\/([a-f0-9]{32})(?:\/(messages|location))?$/);
   if(!match)return json({error:"Not found"},404,cors);
   const object=petAssistObject(env,"petassist-"+match[2]);
   const record=await readPetAssistPayment(env,"petassist-"+match[2]);
   if(!record?.details)return json({error:"Visit not found"},404,cors);
   if(!isOperator && !await secretMatches(bearer,record.clientAccess))return json({error:"Open your private visit link to access this page."},401,cors);
-  if(request.method==="GET" && !match[3])return json(visitSummary(record,request.url,isOperator),200,cors);
+  if(request.method==="GET" && !match[3])return json(visitSummary(record,request.url,isOperator,serviceArea),200,cors);
   if(isOperator && request.method==="DELETE" && !match[3]) {
     const input=await limitedVisitJSON(request);
     if(typeof input?.expectedVersion!=="string")return json({error:"Refresh this visit before removing client details."},400,cors);
     const result=await object.fetch("https://booking.invalid/redact",{method:"POST",body:JSON.stringify({expectedVersion:input.expectedVersion})});
     return json(await result.json(),result.status,cors);
   }
-  if(request.method==="POST" && match[3]) {
+  if(request.method==="PATCH" && match[3]==="location") {
+    if(!isOperator && !(await allowIntakeRequest(request,env)))return json({error:"Please wait before updating your location."},429,cors);
+    const input=await limitedVisitJSON(request);
+    if(typeof input?.expectedVersion!=="string" || (input.location!=null && (!validVisitLocation(input.location) || (!isOperator && input.locationConfirmed!==true))))return json({error:"Confirm the visit location and refresh before saving."},400,cors);
+    const location=input.location ? {latitude:input.location.latitude,longitude:input.location.longitude,source:isOperator?"visit-address":"client-shared"}:null;
+    const result=await object.fetch("https://booking.invalid/location",{method:"POST",body:JSON.stringify({location,expectedVersion:input.expectedVersion})});
+    if(!result.ok)return json(await result.json(),result.status,cors);
+    return json(visitSummary(await result.json(),request.url,isOperator,serviceArea),200,cors);
+  }
+  if(request.method==="POST" && match[3]==="messages") {
     if(!isOperator && !(await allowIntakeRequest(request,env)))return json({error:"Please wait before sending another message."},429,cors);
     const input=await limitedVisitJSON(request);const text=typeof input?.text==="string"?input.text.trim():"";
     if(!text || text.length>2000)return json({error:"Enter a message of up to 2,000 characters."},400,cors);
     const result=await object.fetch("https://booking.invalid/message",{method:"POST",body:JSON.stringify({text,sender:isOperator?"business":"client"})});
     if(!result.ok)return json(await result.json(),result.status,cors);
-    return json(visitSummary(await result.json(),request.url,isOperator),200,cors);
+    return json(visitSummary(await result.json(),request.url,isOperator,serviceArea),200,cors);
   }
   if(isOperator && request.method==="PATCH" && !match[3]) {
     const input=await limitedVisitJSON(request);
@@ -1041,7 +1077,7 @@ async function handleVisits(request,env,url,cors) {
     if(input.scheduledAt && (!Number.isFinite(new Date(input.scheduledAt).getTime()) || new Date(input.scheduledAt).getTime()<Date.now()))return json({error:"Choose a future appointment time."},400,cors);
     const result=await object.fetch("https://booking.invalid/visit-update",{method:"POST",body:JSON.stringify({status:input.status,scheduledAt:input.scheduledAt,expectedVersion:input.expectedVersion})});
     if(!result.ok)return json(await result.json(),result.status,cors);
-    return json(visitSummary(await result.json(),request.url,true),200,cors);
+    return json(visitSummary(await result.json(),request.url,true,serviceArea),200,cors);
   }
   return json({error:"Method not allowed"},405,cors);
 }

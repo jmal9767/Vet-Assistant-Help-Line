@@ -362,3 +362,45 @@ test('device access rejects copied public keys, tampered proofs, stale clocks an
  assert.equal((await s.call('/petassist/device-connection',await signedDeviceProof(stranger.privateKey,publicKey))).status,401);
  delete s.env.PETASSIST_DEVICE_PUBLIC_KEY;assert.equal((await s.call('/petassist/device-connection',input)).status,401);
 });
+
+async function locationPatch(s,path,input,headers=operatorHeaders) {
+ return s.worker.fetch(new Request('https://checkout.test'+path,{method:'PATCH',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify(input)}),s.env);
+}
+test('only the business can publish its public service area and invalid coordinates are rejected',async()=>{
+ const s=setup(),path='/petassist/operator/service-area',area={label:'Public test service area',latitude:0,longitude:0};
+ assert.equal(await (await visitGet(s,'/petassist/service-area')).json(),null);
+ assert.equal((await locationPatch(s,path,area,{})).status,401);
+ for(const invalid of [{...area,latitude:91},{...area,longitude:-181},{...area,latitude:'0'},{...area,label:''}])assert.equal((await locationPatch(s,path,invalid)).status,400);
+ assert.equal((await locationPatch(s,path,area)).status,200);
+ assert.deepEqual(await (await visitGet(s,'/petassist/service-area')).json(),area);
+});
+test('both sides receive the same calculated distance and checkout never exposes their address or pin',async()=>{
+ const s=setup();await locationPatch(s,'/petassist/operator/service-area',{label:'Public service area',latitude:0,longitude:0});
+ assert.equal((await s.call('/petassist/requests',{...visitFixture,location:{latitude:0,longitude:1},locationConfirmed:true})).status,200);
+ const own=await (await visitGet(s,'/petassist/operator/visits/'+visitFixture.token,operatorHeaders)).json();
+ const client=await (await visitGet(s,'/petassist/client/visits/'+visitFixture.token,{Authorization:'Bearer '+visitFixture.clientAccess})).json();
+ assert.equal(own.distanceMiles,69.1);assert.equal(client.distanceMiles,own.distanceMiles);assert.equal(client.address,visitFixture.address);
+ assert.equal(client.location.source,'client-shared');assert.ok(!client.clientName && !client.email && !client.clientLink);
+ const receipt=await (await visitGet(s,'/petassist/bookings/'+visitFixture.token)).json();assert.ok(!receipt.location && !receipt.address && !receipt.distanceMiles);
+});
+test('clients must consent to location and private access is required to replace or remove it',async()=>{
+ const s=setup(),location={latitude:37.7,longitude:-122.4};
+ assert.equal((await s.call('/petassist/requests',{...visitFixture,location})).status,400);
+ assert.equal((await s.call('/petassist/requests',{...visitFixture,location:{latitude:999,longitude:0},locationConfirmed:true})).status,400);
+ await s.call('/petassist/requests',visitFixture);
+ const path='/petassist/client/visits/'+visitFixture.token+'/location',headers={Authorization:'Bearer '+visitFixture.clientAccess};
+ assert.equal((await locationPatch(s,path,{location,expectedVersion:'1'},{})).status,401);
+ assert.equal((await locationPatch(s,path,{location,expectedVersion:'1'},headers)).status,400);
+ const result=await locationPatch(s,path,{location,locationConfirmed:true,expectedVersion:'1'},headers);assert.equal(result.status,200);
+ const saved=await result.json();assert.equal(saved.location.source,'client-shared');
+ assert.equal((await locationPatch(s,path,{location:null,expectedVersion:'1'},headers)).status,409);
+ const removed=await locationPatch(s,path,{location:null,expectedVersion:saved.version},headers);assert.equal(removed.status,200);assert.equal((await removed.json()).location,null);
+});
+test('address lookup pins stay private and redaction removes all location information',async()=>{
+ const s=setup();await s.call('/petassist/requests',visitFixture);
+ const result=await locationPatch(s,'/petassist/operator/visits/'+visitFixture.token+'/location',{location:{latitude:37,longitude:-122},expectedVersion:'1'});
+ assert.equal(result.status,200);const saved=await result.json();assert.equal(saved.location.source,'visit-address');
+ const removed=await s.worker.fetch(new Request('https://checkout.test/petassist/operator/visits/'+visitFixture.token,{method:'DELETE',headers:{...operatorHeaders,'Content-Type':'application/json'},body:JSON.stringify({expectedVersion:saved.version})}),s.env);
+ assert.equal(removed.status,200);assert.equal((await visitGet(s,'/petassist/client/visits/'+visitFixture.token,{Authorization:'Bearer '+visitFixture.clientAccess})).status,404);
+ const record=await s.env.PETASSIST_PAYMENTS.get(s.env.PETASSIST_PAYMENTS.idFromName('petassist-'+visitFixture.token)).fetch('https://booking.invalid/record');assert.ok(!(await record.json()).details);
+});

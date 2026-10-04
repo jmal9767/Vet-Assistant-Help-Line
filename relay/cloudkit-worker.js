@@ -36,7 +36,7 @@ async function handleRequest(request, env) {
 
     if (request.method === "GET" && url.pathname === "/.well-known/apple-developer-merchantid-domain-association") {
       return new Response(applePayDomainAssociation, {
-        headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, max-age=3600" },
+        headers: { "Content-Type": "application/octet-stream", "Cache-Control": "public, max-age=3600" },
       });
     }
 
@@ -448,13 +448,46 @@ async function serveCheckout(url, env) {
   const sdkURL = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(env.PAYPAL_CLIENT_ID)}&currency=USD&components=buttons,applepay`;
   return new Response(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Secure payment</title><script src="${sdkURL}"></script><script src="https://applepay.cdn-apple.com/jsapi/1.latest/apple-pay-sdk.js"></script>
-<style>body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f7fa;color:#132238;margin:0}.card{max-width:520px;margin:32px auto;background:white;border-radius:18px;padding:24px;box-shadow:0 10px 35px #13223818}.brand{color:#173f67}h1{font-size:1.6rem}.amount{font-size:2rem;font-weight:800;margin:.35rem 0 1rem}.note{color:#536579;line-height:1.45}#applepay-container{margin:14px 0}apple-pay-button{--apple-pay-button-width:100%;--apple-pay-button-height:48px;--apple-pay-button-border-radius:8px}#status{font-weight:650;margin-top:16px}</style></head><body><main class="card"><div class="brand">🐾 ${brand}</div><h1>${safeService}</h1><div class="amount">$${offer.amount}</div><p class="note">Choose PayPal or Apple Pay. Payment status updates automatically after payment succeeds.</p><div id="paypal-buttons"></div><div id="applepay-container"></div><p id="status" role="status"></p></main>
-<script>const question=${safeQuestion}, amount=${safeAmount};
+<style>body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f7fa;color:#132238;margin:0}.card{max-width:520px;margin:32px auto;background:white;border-radius:18px;padding:24px;box-shadow:0 10px 35px #13223818}.brand{color:#173f67}h1{font-size:1.6rem}.amount{font-size:2rem;font-weight:800;margin:.35rem 0 1rem}.note{color:#536579;line-height:1.45}#applepay-container{margin:14px 0}apple-pay-button{--apple-pay-button-width:100%;--apple-pay-button-height:48px;--apple-pay-button-border-radius:8px}#status{font-weight:650;margin-top:16px}</style></head><body><main class="card"><div class="brand">🐾 ${brand}</div><h1>${safeService}</h1><div class="amount">$${offer.amount}</div><p class="note">Choose PayPal or Apple Pay. Payment status updates automatically after payment succeeds.</p><div id="paypal-buttons"></div><div id="applepay-container"></div><p id="applepay-status" class="note" role="status"></p><p id="status" role="status"></p></main>
+<script>const question=${safeQuestion}, amount=${safeAmount}, brand=${JSON.stringify(brand)};
 const statusEl=document.getElementById('status');
-async function createOrder(){const r=await fetch('/api/paypal/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question})});const d=await r.json();if(!r.ok)throw new Error(d.error||'Could not start payment');return d.id}
-async function capture(orderID,method){const r=await fetch('/api/paypal/orders/'+encodeURIComponent(orderID)+'/capture',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question,method})});const d=await r.json();if(!r.ok)throw new Error(d.error||'Could not complete payment');statusEl.textContent=d.status==='Paid'?'Payment received. Thank you!':'Payment status: '+d.status+'. Please contact the care line with any questions.';return d}
-if(window.paypal && paypal.Buttons){paypal.Buttons({createOrder,onApprove:d=>capture(d.orderID,'PayPal'),onError:()=>{statusEl.textContent='Payment could not be completed. Please try again.'}}).render('#paypal-buttons').catch(()=>{statusEl.textContent='Checkout could not load. Please reload this page or contact the care line.'})}else{statusEl.textContent='Checkout could not load. Please reload this page or contact the care line.'}
-if(window.paypal&&paypal.Applepay&&window.ApplePaySession&&ApplePaySession.canMakePayments()){const applepay=paypal.Applepay();applepay.config().then(c=>{if(!c.isEligible)return;document.getElementById('applepay-container').innerHTML='<apple-pay-button id="applepay-button" buttonstyle="black" type="pay" locale="en-US"></apple-pay-button>';document.getElementById('applepay-button').onclick=()=>{const session=new ApplePaySession(4,{countryCode:c.countryCode,merchantCapabilities:c.merchantCapabilities,supportedNetworks:c.supportedNetworks,currencyCode:'USD',total:{label:'Paws & Whiskers Care Line',type:'final',amount}});session.onvalidatemerchant=e=>applepay.validateMerchant({validationUrl:e.validationURL,displayName:'Paws & Whiskers Care Line'}).then(v=>session.completeMerchantValidation(v.merchantSession)).catch(()=>session.abort());session.onpaymentauthorized=e=>createOrder().then(id=>applepay.confirmOrder({orderId:id,token:e.payment.token,billingContact:e.payment.billingContact}).then(()=>capture(id,'Apple Pay')).then(()=>session.completePayment(ApplePaySession.STATUS_SUCCESS))).catch(()=>session.completePayment(ApplePaySession.STATUS_FAILURE));session.begin()}}).catch(()=>{})}
+const appleStatus=document.getElementById('applepay-status');
+async function createOrder(){const r=await fetch('/api/paypal/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question})});const d=await r.json();if(!r.ok||!d.id)throw new Error(d.error||'Could not start payment');return d.id}
+async function capture(orderID,method){const r=await fetch('/api/paypal/orders/'+encodeURIComponent(orderID)+'/capture',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question,method})});const d=await r.json();if(!r.ok)throw new Error(d.error||'Could not complete payment');statusEl.textContent=d.status==='Paid'?(d.statusSyncPending?'Payment received. Your care-line payment status is updating. Thank you!':'Payment received. Thank you!'):'Payment status: '+d.status+'. Please contact the care line with any questions.';return d}
+if(window.paypal && paypal.Buttons){paypal.Buttons({createOrder,onApprove:d=>capture(d.orderID,'PayPal'),onCancel:()=>{statusEl.textContent='Payment cancelled. You can try again when ready.'},onError:()=>{statusEl.textContent='Payment could not be confirmed. If you approved a payment, contact the care line before trying again.'}}).render('#paypal-buttons').catch(()=>{statusEl.textContent='Checkout could not load. Please reload this page or contact the care line.'})}else{statusEl.textContent='Checkout could not load. Please reload this page or contact the care line.'}
+async function setupApplePay(){
+  try {
+    if(!window.paypal||!paypal.Applepay||!window.ApplePaySession||!ApplePaySession.canMakePayments()){
+      appleStatus.textContent='Apple Pay is unavailable in this browser. You can use PayPal or the card option above.';return;
+    }
+    const applepay=paypal.Applepay();const c=await applepay.config();
+    if(!c.isEligible){appleStatus.textContent='Apple Pay is currently unavailable. You can use PayPal or the card option above.';return;}
+    document.getElementById('applepay-container').innerHTML='<apple-pay-button id="applepay-button" buttonstyle="black" type="pay" locale="en-US"></apple-pay-button>';
+    appleStatus.textContent='';
+    let active=false;
+    document.getElementById('applepay-button').onclick=()=>{
+      if(active)return;
+      let session;
+      try {
+        session=new ApplePaySession(4,{countryCode:c.countryCode,merchantCapabilities:c.merchantCapabilities,supportedNetworks:c.supportedNetworks,currencyCode:'USD',requiredBillingContactFields:['postalAddress'],total:{label:brand,type:'final',amount}});
+        active=true;appleStatus.textContent='';
+        session.onvalidatemerchant=async e=>{
+          try{const v=await applepay.validateMerchant({validationUrl:e.validationURL,displayName:brand});session.completeMerchantValidation(v.merchantSession);}
+          catch{active=false;appleStatus.textContent='Apple Pay could not verify this checkout. Please use PayPal or the card option, or contact the care line.';session.abort();}
+        };
+        session.onpaymentauthorized=async e=>{
+          let confirmed=false;
+          try{const id=await createOrder();await applepay.confirmOrder({orderId:id,token:e.payment.token,billingContact:e.payment.billingContact});confirmed=true;await capture(id,'Apple Pay');session.completePayment(ApplePaySession.STATUS_SUCCESS);appleStatus.textContent='';}
+          catch{session.completePayment(ApplePaySession.STATUS_FAILURE);appleStatus.textContent=confirmed?'Apple Pay payment could not be confirmed. If your wallet shows a charge, contact the care line before trying again.':'Apple Pay could not complete payment. Please try another card or use PayPal.';}
+          finally{active=false;}
+        };
+        session.oncancel=()=>{active=false;appleStatus.textContent='Apple Pay cancelled. You can try again when ready.';};
+        session.begin();
+      }catch{active=false;appleStatus.textContent='Apple Pay could not open. Please use PayPal or the card option, or contact the care line.';}
+    };
+  }catch{appleStatus.textContent='Apple Pay could not load. Please reload or use PayPal or the card option.';}
+}
+setupApplePay();
 </script></body></html>`, { headers: securityHTMLHeaders() });
 }
 
@@ -506,8 +539,11 @@ async function capturePayPalOrder(request, env, orderID) {
   const result = response ? await response.json() : order;
   const capture = completedCapture(result, offer.amount);
   if ((response && !response.ok) || !capture) return json({ error: "Payment was not completed" }, 502);
-  const update = await updateQuestionPayment(env, recordName, { paymentStatus: "Paid", paymentMethod: method });
-  if (!update.ok) return json({ error: "Payment succeeded, but the app status could not be refreshed" }, 502);
+  // The verified capture is the payment outcome. Webhooks retry status syncing;
+  // a delayed CloudKit write must not tell the payer that their charge failed.
+  let update;
+  try { update = await updateQuestionPayment(env, recordName, { paymentStatus: "Paid", paymentMethod: method }); } catch {}
+  if (!update?.ok) return json({ ok: true, status: "Paid", statusSyncPending: true }, 202);
   return json({ ok: true, status: update.paymentStatus }, 200);
 }
 
@@ -618,7 +654,7 @@ function checkoutMessage(title, message, status) {
 }
 
 function securityHTMLHeaders() {
-  return { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer", "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.paypal.com https://www.paypalobjects.com https://applepay.cdn-apple.com; frame-src https://www.paypal.com; connect-src 'self' https://www.paypal.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://www.paypalobjects.com" };
+  return { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer", "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://*.paypal.com https://*.paypalobjects.com https://applepay.cdn-apple.com; frame-src 'self' https://*.paypal.com https://applepay.cdn-apple.com; connect-src 'self' https://*.paypal.com https://*.paypalobjects.com; style-src 'self' 'unsafe-inline' https://*.paypal.com https://*.paypalobjects.com; img-src 'self' data: https://*.paypal.com https://*.paypalobjects.com https://applepay.cdn-apple.com" };
 }
 
 function escapeHTML(value) {

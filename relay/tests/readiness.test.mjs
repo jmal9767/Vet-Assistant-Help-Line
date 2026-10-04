@@ -83,7 +83,7 @@ test('private uploads are readable with a valid signature and fail on tampering 
 });
 test('failed CloudKit save removes newly uploaded orphan files',async()=>{const s=setup();s.state.failSave=true;const form=new FormData();for(const [k,v]of Object.entries(fixture))form.append(k,v);form.append('attachments',new File(['test'],'fixture.txt'));assert.equal((await s.worker.fetch(new Request('https://checkout.test/intake',{method:'POST',headers:{Origin:origin},body:form}),s.env)).status,502);assert.equal(s.state.files.size,0);});
 test('order uses the server amount and bounded stable idempotency key',async()=>{const s=await paidSetup();assert.equal(s.state.order.purchase_units[0].amount.value,'5.00');assert.match(s.state.order.purchase_units[0].invoice_id,/^paws-/);});
-test('capture recovers after CloudKit failure and repeated paid requests never capture twice',async()=>{const s=await paidSetup();s.state.failSave=true;assert.equal((await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'})).status,502);s.state.failSave=false;assert.equal((await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'})).status,200);assert.equal((await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'})).status,200);assert.equal(s.state.captures,1);assert.equal((await s.call('/api/paypal/orders',{question:'question-1'})).status,409);});
+test('capture recovers after CloudKit failure and repeated paid requests never capture twice',async()=>{const s=await paidSetup();s.state.failSave=true;const pending=await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'});assert.equal(pending.status,202);assert.deepEqual(await pending.json(),{ok:true,status:'Paid',statusSyncPending:true});s.state.failSave=false;assert.equal((await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'})).status,200);assert.equal((await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'})).status,200);assert.equal(s.state.captures,1);assert.equal((await s.call('/api/paypal/orders',{question:'question-1'})).status,409);});
 test('capture rejects a different customer order and wrong captured amount',async()=>{let s=await paidSetup();s.state.order.purchase_units[0].custom_id='different-question';assert.equal((await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'})).status,409);assert.equal(s.state.captures,0);s=await paidSetup();s.state.wrongCapture=true;assert.equal((await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'})).status,502);assert.equal(s.state.records.get('question-1').fields.paymentStatus.value,'Payment requested');});
 test('verified completion webhook repairs payment status; failures stay retryable',async()=>{
   const s=await paidSetup();s.state.failSave=true;await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1',method:'Apple Pay'});const event={event_type:'PAYMENT.CAPTURE.COMPLETED',resource:{supplementary_data:{related_ids:{order_id:'ORDER123'}}}};
@@ -156,4 +156,79 @@ test('PetAssist uses common capture and refund verification without resurrecting
   assert.equal((await s.call('/paypal/webhook',event)).status,200);
   await s.call('/paypal/webhook',{event_type:'PAYMENT.CAPTURE.COMPLETED',resource:{supplementary_data:{related_ids:{order_id:'ORDER123'}}}});
   r=await s.worker.fetch(new Request('https://checkout.test/petassist/bookings/'+petToken),s.env);assert.equal((await r.json()).status,'Refunded');
+});
+
+async function checkoutFixture(patch = {}) {
+  const s = setup();
+  await s.call('/intake', fixture);
+  const response = await s.worker.fetch(new Request('https://checkout.test/pay?question=question-1'), s.env);
+  const html = await response.text();
+  const script = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)][0][1];
+  const elements = Object.fromEntries(['status','applepay-status','applepay-container','applepay-button'].map(id=>[id,{textContent:'',innerHTML:''}]));
+  const calls = { sessions: [], orders: 0, captures: 0, confirmations: 0 };
+  class AppleSession {
+    static STATUS_SUCCESS = 1; static STATUS_FAILURE = 0;
+    static canMakePayments() { return !patch.unsupported; }
+    constructor(version, request) { if(patch.startFails) throw new Error('start'); this.request=request;calls.sessions.push(this); }
+    begin() { this.begun = true; }
+    abort() { this.aborted = true; }
+    completeMerchantValidation(session) { this.merchantSession = session; }
+    completePayment(status) { this.status = status; }
+  }
+  const applepay = {
+    async config() { if(patch.configFails) throw new Error('config');return {isEligible:!patch.ineligible,countryCode:'US',merchantCapabilities:['supports3DS'],supportedNetworks:['visa']}; },
+    async validateMerchant() { if(patch.validationFails) throw new Error('validation');return {merchantSession:{valid:true}}; },
+    async confirmOrder(input) { calls.confirmations++;calls.confirmInput=input;if(patch.confirmFails) throw new Error('declined'); }
+  };
+  const paypal = { Applepay:()=>applepay, Buttons(options){calls.paypalOptions=options;return {render:async()=>{}};} };
+  const context = vm.createContext({document:{getElementById:id=>elements[id]},window:{paypal,ApplePaySession:AppleSession},paypal,ApplePaySession:AppleSession,fetch:async(path,options)=>{
+    if(path.endsWith('/capture')){calls.captures++;return Response.json({status:'Paid',statusSyncPending:!!patch.syncPending});}
+    calls.orders++;return Response.json({id:'ORDER123'});
+  }});
+  vm.runInContext(script,context);
+  await vm.runInContext('setupApplePay()',context);
+  return {s,response,html,elements,calls};
+}
+
+test('checkout permits Apple Pay frames/images and PayPal provider subdomains',async()=>{
+  const {response}=await checkoutFixture();const csp=response.headers.get('Content-Security-Policy');
+  const directives=Object.fromEntries(csp.split(';').map(value=>{const [name,...sources]=value.trim().split(/\s+/);return [name,sources];}));
+  assert.ok(directives['frame-src'].includes('https://applepay.cdn-apple.com'));
+  assert.ok(directives['img-src'].includes('https://applepay.cdn-apple.com'));
+  for(const name of ['script-src','frame-src','connect-src','img-src'])assert.ok(directives[name].includes('https://*.paypal.com'));
+  assert.equal(directives['default-src'].join(' '),"'self'");
+});
+test('Apple Pay verification file is returned as a binary download without redirect',async()=>{
+  const s=setup();const r=await s.worker.fetch(new Request('https://checkout.test/.well-known/apple-developer-merchantid-domain-association'),s.env);
+  assert.equal(r.status,200);assert.equal(r.headers.get('Content-Type'),'application/octet-stream');assert.equal(await r.text(),'association');
+});
+test('Apple Pay validates merchant, requests billing address, confirms token and captures payment',async()=>{
+  const {elements,calls}=await checkoutFixture({syncPending:true});elements['applepay-button'].onclick();elements['applepay-button'].onclick();
+  assert.equal(calls.sessions.length,1);const session=calls.sessions[0];assert.equal(session.begun,true);
+  assert.deepEqual(Array.from(session.request.requiredBillingContactFields),['postalAddress']);
+  await session.onvalidatemerchant({validationURL:'https://apple-pay-gateway.apple.com/session'});assert.equal(session.merchantSession.valid,true);
+  await session.onpaymentauthorized({payment:{token:{test:true},billingContact:{postalCode:'00000'}}});
+  assert.equal(calls.orders,1);assert.equal(calls.confirmations,1);assert.equal(calls.captures,1);assert.equal(calls.confirmInput.orderId,'ORDER123');assert.equal(session.status,1);assert.match(elements.status.textContent,/Payment received.*updating/);
+});
+for(const [name,patch,expected]of [
+  ['unavailable device',{unsupported:true},/unavailable in this browser/],
+  ['ineligible merchant',{ineligible:true},/currently unavailable/],
+  ['configuration failure',{configFails:true},/could not load/],
+])test('Apple Pay explains '+name+' and preserves the PayPal checkout',async()=>{
+  const {elements,calls}=await checkoutFixture(patch);assert.match(elements['applepay-status'].textContent,expected);assert.equal(calls.sessions.length,0);assert.ok(calls.paypalOptions.createOrder);
+});
+test('Apple Pay merchant validation failure explains the error and aborts before creating an order',async()=>{
+  const {elements,calls}=await checkoutFixture({validationFails:true});elements['applepay-button'].onclick();const session=calls.sessions[0];await session.onvalidatemerchant({validationURL:'https://apple.test'});
+  assert.equal(session.aborted,true);assert.equal(calls.orders,0);assert.match(elements['applepay-status'].textContent,/could not verify/);
+});
+test('Apple Pay declined confirmation never captures or reports success',async()=>{
+  const {elements,calls}=await checkoutFixture({confirmFails:true});elements['applepay-button'].onclick();const session=calls.sessions[0];await session.onpaymentauthorized({payment:{token:{},billingContact:{}}});
+  assert.equal(calls.captures,0);assert.equal(session.status,0);assert.match(elements['applepay-status'].textContent,/could not complete/);
+});
+test('Apple Pay start and cancellation errors leave checkout usable',async()=>{
+  let f=await checkoutFixture({startFails:true});f.elements['applepay-button'].onclick();assert.match(f.elements['applepay-status'].textContent,/could not open/);
+  f=await checkoutFixture();f.elements['applepay-button'].onclick();f.calls.sessions[0].oncancel();assert.match(f.elements['applepay-status'].textContent,/cancelled/);f.elements['applepay-button'].onclick();assert.equal(f.calls.sessions.length,2);
+});
+test('PayPal approval captures the order and cancellation gives a retry message',async()=>{
+  const {elements,calls}=await checkoutFixture();assert.equal(await calls.paypalOptions.createOrder(),'ORDER123');await calls.paypalOptions.onApprove({orderID:'ORDER123'});assert.equal(calls.captures,1);assert.match(elements.status.textContent,/Payment received/);calls.paypalOptions.onCancel();assert.match(elements.status.textContent,/cancelled/);
 });

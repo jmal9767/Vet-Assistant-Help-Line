@@ -523,8 +523,18 @@ async function handlePayPalWebhook(request, env) {
   const verification = await verifyResponse.json();
   if (!verifyResponse.ok || verification.verification_status !== "SUCCESS") return json({ error: "Invalid signature" }, 401);
   if (!["PAYMENT.CAPTURE.COMPLETED", "PAYMENT.CAPTURE.REFUNDED", "PAYMENT.CAPTURE.REVERSED"].includes(event.event_type)) return json({ ok: true }, 200);
-  const orderID = event.resource?.supplementary_data?.related_ids?.order_id;
-  if (!orderID) return json({ ok: true }, 200);
+  let orderID = event.resource?.supplementary_data?.related_ids?.order_id;
+  if (!orderID && event.event_type === "PAYMENT.CAPTURE.REFUNDED") {
+    // Refund resources identify their capture through the up link, not an order ID.
+    const captureID = payPalCaptureReference(event.resource, env);
+    if (captureID) {
+      const captureResponse = await fetch(`${payPalAPIBase(env)}/v2/payments/captures/${captureID}`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!captureResponse.ok) return json({ error: "Payment lookup failed" }, 502);
+      const capture = await captureResponse.json();
+      orderID = capture.supplementary_data?.related_ids?.order_id;
+    }
+  }
+  if (!orderID || !/^[A-Z0-9]{1,20}$/.test(orderID)) return json({ error: "Payment order reference is unavailable" }, 502);
   const orderResponse = await fetch(`${payPalAPIBase(env)}/v2/checkout/orders/${orderID}`, { headers: { Authorization: `Bearer ${token}` } });
   const order = await orderResponse.json();
   if (!orderResponse.ok) return json({ error: "Payment lookup failed" }, 502);
@@ -546,6 +556,21 @@ async function handlePayPalWebhook(request, env) {
   const update = await updateQuestionPayment(env, recordName, { paymentStatus: partial ? "Partially refunded" : "Refunded" });
   if (!update.ok) return json({ error: "Payment record could not be updated" }, 503);
   return json({ ok: true }, 200);
+}
+
+function payPalCaptureReference(resource, env) {
+  const allowedHosts = env.PAYPAL_ENVIRONMENT === "live"
+    ? ["api.paypal.com", "api-m.paypal.com"] : ["api.sandbox.paypal.com", "api-m.sandbox.paypal.com"];
+  for (const link of resource?.links || []) {
+    if (link.rel !== "up") continue;
+    try {
+      const url = new URL(link.href);
+      if (url.protocol !== "https:" || !allowedHosts.includes(url.hostname) || url.port || url.username || url.password || url.search || url.hash) continue;
+      const match = /^\/v2\/payments\/captures\/([A-Z0-9]{1,20})$/.exec(url.pathname);
+      if (match) return match[1];
+    } catch {}
+  }
+  return null;
 }
 
 function completedCapture(order, amount) {

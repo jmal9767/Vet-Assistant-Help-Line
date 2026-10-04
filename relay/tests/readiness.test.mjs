@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
 import { webcrypto } from 'node:crypto';
 
-const source = (await readFile(new URL('../cloudkit-worker.js', import.meta.url),'utf8')).replace(/^import .*;$/m,'const applePayDomainAssociation = "association";').replace('export default {','const worker = {');
+const source = (await readFile(new URL('../cloudkit-worker.js', import.meta.url),'utf8')).replace(/^import .*;$/m,'const applePayDomainAssociation = "association";').replace('export default {','const worker = {').replace('export class PetAssistPayments','class PetAssistPayments');
 const key=await webcrypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify']);
 const pem=Buffer.from(await webcrypto.subtle.exportKey('pkcs8',key.privateKey)).toString('base64');
 const fixture={name:'Release test',email:'release@example.invalid',phone:'5555555555',species:'Dog',sex:'Unknown',reproductiveStatus:'Unknown',category:'Other',symptomOnset:'General question',symptomTrend:'Not applicable / general question',appetite:'Normal',drinking:'Normal',urination:'Normal',stool:'Normal',energy:'Normal',vomiting:'None',question:'How can I provide enrichment?',requestedService:'Quick Question — Email · $5',paymentMethod:'PayPal or Apple Pay',signedConsentName:'Release test',signedConsentAt:'2026-10-04T16:00:00Z',acceptedTerms:'yes',acceptedCommunicationPolicy:'yes'};
@@ -46,6 +46,16 @@ function setup(){
   }
   const context=vm.createContext({Request,Response,Headers,URL,TextEncoder,Uint8Array,File,crypto:webcrypto,fetch:fetchMock,btoa,atob,console});
   const worker=vm.runInContext(source+'\nworker;',context);
+  const PaymentObject=vm.runInContext('PetAssistPayments',context);
+  const objects=new Map();
+  env.PETASSIST_PAYMENTS={idFromName:name=>name,get(name){
+    if(!objects.has(name)){
+      const entries=new Map();let chain=Promise.resolve();
+      const storage={async get(key){return structuredClone(entries.get(key));},async put(key,value){entries.set(key,structuredClone(value));},transaction(action){const result=chain.then(()=>action(storage));chain=result.catch(()=>{});return result;}};
+      const object=new PaymentObject({storage});objects.set(name,{fetch:(url,options)=>object.fetch(new Request(url,options))});
+    }
+    return objects.get(name);
+  }};
   const call=(path,body,headers={})=>worker.fetch(new Request('https://checkout.test'+path,{method:'POST',headers:{Origin:origin,'Content-Type':'application/json',...headers},body:JSON.stringify(body)}),env);
   return {state,env,worker,context,call};
 }
@@ -121,4 +131,29 @@ test('cached free labels normalize without checkout; manual payment is rejected'
   const count=s.state.records.size;
   assert.equal((await s.call('/intake',{...fixture,paymentMethod:'Cash App'})).status,400);
   assert.equal(s.state.records.size,count);
+});
+
+const petToken='a'.repeat(32);
+test('PetAssist quotes enforce service prices, remain separate and survive repeat requests',async()=>{
+  const s=setup();const body={token:petToken,service:'wellnessCheck',amount:'0.01',status:'Paid'};
+  let r=await s.call('/petassist/bookings',body);assert.equal(r.status,200);let receipt=await r.json();assert.equal(receipt.amount,'$65');assert.equal(receipt.status,'Payment requested');assert.equal(s.state.records.size,0);
+  assert.equal((await s.call('/petassist/bookings',body)).status,200);
+  assert.equal((await s.call('/petassist/bookings',{...body,service:'nailTrim'})).status,409);
+  assert.equal((await s.call('/petassist/bookings',{...body,service:'__proto__',token:'b'.repeat(32)})).status,400);
+  assert.equal((await s.call('/petassist/bookings',body,{Origin:'https://attacker.invalid'})).status,403);
+  r=await s.worker.fetch(new Request('https://checkout.test/petassist/bookings/'+petToken),s.env);assert.equal(r.status,200);assert.equal((await r.json()).amount,'$65');
+  assert.equal((await s.worker.fetch(new Request('https://checkout.test/petassist/bookings/'+'c'.repeat(32)),s.env)).status,404);
+});
+test('PetAssist uses common capture and refund verification without resurrecting refunded payments',async()=>{
+  const s=setup(),question='petassist-'+petToken;
+  await s.call('/petassist/bookings',{token:petToken,service:'nailTrim'});
+  assert.equal((await s.call('/api/paypal/orders',{question})).status,200);assert.match(s.state.order.purchase_units[0].invoice_id,/^petassist-/);
+  assert.equal((await s.call('/api/paypal/orders/ORDER123/capture',{question})).status,200);
+  assert.equal((await s.call('/api/paypal/orders/ORDER123/capture',{question})).status,200);assert.equal(s.state.captures,1);
+  let r=await s.worker.fetch(new Request('https://checkout.test/petassist/bookings/'+petToken),s.env);assert.equal((await r.json()).status,'Paid');
+  s.state.order.purchase_units[0].payments.captures[0].status='REFUNDED';
+  const event={event_type:'PAYMENT.CAPTURE.REFUNDED',resource:{links:[{rel:'up',href:'https://api.sandbox.paypal.com/v2/payments/captures/CAPTURE123'}]}};
+  assert.equal((await s.call('/paypal/webhook',event)).status,200);
+  await s.call('/paypal/webhook',{event_type:'PAYMENT.CAPTURE.COMPLETED',resource:{supplementary_data:{related_ids:{order_id:'ORDER123'}}}});
+  r=await s.worker.fetch(new Request('https://checkout.test/petassist/bookings/'+petToken),s.env);assert.equal((await r.json()).status,'Refunded');
 });

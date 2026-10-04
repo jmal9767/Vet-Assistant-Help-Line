@@ -332,3 +332,33 @@ test("legacy quote creation cannot bypass business confirmation anonymously",asy
  const s=setup();assert.equal((await s.call("/petassist/bookings",{token:"1".repeat(32),service:"nailTrim"})).status,401);
  assert.equal((await visitGet(s,"/petassist/bookings/"+"1".repeat(32))).status,404);
 });
+
+async function signedDeviceProof(privateKey,publicKey,patch={}) {
+ const input={publicKey,nonce:webcrypto.randomUUID().replaceAll('-',''),timestamp:String(Math.floor(Date.now()/1000)),...patch};
+ const data=new TextEncoder().encode('PawsVisitsDevice/v1\n'+input.publicKey+'\n'+input.nonce+'\n'+input.timestamp);
+ input.signature=Buffer.from(await webcrypto.subtle.sign({name:'ECDSA',hash:'SHA-256'},privateKey,data)).toString('base64');return input;
+}
+test('only the approved owner device can obtain business access and signed requests cannot replay',async()=>{
+ const keys=await webcrypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify']);
+ const publicKey=Buffer.from(await webcrypto.subtle.exportKey('raw',keys.publicKey)).toString('base64');
+ const s=setup();s.env.PETASSIST_DEVICE_PUBLIC_KEY=publicKey;
+ const input=await signedDeviceProof(keys.privateKey,publicKey);
+ const replies=await Promise.all([s.call('/petassist/device-connection',input),s.call('/petassist/device-connection',input)]);
+ assert.deepEqual(replies.map(r=>r.status).sort(),[200,401]);
+ const approved=await replies.find(r=>r.status===200).json();assert.equal(approved.connectionKey,s.env.PETASSIST_OPERATOR_KEY);
+ const fresh=await s.call('/petassist/device-connection',await signedDeviceProof(keys.privateKey,publicKey));assert.equal(fresh.status,200);assert.equal(fresh.headers.get('Cache-Control'),'no-store');
+});
+test('device access rejects copied public keys, tampered proofs, stale clocks and unregistered phones',async()=>{
+ const keys=await webcrypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify']);
+ const publicKey=Buffer.from(await webcrypto.subtle.exportKey('raw',keys.publicKey)).toString('base64');
+ const s=setup();s.env.PETASSIST_DEVICE_PUBLIC_KEY=publicKey;
+ const input=await signedDeviceProof(keys.privateKey,publicKey);
+ assert.equal((await s.call('/petassist/device-connection',{...input,signature:''})).status,401);
+ assert.equal((await s.call('/petassist/device-connection',{...input,nonce:'f'.repeat(32)})).status,401);
+ assert.equal((await s.call('/petassist/device-connection',await signedDeviceProof(keys.privateKey,publicKey,{timestamp:'1000000000'}))).status,401);
+ const stranger=await webcrypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify']);
+ const strangerPublic=Buffer.from(await webcrypto.subtle.exportKey('raw',stranger.publicKey)).toString('base64');
+ assert.equal((await s.call('/petassist/device-connection',await signedDeviceProof(stranger.privateKey,strangerPublic))).status,401);
+ assert.equal((await s.call('/petassist/device-connection',await signedDeviceProof(stranger.privateKey,publicKey))).status,401);
+ delete s.env.PETASSIST_DEVICE_PUBLIC_KEY;assert.equal((await s.call('/petassist/device-connection',input)).status,401);
+});

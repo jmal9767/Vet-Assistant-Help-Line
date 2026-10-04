@@ -18,6 +18,14 @@ struct VerifyClientQuestion {
         precondition(question.question == "An enrichment question")
         precondition(question.breed == "Fictional mix")
         precondition(record["conversationStatus"] == nil)
+        let freeRecord = CKRecord(recordType: "Question")
+        freeRecord["requestedService"] = "Free Community Support — Email"
+        precondition(ClientQuestion(record: freeRecord).paymentAmount == "$0")
+        freeRecord["requestedService"] = "Community Access — Text · $0"
+        precondition(ClientQuestion(record: freeRecord).requestedService == "Free Community Support — Text")
+        precondition(ClientQuestion(record: freeRecord).paymentAmount == "$0")
+        freeRecord["paymentAmount"] = "$35"
+        precondition(ClientQuestion(record: freeRecord).paymentAmount == "$35")
         print("ClientQuestion compatibility, display, and update checks passed")
     }
 }

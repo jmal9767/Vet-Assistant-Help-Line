@@ -1,13 +1,13 @@
-# PayPal, Apple Pay, and Cash App setup
+# PayPal and Apple Pay setup
 
-The client chooses **$5 Quick Question**, **$10 Detailed Guidance**, **$20 Phone Support**, or **Community Access at $0** before submitting.
+The client chooses **$5 Quick Question**, **$10 Detailed Guidance**, **$20 Phone Support**, or **Free Community Support** before submitting.
 
 1. For **PayPal or Apple Pay**, the website opens the question-specific secure checkout after submission. A successful capture marks the CloudKit question **Paid** automatically.
-2. For **Cash App**, the selected price and payment method appear in the operator app. Send the Cash App for Business link when needed and mark the question paid only after the payment appears in Cash App.
-3. Begin paid services after confirming payment. Community Access requires no payment.
-4. Use **Refunded** only after the provider confirms the refund.
+2. Free Community Support skips checkout and requires no payment.
+3. Begin paid services after the app shows Paid. No manual payment-link messages or status buttons are used.
+4. Issue any approved refund in PayPal. Verified provider webhooks update Refunded or Partially refunded automatically; changing an app label does not issue a refund.
 
-The app stores only the selected amount, provider, status, and checkout URL. Card and bank information stays with PayPal, Apple Pay, or Cash App.
+The app stores only the selected amount, provider, status, and checkout URL. Card and bank information stays with PayPal or Apple Pay.
 
 ## Cloudflare Worker secrets
 

@@ -37,7 +37,11 @@ struct ClientQuestion: Identifiable {
     var email: String { string(for: "email") ?? "" }
     var phone: String? { string(for: "phone") }
     var preferredReply: String { string(for: "preferredReply") ?? (phone == nil ? "Email" : "Text message") }
-    var requestedService: String { string(for: "requestedService") ?? preferredReply }
+    var requestedService: String {
+        (string(for: "requestedService") ?? preferredReply)
+            .replacingOccurrences(of: "Community Access", with: "Free Community Support")
+            .replacingOccurrences(of: " · $0", with: "")
+    }
     var petName: String { string(for: "petName") ?? "Pet" }
     var species: String { string(for: "species") ?? "Unknown" }
     var age: String { string(for: "age") ?? "Not given" }
@@ -63,7 +67,7 @@ struct ClientQuestion: Identifiable {
     var sourceChannel: String { string(for: "sourceChannel") ?? "Website" }
     var conversationStatus: String { string(for: "conversationStatus") ?? "Needs response" }
     var paymentStatus: String { string(for: "paymentStatus") ?? "Reviewing" }
-    var paymentMethod: String { string(for: "paymentMethod") ?? "Client has no preference" }
+    var paymentMethod: String { (string(for: "paymentMethod") ?? "Client has no preference").replacingOccurrences(of: "Community Access", with: "Free Community Support") }
     var paymentAmount: String { string(for: "paymentAmount") ?? amountFromRequestedService }
     var paymentLink: String? { string(for: "paymentLink") }
     var signedConsentName: String? { string(for: "signedConsentName") }
@@ -103,6 +107,7 @@ struct ClientQuestion: Identifiable {
     }
 
     private var amountFromRequestedService: String {
+        if requestedService.hasPrefix("Free Community Support") { return "$0" }
         guard let range = requestedService.range(of: "$", options: .backwards) else { return "Confirm" }
         return String(requestedService[range.lowerBound...])
     }

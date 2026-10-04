@@ -1,45 +1,9 @@
 import SwiftUI
 import MessageUI
 
-private enum ServiceOffer: String, CaseIterable, Identifiable {
-    case quickEmail = "Quick Question — Email · $5"
-    case quickText = "Quick Question — Text · $5"
-    case detailedEmail = "Detailed Guidance — Email · $10"
-    case detailedText = "Detailed Guidance — Text · $10"
-    case phoneSupport = "Phone Support · $20"
-    case communityEmail = "Community Access — Email · $0"
-    case communityText = "Community Access — Text · $0"
-
-    var id: String { rawValue }
-    var amount: String {
-        switch self {
-        case .quickEmail, .quickText: "$5"
-        case .detailedEmail, .detailedText: "$10"
-        case .phoneSupport: "$20"
-        case .communityEmail, .communityText: "$0"
-        }
-    }
-    var replyMethod: String {
-        switch self {
-        case .quickEmail, .detailedEmail, .communityEmail: "Email"
-        case .quickText, .detailedText, .communityText: "Text message"
-        case .phoneSupport: "Phone call"
-        }
-    }
-    var needsPhone: Bool { replyMethod != "Email" }
-}
-
-private enum PaymentChoice: String, CaseIterable, Identifiable {
-    case paypal = "PayPal or Apple Pay"
-    case cashApp = "Cash App"
-
-    var id: String { rawValue }
-}
-
 struct QuestionDetailView: View {
     @Environment(QuestionStore.self) private var store
     @Environment(\.openURL) private var openURL
-    @AppStorage("setup.cashAppLink") private var cashAppLink = ""
 
     let question: ClientQuestion
     @State private var showMailError = false
@@ -179,71 +143,22 @@ struct QuestionDetailView: View {
 
     private var paymentCard: some View {
         InfoTile {
-            SectionHeader("Service and payment", subtitle: question.paymentAmount == "$0" ? "Community Access selected — no payment required." : "The client selected the service and price before submitting. PayPal and Apple Pay confirm automatically; verify Cash App manually.")
+            SectionHeader("Service and payment", subtitle: question.paymentAmount == "$0" ? "Free Community Support — no payment required." : "Payment and refund status update automatically through PayPal or Apple Pay.")
 
             HStack(spacing: 10) {
                 MetricPill(title: "Payment", value: question.paymentStatus, icon: "creditcard.fill", tint: paymentTint)
-                MetricPill(title: "Amount", value: question.paymentAmount, icon: "dollarsign.circle.fill", tint: AppPalette.clinicGreen)
+                MetricPill(title: "Amount", value: question.paymentAmount == "$0" ? "Free" : question.paymentAmount, icon: "dollarsign.circle.fill", tint: AppPalette.clinicGreen)
             }
             CompactLabel(title: "Signed consent", value: signedConsentText, icon: "signature")
 
             CompactLabel(title: "Selected service", value: question.requestedService, icon: "checkmark.circle.fill")
-            if question.paymentAmount != "$0" {
-            CompactLabel(
-                title: selectedPayment.rawValue,
-                value: selectedPaymentLink.isEmpty ? "Add your Cash App for Business link in Settings before sending it." : selectedPaymentLink,
-                icon: "link.circle.fill"
-            )
 
-            Button {
-                Task {
-                    await store.updatePayment(status: "Payment requested", amount: question.paymentAmount, link: selectedPaymentLink, for: question)
-                    if let offerMessageURL {
-                        if offerMessageURL.scheme == "mailto" { prepareEmail(offerMessageURL) }
-                        else { openURL(offerMessageURL) }
-                    }
-                }
-            } label: {
-                Label("Prepare Payment Message", systemImage: "paperplane.fill")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(AppPalette.brand)
-            .disabled(question.paymentStatus != "Payment requested" || selectedPaymentLink.isEmpty || (selectedOffer.needsPhone && question.phone == nil))
-            }
-
-            if let link = question.paymentLink, !link.isEmpty, let paymentURL = URL(string: link) {
-                Link(destination: paymentURL) {
-                    Label("Open Saved Payment Link", systemImage: "safari.fill")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.bordered)
-            }
-
-            if (question.paymentStatus == "Payment requested" && question.paymentMethod == PaymentChoice.cashApp.rawValue) || question.paymentStatus == "Paid" {
-                HStack(spacing: 10) {
-                    Button {
-                        Task { await store.updatePayment(status: "Paid", amount: question.paymentAmount, link: question.paymentLink, for: question) }
-                    } label: {
-                        Label("Mark Paid", systemImage: "checkmark.circle.fill").frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.bordered)
-                    .tint(AppPalette.clinicGreen)
-
-                    Button {
-                        Task { await store.updatePayment(status: "Refunded", amount: question.paymentAmount, link: question.paymentLink, for: question) }
-                    } label: {
-                        Label("Refunded", systemImage: "arrow.uturn.backward.circle.fill").frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.bordered)
-                }
-            }
         }
     }
 
     private var questionCard: some View {
         InfoTile {
-            SectionHeader("Client Concern", subtitle: "Review this before choosing the service and price.")
+            SectionHeader("Client Concern", subtitle: "Review the client’s question and selected service.")
             Text(question.question.isEmpty ? "No concern was included." : question.question)
                 .font(.body)
                 .lineSpacing(3)
@@ -335,54 +250,6 @@ struct QuestionDetailView: View {
         case "Reviewing": AppPalette.warmGold
         default: AppPalette.danger
         }
-    }
-
-    private var defaultOffer: ServiceOffer {
-        if let offer = ServiceOffer(rawValue: question.requestedService) { return offer }
-        switch question.preferredReply {
-        case "Text message": return .quickText
-        case "Phone call": return .phoneSupport
-        default: return .quickEmail
-        }
-    }
-
-    private var selectedOffer: ServiceOffer { defaultOffer }
-
-    private var selectedPayment: PaymentChoice {
-        question.paymentMethod == PaymentChoice.cashApp.rawValue ? .cashApp : .paypal
-    }
-
-    private var selectedPaymentLink: String {
-        switch selectedPayment {
-        case .paypal:
-            var components = URLComponents(url: HelplineConfig.checkoutBaseURL.appending(path: "pay"), resolvingAgainstBaseURL: false)
-            components?.queryItems = [URLQueryItem(name: "question", value: question.id.recordName)]
-            return components?.url?.absoluteString ?? ""
-        case .cashApp:
-            return cashAppLink.trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-    }
-
-    private var offerMessageURL: URL? {
-        let paymentSentence = "The price is \(question.paymentAmount). Pay with \(selectedPayment.rawValue) here: \(selectedPaymentLink). " + (selectedPayment == .cashApp ? "Please tell me after you send it so I can confirm it." : "My app will confirm the payment automatically.")
-        let message = "Hi \(question.name), you selected \(question.requestedService) for \(petDisplayName). \(paymentSentence)"
-
-        if selectedOffer.replyMethod != "Email", let phone = question.phone {
-            var components = URLComponents()
-            components.scheme = "sms"
-            components.path = phone.filter { $0.isNumber || $0 == "+" }
-            components.queryItems = [URLQueryItem(name: "body", value: message)]
-            return components.url
-        }
-        guard !question.email.isEmpty else { return nil }
-        var components = URLComponents()
-        components.scheme = "mailto"
-        components.path = question.email
-        components.queryItems = [
-            URLQueryItem(name: "subject", value: "Your Paws & Whiskers Care Line request"),
-            URLQueryItem(name: "body", value: message)
-        ]
-        return components.url
     }
 
     private var signedConsentText: String {

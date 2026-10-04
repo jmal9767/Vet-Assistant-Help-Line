@@ -1,6 +1,6 @@
 # Deploy the care line
 
-The public intake and backend must use the same service menu: Quick Question $5, Detailed Guidance $10, Phone Support $20, Community Access $0. Existing pending $30/$35 payment links remain valid for historical requests; new intake does not offer those services.
+The public intake and backend must use the same service menu: Quick Question $5, Detailed Guidance $10, Phone Support $20, Free Community Support — Free. Existing pending $30/$35 payment links remain valid for historical requests; new intake does not offer those services.
 
 ## Validate
 
@@ -27,7 +27,7 @@ node scripts/build-site.mjs
 npx wrangler deploy --config website.wrangler.jsonc
 ```
 
-After publication, verify both service menus, consent fields, Community Access without checkout, and a paid request's checkout page. Test with clearly labeled fictional records; never use real client data for release tests. Check private-file access and expiry, PayPal capture retry and completion/refund reconciliation, and app inbox/notification/answer/archive behavior. Confirm the original merchant and all webhook subscriptions in PayPal.
+After publication, verify both service menus, consent fields, Free Community Support without checkout, and a paid request's checkout page. Test with clearly labeled fictional records; never use real client data for release tests. Check private-file access and expiry, PayPal capture retry and completion/refund reconciliation, and app inbox/notification/answer/archive behavior. Confirm the original merchant and all webhook subscriptions in PayPal.
 
 Four files of 10 MB each are supported, with a 40 MB combined limit. Private URLs expire after 30 days; URL expiry does not delete stored objects. Verify retention and deletion procedures separately.
 

@@ -4,11 +4,11 @@ A private iPhone operator app and public client website for general dog-and-cat 
 
 ## Current flow
 
-1. A client opens the website, chooses a $5 Quick Question, $10 Detailed Guidance, $20 Phone Support, or $0 Community Access option, enters the question, and may upload up to four files of any type at 10 MB each.
+1. A client opens the website, chooses a $5 Quick Question, $10 Detailed Guidance, $20 Phone Support, or Free Community Support option, enters the question, and may upload up to four files of any type at 10 MB each.
 2. A secured Cloudflare Worker saves the question to the CloudKit `Question` record type. Files go to a private R2 bucket through signed links that expire after 30 days.
 3. The operator receives a CloudKit push notification and opens the matching question in the iPhone app.
-4. Paid options continue to PayPal or Apple Pay checkout, or the selected Cash App payment. Community Access skips payment. The operator can see the chosen service and payment status in the app.
-5. PayPal and Apple Pay confirm in the app automatically; Cash App is confirmed manually.
+4. Paid options continue to PayPal or Apple Pay checkout. Free Community Support skips payment. The operator can see the chosen service and payment status in the app.
+5. PayPal and Apple Pay update payment and refund status automatically. No operator payment messages or manual payment marking are required.
 6. The operator replies by email, text, or phone, marks the question answered, and may archive it.
 
 ## Main files
@@ -20,7 +20,7 @@ A private iPhone operator app and public client website for general dog-and-cat 
 - `VetAssistantHelpLine/`: private SwiftUI operator app.
 - `docs/LEGAL_SCOPE.md`: response boundaries.
 - `docs/SOLO_WORKFLOW.md`: daily workflow.
-- `docs/PAYMENTS_SETUP.md`: PayPal, Apple Pay, and Cash App payment process.
+- `docs/PAYMENTS_SETUP.md`: automatic PayPal and Apple Pay payment process.
 
 ## Service boundary
 

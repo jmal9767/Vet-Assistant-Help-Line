@@ -5,7 +5,6 @@ import UserNotifications
 struct SettingsView: View {
     @Environment(QuestionStore.self) private var store
     @Environment(\.openURL) private var openURL
-    @AppStorage("setup.cashAppLink") private var cashAppLink = ""
     @State private var notificationStatus = "Checking…"
 
     var body: some View {
@@ -18,7 +17,6 @@ struct SettingsView: View {
                         Text("Add this mailbox to iPhone Mail. Before sending, check that From shows this address and your signature contains no personal contact details.")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
-                        settingsField("Cash App for Business link", text: $cashAppLink)
                     }
 
                     InfoTile {
@@ -60,14 +58,6 @@ struct SettingsView: View {
                 await store.ensureSubscription()
             }
         }
-    }
-
-    private func settingsField(_ title: String, text: Binding<String>) -> some View {
-        TextField(title, text: text)
-            .keyboardType(.URL)
-            .textInputAutocapitalization(.never)
-            .autocorrectionDisabled()
-            .textFieldStyle(.roundedBorder)
     }
 
     private func settingsRow(_ title: String, icon: String) -> some View {

@@ -98,7 +98,7 @@ private struct PaymentRow: View {
                             .font(.headline)
                             .foregroundStyle(.primary)
                         Spacer(minLength: 10)
-                        Text(question.paymentAmount)
+                        Text(question.paymentAmount == "$0" ? "Free" : question.paymentAmount)
                             .font(.headline.weight(.bold))
                             .foregroundStyle(tint)
                     }

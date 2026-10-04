@@ -23,49 +23,14 @@ struct TemplatesView: View {
             """
         ),
         Template(
-            title: "Confirm Price",
-            intent: "Use before taking payment or starting a paid answer.",
-            icon: "creditcard.fill",
-            tint: AppPalette.clinicGreen,
-            text: """
-            Hi [name], thanks for sending this in. Based on what you described, \
-            I can provide this by [email / text / phone]. Based on the question and \
-            estimated time, the price is [service price: $5, $10, or $20]. If that works \
-            for you, I'll send the payment link before I begin.
-            """
-        ),
-        Template(
-            title: "Send PayPal Link",
-            intent: "Use when the client prefers PayPal.",
-            icon: "link.circle.fill",
-            tint: AppPalette.brand,
-            text: """
-            Hi [name], the total for [service] is [price]. Here is the PayPal \
-            payment link: [PayPal link]\n\nOnce payment is complete, I'll send \
-            the answer by [email / text / phone] in the selected time frame.
-            """
-        ),
-        Template(
-            title: "Send Cash App Link",
-            intent: "Use when the client prefers Cash App.",
-            icon: "dollarsign.circle.fill",
-            tint: AppPalette.clinicGreen,
-            text: """
-            Hi [name], the total for [service] is [price]. Here is the Cash App \
-            payment link: [Cash App link]\n\nOnce payment is complete, I'll send \
-            the answer by [email / text / phone] in the selected time frame.
-            """
-        ),
-        Template(
             title: "Received + Next Step",
             intent: "Reassure a client after intake and explain what happens next.",
             icon: "checkmark.message.fill",
             tint: AppPalette.clinicGreen,
             text: """
             Hi [name], I received your question about [pet name]. I'll review \
-            the details and any files you sent, then let you know which $10, $20, \
-            or $35 service fits the question. \
-            Nothing is charged automatically.
+            the details and any files you sent, then reply using your selected \
+            contact method. Free Community Support requires no payment.
             """
         ),
         Template(

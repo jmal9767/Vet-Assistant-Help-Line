@@ -164,7 +164,7 @@ async function checkoutFixture(patch = {}) {
   const response = await s.worker.fetch(new Request('https://checkout.test/pay?question=question-1'), s.env);
   const html = await response.text();
   const script = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)][0][1];
-  const elements = Object.fromEntries(['status','applepay-status','applepay-container','applepay-button'].map(id=>[id,{textContent:'',innerHTML:''}]));
+  const elements = Object.fromEntries(['status','applepay-status','applepay-container','applepay-button','paypal-buttons','checkout-controls','checkout-title','checkout-note','checkout-next'].map(id=>[id,{textContent:'',innerHTML:'',hidden:id==='checkout-next',focus(){this.focused=true;}}]));
   const calls = { sessions: [], orders: 0, captures: 0, confirmations: 0 };
   class AppleSession {
     static STATUS_SUCCESS = 1; static STATUS_FAILURE = 0;
@@ -229,6 +229,17 @@ test('Apple Pay start and cancellation errors leave checkout usable',async()=>{
   let f=await checkoutFixture({startFails:true});f.elements['applepay-button'].onclick();assert.match(f.elements['applepay-status'].textContent,/could not open/);
   f=await checkoutFixture();f.elements['applepay-button'].onclick();f.calls.sessions[0].oncancel();assert.match(f.elements['applepay-status'].textContent,/cancelled/);f.elements['applepay-button'].onclick();assert.equal(f.calls.sessions.length,2);
 });
-test('PayPal approval captures the order and cancellation gives a retry message',async()=>{
-  const {elements,calls}=await checkoutFixture();assert.equal(await calls.paypalOptions.createOrder(),'ORDER123');await calls.paypalOptions.onApprove({orderID:'ORDER123'});assert.equal(calls.captures,1);assert.match(elements.status.textContent,/Payment received/);calls.paypalOptions.onCancel();assert.match(elements.status.textContent,/cancelled/);
+test('PayPal approval ends checkout and blocks another order',async()=>{
+  const {elements,calls}=await checkoutFixture();assert.equal(await calls.paypalOptions.createOrder(),'ORDER123');await calls.paypalOptions.onApprove({orderID:'ORDER123'});assert.equal(calls.captures,1);assert.match(elements.status.textContent,/Payment received/);calls.paypalOptions.onCancel();assert.match(elements.status.textContent,/Payment received/);assert.equal(elements['checkout-controls'].hidden,true);assert.equal(elements['checkout-next'].hidden,false);assert.equal(elements['checkout-title'].textContent,'Payment received');assert.equal(elements.status.focused,true);await assert.rejects(calls.paypalOptions.createOrder(),/already paid/);assert.equal(calls.orders,1);
 });
+
+
+test('paid request revisits show confirmation and new question link without any payment SDK',async()=>{
+  const s=await paidSetup();await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'});
+  const r=await s.worker.fetch(new Request('https://checkout.test/pay?question=question-1'),s.env);const html=await r.text();assert.equal(r.status,200);assert.match(html,/This request is already paid/);assert.match(html,/Ask another question/);assert.match(html,/https:\/\/paws-whiskers-care-line.dkjmmz6whh.workers.dev\/#askSection/);assert.doesNotMatch(html,/paypal-buttons|applepay-button|<script/);assert.equal((await s.call('/api/paypal/orders',{question:'question-1'})).status,409);
+});
+test('Apple Pay completion removes payment choices and cannot open a second session',async()=>{
+  const {elements,calls}=await checkoutFixture();const click=elements['applepay-button'].onclick;click();await calls.sessions[0].onpaymentauthorized({payment:{token:{},billingContact:{}}});assert.equal(elements['checkout-controls'].hidden,true);assert.equal(elements['paypal-buttons'].innerHTML,'');assert.equal(elements['applepay-container'].innerHTML,'');assert.equal(elements['checkout-next'].hidden,false);click();assert.equal(calls.sessions.length,1);assert.match(elements['checkout-note'].textContent,/Your question and payment have been received/);
+});
+
+test('PayPal cancellation before payment preserves checkout choices',async()=>{const {elements,calls}=await checkoutFixture();calls.paypalOptions.onCancel();assert.match(elements.status.textContent,/cancelled/);assert.equal(elements['checkout-controls'].hidden,false);assert.equal(elements['checkout-next'].hidden,true);});

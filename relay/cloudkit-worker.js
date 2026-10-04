@@ -436,7 +436,7 @@ async function serveCheckout(url, env) {
   const record = await fetchQuestionFromCloudKit(env, recordName);
   const offer = record && paidOffer(record);
   if (!offer) return checkoutMessage("Payment link unavailable", "This payment request is no longer available. Please contact the care line.", 404);
-  if (fieldValue(record, "paymentStatus") === "Paid") return checkoutMessage("Payment received", "This request is already paid. Thank you!", 200);
+  if (fieldValue(record, "paymentStatus") === "Paid") return paidCheckoutConfirmation(record);
   if (!env.PAYPAL_CLIENT_ID || !env.PAYPAL_CLIENT_SECRET) {
     return checkoutMessage("Checkout is being connected", "Please contact the care line for a payment link.", 503);
   }
@@ -448,25 +448,38 @@ async function serveCheckout(url, env) {
   const sdkURL = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(env.PAYPAL_CLIENT_ID)}&currency=USD&components=buttons,applepay`;
   return new Response(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Secure payment</title><script src="${sdkURL}"></script><script src="https://applepay.cdn-apple.com/jsapi/1.latest/apple-pay-sdk.js"></script>
-<style>body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f7fa;color:#132238;margin:0}.card{max-width:520px;margin:32px auto;background:white;border-radius:18px;padding:24px;box-shadow:0 10px 35px #13223818}.brand{color:#173f67}h1{font-size:1.6rem}.amount{font-size:2rem;font-weight:800;margin:.35rem 0 1rem}.note{color:#536579;line-height:1.45}#applepay-container{margin:14px 0}apple-pay-button{--apple-pay-button-width:100%;--apple-pay-button-height:48px;--apple-pay-button-border-radius:8px}#status{font-weight:650;margin-top:16px}</style></head><body><main class="card"><div class="brand">🐾 ${brand}</div><h1>${safeService}</h1><div class="amount">$${offer.amount}</div><p class="note">Choose PayPal or Apple Pay. Payment status updates automatically after payment succeeds.</p><div id="paypal-buttons"></div><div id="applepay-container"></div><p id="applepay-status" class="note" role="status"></p><p id="status" role="status"></p></main>
+<style>body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f7fa;color:#132238;margin:0}.card{max-width:520px;margin:32px auto;background:white;border-radius:18px;padding:24px;box-shadow:0 10px 35px #13223818}.brand{color:#173f67}h1{font-size:1.6rem}.amount{font-size:2rem;font-weight:800;margin:.35rem 0 1rem}.note{color:#536579;line-height:1.45}#applepay-container{margin:14px 0}apple-pay-button{--apple-pay-button-width:100%;--apple-pay-button-height:48px;--apple-pay-button-border-radius:8px}#status{font-weight:650;margin-top:16px}</style></head><body><main class="card"><div class="brand">🐾 ${brand}</div><h1 id="checkout-title">${safeService}</h1><div class="amount">$${offer.amount}</div><p id="checkout-note" class="note">Choose PayPal or Apple Pay. Payment status updates automatically after payment succeeds.</p><div id="checkout-controls"><div id="paypal-buttons"></div><div id="applepay-container"></div><p id="applepay-status" class="note" role="status"></p></div><p id="status" role="status" tabindex="-1"></p>${checkoutNextAction(recordName, true)}</main>
 <script>const question=${safeQuestion}, amount=${safeAmount}, brand=${JSON.stringify(brand)};
 const statusEl=document.getElementById('status');
 const appleStatus=document.getElementById('applepay-status');
-async function createOrder(){const r=await fetch('/api/paypal/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question})});const d=await r.json();if(!r.ok||!d.id)throw new Error(d.error||'Could not start payment');return d.id}
-async function capture(orderID,method){const r=await fetch('/api/paypal/orders/'+encodeURIComponent(orderID)+'/capture',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question,method})});const d=await r.json();if(!r.ok)throw new Error(d.error||'Could not complete payment');statusEl.textContent=d.status==='Paid'?(d.statusSyncPending?'Payment received. Your care-line payment status is updating. Thank you!':'Payment received. Thank you!'):'Payment status: '+d.status+'. Please contact the care line with any questions.';return d}
-if(window.paypal && paypal.Buttons){paypal.Buttons({createOrder,onApprove:d=>capture(d.orderID,'PayPal'),onCancel:()=>{statusEl.textContent='Payment cancelled. You can try again when ready.'},onError:()=>{statusEl.textContent='Payment could not be confirmed. If you approved a payment, contact the care line before trying again.'}}).render('#paypal-buttons').catch(()=>{statusEl.textContent='Checkout could not load. Please reload this page or contact the care line.'})}else{statusEl.textContent='Checkout could not load. Please reload this page or contact the care line.'}
+let paymentComplete=false;
+function finishCheckout(d){
+  paymentComplete=true;
+  document.getElementById('checkout-controls').hidden=true;
+  document.getElementById('paypal-buttons').innerHTML='';
+  document.getElementById('applepay-container').innerHTML='';
+  document.getElementById('checkout-title').textContent=d.status==='Paid'?'Payment received':'Payment status updated';
+  document.getElementById('checkout-note').textContent=question.startsWith('petassist-')?'Your booking payment is complete. Return to the PetAssist app to view your booking.':'Your question and payment have been received. Your reply will arrive through the method you selected.';
+  document.getElementById('checkout-next').hidden=false;
+  statusEl.focus();
+}
+async function createOrder(){if(paymentComplete)throw new Error('This request is already paid');const r=await fetch('/api/paypal/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question})});const d=await r.json();if(!r.ok||!d.id)throw new Error(d.error||'Could not start payment');return d.id}
+async function capture(orderID,method){const r=await fetch('/api/paypal/orders/'+encodeURIComponent(orderID)+'/capture',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question,method})});const d=await r.json();if(!r.ok)throw new Error(d.error||'Could not complete payment');statusEl.textContent=d.status==='Paid'?(d.statusSyncPending?'Payment received. Your care-line payment status is updating. Thank you!':'Payment received. Thank you!'):'Payment status: '+d.status+'. Please contact the care line with any questions.';finishCheckout(d);return d}
+if(window.paypal && paypal.Buttons){paypal.Buttons({createOrder,onApprove:d=>capture(d.orderID,'PayPal'),onCancel:()=>{if(paymentComplete)return;statusEl.textContent='Payment cancelled. You can try again when ready.'},onError:()=>{if(paymentComplete)return;statusEl.textContent='Payment could not be confirmed. If you approved a payment, contact the care line before trying again.'}}).render('#paypal-buttons').catch(()=>{statusEl.textContent='Checkout could not load. Please reload this page or contact the care line.'})}else{statusEl.textContent='Checkout could not load. Please reload this page or contact the care line.'}
 async function setupApplePay(){
+  if(paymentComplete)return;
   try {
     if(!window.paypal||!paypal.Applepay||!window.ApplePaySession||!ApplePaySession.canMakePayments()){
       appleStatus.textContent='Apple Pay is unavailable in this browser. You can use PayPal or the card option above.';return;
     }
     const applepay=paypal.Applepay();const c=await applepay.config();
+    if(paymentComplete)return;
     if(!c.isEligible){appleStatus.textContent='Apple Pay is currently unavailable. You can use PayPal or the card option above.';return;}
     document.getElementById('applepay-container').innerHTML='<apple-pay-button id="applepay-button" buttonstyle="black" type="pay" locale="en-US"></apple-pay-button>';
     appleStatus.textContent='';
     let active=false;
     document.getElementById('applepay-button').onclick=()=>{
-      if(active)return;
+      if(active||paymentComplete)return;
       let session;
       try {
         session=new ApplePaySession(4,{countryCode:c.countryCode,merchantCapabilities:c.merchantCapabilities,supportedNetworks:c.supportedNetworks,currencyCode:'USD',requiredBillingContactFields:['postalAddress'],total:{label:brand,type:'final',amount}});
@@ -481,7 +494,7 @@ async function setupApplePay(){
           catch{session.completePayment(ApplePaySession.STATUS_FAILURE);appleStatus.textContent=confirmed?'Apple Pay payment could not be confirmed. If your wallet shows a charge, contact the care line before trying again.':'Apple Pay could not complete payment. Please try another card or use PayPal.';}
           finally{active=false;}
         };
-        session.oncancel=()=>{active=false;appleStatus.textContent='Apple Pay cancelled. You can try again when ready.';};
+        session.oncancel=()=>{active=false;if(paymentComplete)return;appleStatus.textContent='Apple Pay cancelled. You can try again when ready.';};
         session.begin();
       }catch{active=false;appleStatus.textContent='Apple Pay could not open. Please use PayPal or the card option, or contact the care line.';}
     };
@@ -489,6 +502,19 @@ async function setupApplePay(){
 }
 setupApplePay();
 </script></body></html>`, { headers: securityHTMLHeaders() });
+}
+
+function checkoutNextAction(recordName, hidden = false) {
+  const isPetAssist = recordName.startsWith("petassist-");
+  const href = isPetAssist ? "https://bayareaapps.com/petassist-local/" : "https://paws-whiskers-care-line.dkjmmz6whh.workers.dev/#askSection";
+  const label = isPetAssist ? "Return to PetAssist Local" : "Ask another question";
+  return `<p id="checkout-next"${hidden ? " hidden" : ""}><a href="${href}" style="display:inline-block;background:#173f67;color:white;padding:14px 20px;border-radius:10px;text-decoration:none;font-weight:650">${label}</a></p>`;
+}
+
+function paidCheckoutConfirmation(record) {
+  const isPetAssist = record.recordName.startsWith("petassist-");
+  const next = isPetAssist ? "Return to the PetAssist app to view your booking." : "Your reply will arrive through the method you selected. To submit a new question, use the button below.";
+  return new Response(`<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Payment received</title><style>body{font-family:-apple-system,sans-serif;max-width:540px;margin:48px auto;padding:20px;color:#132238;line-height:1.6}h1{color:#173f67}</style></head><body><main><h1>Payment received</h1><p>This request is already paid. Thank you!</p><p>${next}</p>${checkoutNextAction(record.recordName)}</main></body></html>`, { headers: securityHTMLHeaders() });
 }
 
 async function createPayPalOrder(request, env) {

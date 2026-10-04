@@ -30,3 +30,5 @@ Serve the Apple Pay association file directly with HTTP 200 and `Content-Type: a
 A verified completed capture returns payment success even if CloudKit synchronization is delayed (HTTP 202 with `statusSyncPending`). The client displays “Payment received” while the verified completion webhook retries the app update. The operator still waits for Paid in the app before providing paid service.
 
 Before release, run the backend and checkout script tests. Then open an unpaid test request on the deployed checkout, verify PayPal/card buttons and the Apple Pay payment sheet, and cancel before authorization. Actual wallet authorization and settlement require a buyer test on a supported device; opening the sheet alone does not prove capture.
+
+After a verified capture, checkout removes payment controls, shows receipt confirmation and the expected reply method, and offers **Ask another question** to start a separate intake. Reopening a paid request shows confirmation with no payment SDK or buttons. The server rejects new orders for paid requests. PetAssist confirmation links back to PetAssist instead.

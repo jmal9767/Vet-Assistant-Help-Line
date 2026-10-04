@@ -21,3 +21,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: xcodebuild -project VetAssistantHelpLine.xcodeproj -scheme VetAssistantHelpLine -sdk iphonesimulator CODE_SIGNING_ALLOWED=NO build
+      - run: swiftc VetAssistantHelpLine/Models/ClientQuestion.swift tests-ClientQuestion.swift -o "$RUNNER_TEMP/verify-client-question" && "$RUNNER_TEMP/verify-client-question"

@@ -31,6 +31,8 @@ After publication, verify both service menus, consent fields, Community Access w
 
 Four files of 10 MB each are supported, with a 40 MB combined limit. Private URLs expire after 30 days; URL expiry does not delete stored objects. Verify retention and deletion procedures separately.
 
+The backend supports an older Question schema: when CloudKit rejects a missing field, the backend preserves that value in a versioned JSON envelope within the existing `question` field. The app decodes that envelope for normal display and updates, and checkout reads payment fields from it. Client information is retained even before newer schema fields are added. Production roles, record types, and query indexes still need verification.
+
 ## CloudKit and iPhone distribution
 
 The current Worker uses CloudKit Development. A development-signed operator app uses that environment. TestFlight/App Store builds use Production: export and verify the full Production schema, operator/relay roles, and indexes before switching the Worker. Do not import the partial `cloudkit/Question.ckdb` reference as a full container schema, grant broad client-record access, or change the production environment blindly.

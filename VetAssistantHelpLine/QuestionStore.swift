@@ -46,22 +46,22 @@ final class QuestionStore {
 
     func setStatus(_ status: ClientQuestion.Status, for question: ClientQuestion) async {
         question.record["status"] = status.rawValue
-        if status == .answered { question.record["conversationStatus"] = "Closed" }
-        if status == .new { question.record["conversationStatus"] = "Needs response" }
+        if status == .answered { question.setString("Closed", for: "conversationStatus") }
+        if status == .new { question.setString("Needs response", for: "conversationStatus") }
         await save(question.record, failureMessage: "Couldn't update the question")
     }
 
     func updatePayment(status: String, amount: String? = nil, link: String? = nil, for question: ClientQuestion) async {
-        question.record["paymentStatus"] = status
-        if let amount { question.record["paymentAmount"] = amount }
-        if let link { question.record["paymentLink"] = link }
+        question.setString(status, for: "paymentStatus")
+        if let amount { question.setString(amount, for: "paymentAmount") }
+        if let link { question.setString(link, for: "paymentLink") }
         await save(question.record, failureMessage: "Couldn't update the payment")
     }
 
     func requestPayment(amount: String, link: String, for question: ClientQuestion) async {
-        question.record["paymentStatus"] = "Payment requested"
-        question.record["paymentAmount"] = amount
-        question.record["paymentLink"] = link
+        question.setString("Payment requested", for: "paymentStatus")
+        question.setString(amount, for: "paymentAmount")
+        question.setString(link, for: "paymentLink")
         await save(question.record, failureMessage: "Couldn't save the payment request")
     }
 

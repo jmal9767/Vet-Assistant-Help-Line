@@ -2,6 +2,19 @@ import CloudKit
 import Foundation
 
 struct ClientQuestion: Identifiable {
+    private struct IntakeEnvelope: Codable {
+        let format: String
+        let question: String
+        var details: [String: String]
+    }
+
+    private var envelope: IntakeEnvelope? {
+        guard let raw = record["question"] as? String,
+              let data = raw.data(using: .utf8),
+              let value = try? JSONDecoder().decode(IntakeEnvelope.self, from: data),
+              value.format == "paws-intake-v1" else { return nil }
+        return value
+    }
     static let recordType = "Question"
 
     enum Status: String {
@@ -45,7 +58,7 @@ struct ClientQuestion: Identifiable {
     var medicalHistory: String { string(for: "medicalHistory") ?? "None reported" }
     var currentMedications: String { string(for: "currentMedications") ?? "None reported" }
     var actionsTaken: String { string(for: "actionsTaken") ?? "None reported" }
-    var question: String { string(for: "question") ?? "" }
+    var question: String { envelope?.question ?? string(for: "question") ?? "" }
     var attachmentSummary: String? { string(for: "attachmentSummary") }
     var sourceChannel: String { string(for: "sourceChannel") ?? "Website" }
     var conversationStatus: String { string(for: "conversationStatus") ?? "Needs response" }
@@ -73,9 +86,20 @@ struct ClientQuestion: Identifiable {
     }
 
     private func string(for key: String) -> String? {
-        guard let value = record[key] as? String,
+        guard let value = (record[key] as? String) ?? envelope?.details[key],
               !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
         return value
+    }
+
+    func setString(_ value: String, for key: String) {
+        if var packed = envelope, packed.details[key] != nil, record[key] == nil {
+            packed.details[key] = value
+            if let data = try? JSONEncoder().encode(packed), let text = String(data: data, encoding: .utf8) {
+                record["question"] = text
+            }
+        } else {
+            record[key] = value
+        }
     }
 
     private var amountFromRequestedService: String {

@@ -315,15 +315,48 @@ function cloudKitCreateBody(fields) {
 
 async function saveQuestionToCloudKit(env, requestBody) {
   const path = `/database/1/${env.CLOUDKIT_CONTAINER}/${env.CLOUDKIT_ENVIRONMENT}/public/records/modify`;
+  const requestData = JSON.parse(requestBody);
+  for (let attempt = 0; attempt <= Object.keys(MAX_LENGTHS).length; attempt++) {
+  requestBody = JSON.stringify(requestData);
   const headers = await signedHeaders(env, path, requestBody);
   const response = await fetch(`https://api.apple-cloudkit.com${path}`, { method: "POST", headers, body: requestBody });
-  if (!response.ok) return { ok: false, status: response.status };
   const result = await response.json();
   const record = result.records?.find((item) => !item.serverErrorCode);
+  if (!response.ok || !record || result.records?.some(item => item.serverErrorCode)) {
+    const failures = [result, ...(result.records || [])].filter(item => item.serverErrorCode);
+    const reasons = failures.map(item => String(item.reason || '')).join(' ');
+    const missingFields = Object.keys(MAX_LENGTHS).filter(name => name !== 'question' && failures.some(item => item.serverErrorCode === 'BAD_REQUEST' && new RegExp('\\b'+name+'\\b').test(String(item.reason || ''))));
+    let migrated = false;
+    for (const operation of requestData.operations) {
+      const fields = operation.record.fields;
+      const toPack = missingFields.filter(name => Object.hasOwn(fields, name));
+      if (!toPack.length) continue;
+      const existing = !fields.question && operation.record.recordName ? await fetchQuestionFromCloudKit(env, operation.record.recordName) : null;
+      const original = String(fields.question?.value ?? existing?.fields?.question?.value ?? '');
+      const envelope = intakeEnvelope(original) || { format: 'paws-intake-v1', question: original, details: {} };
+      for (const name of toPack) { envelope.details[name] = String(fields[name].value ?? ''); delete fields[name]; }
+      fields.question = { value: JSON.stringify(envelope) };
+      migrated = true;
+    }
+    // Preserve unavailable schema fields in the existing question field, rather than dropping client information.
+    if (migrated) continue;
+    // Log only public schema field names and provider codes, never client values or credentials.
+    console.error('CloudKit write rejected', JSON.stringify({ status: response.status, codes: failures.map(item => item.serverErrorCode), fields: Object.keys(MAX_LENGTHS).filter(name => new RegExp('\\b'+name+'\\b').test(reasons)) }));
+    return { ok: false, status: response.status };
+  }
   return {
     ok: Boolean(record) && !result.records?.some((item) => item.serverErrorCode),
     recordName: record?.recordName || "",
   };
+  }
+  return { ok: false };
+}
+
+function intakeEnvelope(value) {
+  try {
+    const result = JSON.parse(value);
+    return result?.format === 'paws-intake-v1' && typeof result.question === 'string' && result.details && typeof result.details === 'object' && !Array.isArray(result.details) ? result : null;
+  } catch { return null; }
 }
 
 async function fetchQuestionFromCloudKit(env, recordName) {
@@ -349,7 +382,8 @@ async function updateQuestionPayment(env, recordName, values) {
 }
 
 function fieldValue(record, name) {
-  return String(record?.fields?.[name]?.value ?? "").trim();
+  const packed = intakeEnvelope(String(record?.fields?.question?.value ?? ''));
+  return String(record?.fields?.[name]?.value ?? packed?.details?.[name] ?? "").trim();
 }
 
 function paidOffer(record) {

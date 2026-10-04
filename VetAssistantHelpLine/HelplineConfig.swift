@@ -1,6 +1,7 @@
 import Foundation
 
 enum HelplineConfig {
+    static let replyEmail = "info@bayareaapps.com"
     /// The client page the QR code points to — the same URL as the printed
     /// poster (docs/share-qr.png), so every QR code lands in the same place.
     static let siteURL = URL(string: "https://paws-whiskers-care-line.dkjmmz6whh.workers.dev/")!

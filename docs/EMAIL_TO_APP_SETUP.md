@@ -1,3 +1,5 @@
+> Updated October 5, 2026: new written requests use **private website conversations** answered directly in the app. Email/Text references below apply to historical requests or optional integrations. See [private conversations](PRIVATE_CONVERSATIONS.md) for the current workflow.
+
 # Email-to-App Setup
 
 Client emails only appear in the iOS app when they create `Question` records in CloudKit.

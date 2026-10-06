@@ -13,18 +13,18 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icons/icon-512.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
-<meta name="theme-color" content="#1f3a5f">
+<meta name="theme-color" content="#c81e30">
 <style>
   :root {
-    --navy: #1f3a5f;
-    --navy-dark: #15294a;
+    --navy: #c81e30;
+    --navy-dark: #ac1929;
     --red: #c0392b;
-    --red-bg: #fdecea;
-    --ink: #14181c;
-    --muted: #3c4652;
-    --bg: #f6f9f9;
-    --card: #ffffff;
-    --border: #dde5e8;
+    --red-bg: #2b1720;
+    --ink: #f7f8fa;
+    --muted: #c9cdd5;
+    --bg: #0e1014;
+    --card: #191d24;
+    --border: #35383e;
   }
   * { box-sizing: border-box; }
   body {
@@ -88,7 +88,7 @@
     border-radius: 8px;
     font-size: 1rem;
     font-family: inherit;
-    background: #fff;
+    background:#191d24;
     color: var(--ink);
   }
   textarea { min-height: 120px; resize: vertical; }
@@ -118,7 +118,7 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .promise {
-    background: #eef5f3;
+    background: #191d24;
     border: 1px solid var(--border);
     border-radius: 10px;
     padding: .8rem;
@@ -135,7 +135,7 @@
     border: 1px solid var(--border);
     border-radius: 10px;
     padding: .85rem;
-    background: #fff;
+    background:#191d24;
   }
   .option-card label { margin: 0; display: flex; gap: .45rem; align-items: flex-start; }
   .option-card strong { display: block; line-height: 1.2; }
@@ -154,13 +154,13 @@
     .option-grid,
     .promise-grid { grid-template-columns: 1fr; }
   }
-</style>
+body{background:#0e1014;color:#f7f8fa}main,.wrap,.card,.form-card,.service-card{color:inherit}h1,h2{color:#f7f8fa}a{color:#ff6670}input,select,textarea{background:#191d24;color:#f7f8fa;border-color:#656c79}.note,.muted{color:#c9cdd5}header{border-color:#f2c65b}button[type=submit]{background:#c81e30;color:#fff}strong{color:inherit}.promise strong,.amount{color:#f2c65b}.option-card{background:#191d24;color:#f7f8fa;border-color:#35383e}.emergency{background:#2b1720;color:#f7f8fa;border-color:#ff6670}.emergency h2{color:#ff6670}main{background:#191d24}.btn,.btn-red,.btn-navy{color:#fff}.service-label{color:#f2c65b}</style>
 </head>
 <body>
 
 <header>
   <h1><span aria-hidden="true">🐾</span> Paws & Whiskers Care Line</h1>
-  <p>Have questions about your dog or cat? Just ask. Get general educational guidance from an experienced veterinary assistant by email, text, or phone.</p>
+  <p>Have questions about your dog or cat? Just ask. Get general educational guidance from an experienced veterinary assistant on your private conversation page or by phone.</p>
 </header>
 
 <main>
@@ -227,8 +227,8 @@
   <section class="card">
     <h2>Pricing</h2>
     <ul class="help-list">
-      <li><strong>Quick Question — $10:</strong> for a simple question that needs a short response by email or text.</li>
-      <li><strong>Detailed Guidance — $15:</strong> for a question that needs more time and explanation by email or text.</li>
+      <li><strong>Quick Question — $10:</strong> for a simple question that needs a short response on your private conversation page.</li>
+      <li><strong>Detailed Guidance — $15:</strong> for a question that needs more time and explanation on your private conversation page.</li>
       <li><strong>Phone Support — $25:</strong> for when you would rather talk through your question by phone.</li>
       <li><strong>Free Community Support — Free:</strong> no-cost access is always available when needed. No explanation required.</li>
     </ul>
@@ -254,15 +254,12 @@
       <label for="requestedService">First, choose the kind of help you want</label>
       <select id="requestedService" required>
         <option value="">Select a service…</option>
-        <option value="Quick Question — Email · $10">Quick Question — Email · $10</option>
-        <option value="Quick Question — Text · $10">Quick Question — Text · $10</option>
-        <option value="Detailed Guidance — Email · $15">Detailed Guidance — Email · $15</option>
-        <option value="Detailed Guidance — Text · $15">Detailed Guidance — Text · $15</option>
+        <option value="Quick Question — Private Message · $10">Quick Question — Private Message · $10</option>
+        <option value="Detailed Guidance — Private Message · $15">Detailed Guidance — Private Message · $15</option>
         <option value="Phone Support · $25">Phone Support · $25</option>
-        <option value="Free Community Support — Email">Free Community Support — Email</option>
-        <option value="Free Community Support — Text">Free Community Support — Text</option>
+        <option value="Free Community Support — Private Message">Free Community Support — Private Message</option>
       </select>
-      <p class="note" id="serviceNote">Pick an option first. The form will adjust based on email, text, or phone.</p>
+      <p class="note" id="serviceNote">Pick an option first. The form will adjust based on private messages or phone.</p>
 
       <div id="questionnaireFields" class="hidden">
       <span class="step-label">Step 2</span>
@@ -270,12 +267,12 @@
       <label for="name">Your name</label>
       <input type="text" id="name" required autocomplete="name">
 
-      <label for="email">Your email (so I can reply)</label>
+      <label for="email">Your email (for business support)</label>
       <input type="email" id="email" required autocomplete="email">
 
       <label for="phone">Phone number (optional)</label>
-      <input type="tel" id="phone" autocomplete="tel" placeholder="Add your number if you'd prefer your reply by text message">
-      <p class="note" id="phoneNote">Optional for email replies. Required for text replies or phone calls.</p>
+      <input type="tel" id="phone" autocomplete="tel" placeholder="Required only if you request a phone call">
+      <p class="note" id="phoneNote">Optional for private messages. Required for phone calls.</p>
 
       <div id="paymentFields"><label for="paymentMethod">Preferred payment method</label>
       <select id="paymentMethod">
@@ -589,6 +586,7 @@
     var uploadBytes = files.reduce(function (total, file) { return total + file.size; }, 0);
     var timeoutMs = Math.max(25000, 30000 + Math.ceil(uploadBytes / (128 * 1024)) * 1000);
     var timeout = window.setTimeout(function () { controller.abort(); }, timeoutMs);
+    payload.conversationToken = conversationToken; payload.conversationAccess = conversationAccess;
     fetch(WORKER_URL, {
       method: "POST",
       body: submissionBody(payload, files),
@@ -602,6 +600,11 @@
       }
       return response.json();
     }).then(function (data) {
+      if (data.conversationURL) {
+        var conversation = new URL(data.conversationURL);
+        if (conversation.origin !== "https://paws-whiskers-care-line.dkjmmz6whh.workers.dev" || conversation.pathname !== "/conversation.html" || !/^#thread=[a-f0-9]{32}\.[a-f0-9]{64}$/.test(conversation.hash)) throw new Error("Your private conversation could not be verified.");
+        window.location.assign(conversation.href); return;
+      }
       if (data.checkoutURL) {
         window.location.assign(data.checkoutURL);
         return;
@@ -664,10 +667,13 @@
 
   function isFreeSupport(service) { return String(service).indexOf("Free Community Support") === 0; }
 
+  var conversationToken = crypto.randomUUID().replaceAll("-", "");
+  var conversationAccess = crypto.randomUUID().replaceAll("-", "") + crypto.randomUUID().replaceAll("-", "");
+
   function replyMethodFromService(service) {
     if (service.toLowerCase().indexOf("text") !== -1) return "Text message";
     if (service.indexOf("Phone") === 0) return "Phone call";
-    return "Email";
+    return service.indexOf("Private Message") !== -1 ? "Private website conversation" : "Email";
   }
 
   function updateServiceGuidance(service) {
@@ -676,12 +682,12 @@
     var paymentFields = document.getElementById("paymentFields");
     var fields = document.getElementById("questionnaireFields");
     var method = replyMethodFromService(service);
-    document.getElementById("phone").required = !!service && method !== "Email";
+    document.getElementById("phone").required = !!service && method === "Phone call";
     if (!service) {
-      note.textContent = "Pick an option first. The form will adjust based on email, text, or phone.";
+      note.textContent = "Pick an option first. The form will adjust based on private messages or phone.";
       fields.classList.add("hidden");
       paymentFields.classList.remove("hidden");
-      phoneNote.textContent = "Optional for email replies. Required for text replies or phone calls.";
+      phoneNote.textContent = "Optional for private messages. Required for phone calls.";
       return;
     }
     fields.classList.remove("hidden");
@@ -691,7 +697,10 @@
     } else {
       paymentFields.classList.remove("hidden");
     }
-    if (method === "Email") {
+    if (method === "Private website conversation") {
+      note.textContent = "Read your response and send follow-up messages on your private conversation page. Bookmark the page after sending. No SMS or email reply is required.";
+      phoneNote.textContent = "Optional for private messages. Required only for phone-call requests.";
+    } else if (method === "Email") {
       note.textContent = isFreeSupport(service) ? "Free Community Support is free. You'll receive your reply by email. No explanation required." : "You'll receive written help by email for the displayed price.";
       phoneNote.textContent = "Optional for email replies.";
     } else if (method === "Text message") {

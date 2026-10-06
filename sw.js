@@ -1,4 +1,4 @@
-const CACHE = "paws-whiskers-v4";
+const CACHE = "paws-whiskers-v5";
 const ASSETS = [
   "./",
   "./index.html",

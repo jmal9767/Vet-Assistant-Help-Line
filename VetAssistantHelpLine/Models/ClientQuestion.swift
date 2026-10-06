@@ -36,6 +36,9 @@ struct ClientQuestion: Identifiable {
     var name: String { string(for: "name") ?? "Anonymous" }
     var email: String { string(for: "email") ?? "" }
     var phone: String? { string(for: "phone") }
+    var conversationToken: String? {
+        guard let token = string(for: "conversationToken"), token.range(of: "^[a-f0-9]{32}$", options: .regularExpression) != nil else { return nil }; return token
+    }
     var preferredReply: String { string(for: "preferredReply") ?? (phone == nil ? "Email" : "Text message") }
     var requestedService: String {
         (string(for: "requestedService") ?? preferredReply)

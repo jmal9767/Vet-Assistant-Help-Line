@@ -1,3 +1,5 @@
+> Updated October 5, 2026: new written requests use **private website conversations** answered directly in the app. Email/Text references below apply to historical requests or optional integrations. See [private conversations](PRIVATE_CONVERSATIONS.md) for the current workflow.
+
 # PayPal and Apple Pay setup
 
 The client chooses **$10 Quick Question**, **$15 Detailed Guidance**, **$25 Phone Support**, or **Free Community Support** before submitting.

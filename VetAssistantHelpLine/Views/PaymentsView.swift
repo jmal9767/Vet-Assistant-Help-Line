@@ -31,7 +31,7 @@ struct PaymentsView: View {
                         ) {
                             HStack(spacing: 10) {
                                 MetricPill(title: "Pending", value: "\(pendingQuestions.count)", icon: "clock.fill", tint: AppPalette.warmGold)
-                                MetricPill(title: "Paid", value: "\(paidQuestions.count)", icon: "checkmark.circle.fill", tint: AppPalette.clinicGreen)
+                                MetricPill(title: "Paid", value: "\(paidQuestions.count)", icon: "checkmark.circle.fill", tint: AppPalette.serviceAccent)
                                 MetricPill(title: "Refunds", value: "\(refundedCount)", icon: "arrow.uturn.backward.circle.fill", tint: AppPalette.brand)
                             }
                         }
@@ -149,7 +149,7 @@ private struct PaymentRow: View {
 
     private var tint: Color {
         switch question.paymentStatus {
-        case "Paid": AppPalette.clinicGreen
+        case "Paid": AppPalette.serviceAccent
         case "Refunded", "Partially refunded": AppPalette.brand
         case "Referred — no charge": AppPalette.brand
         case "Payment requested": AppPalette.warmGold

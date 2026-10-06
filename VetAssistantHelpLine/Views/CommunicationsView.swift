@@ -30,11 +30,11 @@ struct CommunicationsView: View {
                         HeroPanel(
                             icon: "bubble.left.and.bubble.right.fill",
                             title: "Messages",
-                            subtitle: "Read each client's concern, reply, and see the service and payment decision for the same case."
+                            subtitle: "Read each client’s concern and tap Reply in Care Line to answer on their private page. Phone calls remain separate."
                         ) {
                             HStack(spacing: 10) {
                                 MetricPill(title: "Open", value: "\(openCount)", icon: "bubble.left.fill", tint: AppPalette.warmGold)
-                                MetricPill(title: "Channels", value: "SMS / Email / Phone", icon: "phone.connection.fill", tint: AppPalette.brand)
+                                MetricPill(title: "Channels", value: "Private page / Phone", icon: "phone.connection.fill", tint: AppPalette.brand)
                             }
                         }
 
@@ -149,7 +149,7 @@ private struct CommunicationRow: View {
     private var tint: Color {
         switch question.sourceChannel.lowercased() {
         case let value where value.contains("sms"):
-            AppPalette.clinicGreen
+            AppPalette.serviceAccent
         case let value where value.contains("email"):
             AppPalette.brand
         case let value where value.contains("phone"):

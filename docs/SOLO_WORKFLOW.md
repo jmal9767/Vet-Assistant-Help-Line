@@ -1,3 +1,5 @@
+> Updated October 5, 2026: new written requests use **private website conversations** answered directly in the app. Email/Text references below apply to historical requests or optional integrations. See [private conversations](PRIVATE_CONVERSATIONS.md) for the current workflow.
+
 # Solo operator workflow
 
 ## New question
@@ -8,7 +10,7 @@
 4. Review the question and private files. Files may be any type, up to four files and 10 MB each. Download unfamiliar file types only when you recognize and trust the client submission.
 5. Decide whether the request is within the educational scope. Refer diagnosis, medication, dosing, treatment, prognosis, diagnostic interpretation, and other clinical decisions to a licensed veterinarian; refund a paid request when you cannot provide the selected service.
 6. For paid options, confirm payment before beginning the response. Free Community Support requires no payment. PayPal and Apple Pay update automatically. No payment-link messages or manual payment-status changes are needed.
-7. Send the response through the selected channel. Add the standard disclaimer and mark the question Answered.
+7. Tap Reply in Care Line, write the response with the standard disclaimer, and tap Send Care Line Reply. A delivered reply marks the question answered; a client follow-up marks it new when CloudKit sync succeeds. For Phone Support, arrange and make the call separately.
 8. Archive completed questions. Archived questions remain available in the Inbox’s Archived filter.
 
 ## Before every response
@@ -20,8 +22,8 @@
 
 ## Payments
 
-The client chooses $10 Quick Question, $15 Detailed Guidance, $25 Phone Support, or Free Community Support before submitting. Paid options continue to checkout; Free Community Support requires no payment and no explanation. Card and bank information stays with the payment provider.
+The client chooses $10 Quick Question, $15 Detailed Guidance, $25 Phone Support, or Free Community Support before submitting. Paid clients open checkout from their private conversation page; Free Community Support requires no payment and no explanation. Card and bank information stays with the payment provider.
 
 ## Privacy and retention
 
-Use a public care-line email for client replies. Do not place server secrets in the app or website. Private file links expire after 30 days, and the R2 bucket should delete uploaded objects after 30 days. Handle deletion or correction requests through the client’s existing contact channel.
+Use private conversations for new written replies. Use info@bayareaapps.com only for support or historical email requests. Do not place server secrets in the app or website. Private file links expire after 30 days, and the R2 bucket should delete uploaded objects after 30 days. Handle deletion or correction requests through the client’s existing contact channel.

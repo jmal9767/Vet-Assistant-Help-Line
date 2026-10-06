@@ -447,7 +447,7 @@ function paidOffer(record) {
   if (isPetAssist && record.visitStatus && !["accepted", "en-route", "in-progress", "completed"].includes(record.visitStatus)) return null;
   if (!isPetAssist && fieldValue(record, "paymentStatus") !== "Paid" && ["archived", "answered"].includes(fieldValue(record, "status"))) return null;
   const allowedAmounts = new Set(isPetAssist ? Object.values(PETASSIST_SERVICES).map(service => service.amount) : [10, 15, 25, 5, 20, 30, 35]);
-  if (!["Payment requested", "Paid"].includes(fieldValue(record, "paymentStatus")) || !allowedAmounts.has(amount)) return null;
+  if (!["Payment requested", "Paid"].includes(fieldValue(record, "paymentStatus")) || !(allowedAmounts.has(amount) || (isPetAssist && record.marketplace === true && Number.isFinite(amount) && amount >= 1 && amount <= 5000))) return null;
   return {
     amount: amount.toFixed(2),
     service: fieldValue(record, "requestedService") || "Paws & Whiskers Care Line service",
@@ -883,7 +883,25 @@ function petAssistObject(env, recordName) {
 }
 async function readPetAssistPayment(env, recordName) {
   const object = petAssistObject(env, recordName);
-  return object ? (await object.fetch("https://booking.invalid/record")).json() : null;
+  if (!object) return null;
+  let record = await (await object.fetch("https://booking.invalid/record")).json();
+  if (record && !record.marketplace) return record;
+  const token = recordName.slice("petassist-".length);
+  let offer;
+  try {
+    const result = await (env.VISITS_MARKETPLACE ? env.VISITS_MARKETPLACE.fetch("https://petassist-local-marketplace.dkjmmz6whh.workers.dev/v1/payment-offer/" + token) : fetch("https://petassist-local-marketplace.dkjmmz6whh.workers.dev/v1/payment-offer/" + token, {signal:AbortSignal.timeout(10000)}));
+    if (!result.ok) return null;
+    offer = await result.json();
+  } catch { return null; }
+  if (offer.token !== token || !Object.hasOwn(PETASSIST_SERVICES, offer.serviceID) || !/^[0-9]+\.[0-9]{2}$/.test(offer.amount) || Number(offer.amount)<1 || Number(offer.amount)>5000) return null;
+  if (!record) {
+    if (!["accepted", "en-route", "in-progress", "completed"].includes(offer.visitStatus)) return null;
+    const created = await object.fetch("https://booking.invalid/create", {method:"POST",body:JSON.stringify({recordName,serviceID:offer.serviceID,service:PETASSIST_SERVICES[offer.serviceID].title + " — Marketplace Home Visit",amount:offer.amount,marketplace:true})});
+    if (!created.ok) return null;
+    record = await created.json();
+  }
+  if (Number(fieldValue(record,"paymentAmount").replace(/[^0-9.]/g,""))!==Number(offer.amount) || record.serviceID!==offer.serviceID) return null;
+  return {...record,visitStatus:offer.visitStatus};
 }
 function petAssistReceipt(record, requestURL) {
   const token = record.recordName.slice("petassist-".length);
@@ -1011,7 +1029,7 @@ export class PetAssistPayments {
       if (path === "/create") {
         if (record) return Response.json(record, { status: record.serviceID === input.serviceID ? 200 : 409 });
         const fields = Object.fromEntries(Object.entries({ requestedService:input.service, paymentAmount:`$${input.amount}`, paymentStatus:"Payment requested", paymentMethod:"PayPal or Apple Pay", sourceChannel:"PetAssist Local" }).map(([key,value])=>[key,{value}]));
-        record = { recordName:input.recordName, recordType:"PetAssistPayment", recordChangeTag:"1", serviceID:input.serviceID, fields };
+        record = { recordName:input.recordName, recordType:"PetAssistPayment", recordChangeTag:"1", serviceID:input.serviceID, fields, ...(input.marketplace === true ? {marketplace:true} : {}) };
         await txn.put("record",record); return Response.json(record);
       }
       if (path !== "/payment" || !record) return Response.json({ok:false});

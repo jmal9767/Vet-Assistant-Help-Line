@@ -1,0 +1,23 @@
+// Server-to-server authorization/capture bridge. Never used by Care Line checkout.
+export async function visitsPayment(request,env,action){
+ const reply=(data,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store'}});
+ const bearer=(request.headers.get('Authorization')||'').replace(/^Bearer /,'');
+ if(!env.WORKFLOW_PAYMENT_KEY||bearer.length!==env.WORKFLOW_PAYMENT_KEY.length)return reply({error:'Unauthorized'},401);
+ let diff=0;for(let i=0;i<bearer.length;i++)diff|=bearer.charCodeAt(i)^env.WORKFLOW_PAYMENT_KEY.charCodeAt(i);if(diff)return reply({error:'Unauthorized'},401);
+ if(!env.PAYPAL_CLIENT_ID||!env.PAYPAL_CLIENT_SECRET)return reply({error:'PayPal is not configured. No charge was made.'},503);
+ try{
+  const raw=await request.text();if(raw.length>8000)return reply({error:'Request too large'},413);const b=JSON.parse(raw);
+  if(!/^[\w-]{1,108}$/.test(b.requestId||''))return reply({error:'Payment reference required'},400);
+  const base=env.PAYPAL_ENVIRONMENT==='live'?'https://api-m.paypal.com':'https://api-m.sandbox.paypal.com';
+  const auth=await fetch(base+'/v1/oauth2/token',{method:'POST',headers:{Authorization:'Basic '+btoa(env.PAYPAL_CLIENT_ID+':'+env.PAYPAL_CLIENT_SECRET),'Content-Type':'application/x-www-form-urlencoded'},body:'grant_type=client_credentials'});const token=(await auth.json()).access_token;if(!auth.ok||!token)return reply({error:'Payment authorization unavailable'},502);
+  async function call(path,method='GET',body){const r=await fetch(base+path,{method,headers:{Authorization:'Bearer '+token,'Content-Type':'application/json','PayPal-Request-Id':b.requestId},...(body?{body:JSON.stringify(body)}:{})});const d=r.status===204?{}:await r.json();if(!r.ok)throw Error('PayPal could not confirm this operation. Retry using the same payment reference.');return d}
+  const money=()=>{if(!Number.isSafeInteger(b.amount)||b.amount<=0||b.amount>1000000)throw Error('Invalid payment amount');return {currency_code:'USD',value:(b.amount/100).toFixed(2)}};
+  const validId=id=>/^[A-Z0-9]{1,30}$/.test(id||'');
+  if(action==='order'){const d=await call('/v2/checkout/orders','POST',{intent:'AUTHORIZE',purchase_units:[{custom_id:b.visitId,amount:money(),description:'Paws & Whiskers Visits · quoted services'}],payment_source:{paypal:{experience_context:{user_action:'PAY_NOW',return_url:(env.VISITS_CLIENT_ORIGIN||'https://petassist-local-marketplace.dkjmmz6whh.workers.dev')+'/?payment=approved',cancel_url:(env.VISITS_CLIENT_ORIGIN||'https://petassist-local-marketplace.dkjmmz6whh.workers.dev')+'/?payment=cancelled'}}}});const approve=d.links?.find(x=>['approve','payer-action'].includes(x.rel));if(!approve)throw Error('Approval link unavailable');const url=new URL(approve.href);if(url.protocol!=='https:'||!['www.paypal.com','www.sandbox.paypal.com'].includes(url.hostname))throw Error('Invalid approval link');return reply({id:d.id,approvalURL:url.href});}
+  if(action==='authorize'){if(!validId(b.orderId))throw Error('Invalid order');let order=await call('/v2/checkout/orders/'+b.orderId);const unit=order.purchase_units?.[0];if(order.intent!=='AUTHORIZE'||order.purchase_units?.length!==1||unit.custom_id!==b.visitId||unit.amount?.value!==money().value||unit.amount?.currency_code!=='USD')throw Error('Payment does not match the accepted quote');if(order.status!=='COMPLETED')order=await call('/v2/checkout/orders/'+b.orderId+'/authorize','POST',{});const a=order.purchase_units?.[0]?.payments?.authorizations?.[0];if(!a||a.status!=='CREATED'||a.amount.value!==money().value||a.amount.currency_code!=='USD')throw Error('Authorization could not be verified');return reply({authorizationId:a.id,orderId:b.orderId,expires:new Date(Math.min(Date.parse(a.expiration_time),Date.now()+3*86400000)).toISOString(),amount:b.amount});}
+  if(!validId(b.authorizationId))throw Error('Invalid authorization');
+  if(action==='capture'){const a=await call('/v2/payments/authorizations/'+b.authorizationId);if(a.amount?.currency_code!=='USD'||Number(a.amount.value)*100<b.amount)throw Error('Amount exceeds authorization');const d=await call('/v2/payments/authorizations/'+b.authorizationId+'/capture','POST',{amount:money(),final_capture:true});if(d.status!=='COMPLETED'||d.amount?.value!==money().value||d.amount?.currency_code!=='USD')throw Error('Collection could not be verified');return reply({captureId:d.id,collected:b.amount});}
+  if(action==='void'){const a=await call('/v2/payments/authorizations/'+b.authorizationId);if(a.status!=='VOIDED')await call('/v2/payments/authorizations/'+b.authorizationId+'/void','POST',{});return reply({voided:true});}
+  return reply({error:'Unknown payment action'},404);
+ }catch(e){return reply({error:e.message||'Payment could not be verified'},502)}
+}

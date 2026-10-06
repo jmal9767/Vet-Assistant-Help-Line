@@ -20,5 +20,13 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - run: xcodebuild -project VetAssistantHelpLine.xcodeproj -scheme VetAssistantHelpLine -sdk iphonesimulator CODE_SIGNING_ALLOWED=NO build
+      - run: xcodebuild -project VetAssistantHelpLine.xcodeproj -scheme VetAssistantHelpLine -sdk iphonesimulator -derivedDataPath "$RUNNER_TEMP/careline-build" CODE_SIGNING_ALLOWED=NO build
       - run: swiftc VetAssistantHelpLine/Models/ClientQuestion.swift tests-ClientQuestion.swift -o "$RUNNER_TEMP/verify-client-question" && "$RUNNER_TEMP/verify-client-question"
+      - name: Verify cold launch and relaunch
+        run: python3 scripts/verify-app-launch.py "$RUNNER_TEMP/careline-build/Build/Products/Debug-iphonesimulator/VetAssistantHelpLine.app"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: careline-launch
+          path: ${{ runner.temp }}/careline-launch.png
+          if-no-files-found: ignore

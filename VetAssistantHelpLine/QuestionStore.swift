@@ -12,7 +12,10 @@ final class QuestionStore {
     private(set) var notificationSetupError: String?
     private(set) var notificationSetupComplete = false
 
-    private let database = CKContainer.default().publicCloudDatabase
+    // Construct CloudKit only when it is needed, after the interface has opened.
+    // Use the same explicit container as the app's iCloud entitlement.
+    private lazy var container = CKContainer(identifier: "iCloud.com.jmal9767.VetAssistantHelpLine")
+    private lazy var database = container.publicCloudDatabase
     private static let subscriptionID = "new-question-alerts"
 
     var newQuestions: [ClientQuestion] { questions.filter { $0.status == .new } }
@@ -27,6 +30,10 @@ final class QuestionStore {
         isLoading = true
         defer { isLoading = false }
         do {
+            guard try await container.accountStatus() == .available else {
+                errorMessage = "Your Inbox needs iCloud. Sign in to iCloud in iPhone Settings, then tap Refresh. You can still use the other tabs."
+                return
+            }
             let query = CKQuery(recordType: ClientQuestion.recordType, predicate: NSPredicate(value: true))
             query.sortDescriptors = [NSSortDescriptor(key: "submittedAt", ascending: false)]
             var records: [CKRecord] = []

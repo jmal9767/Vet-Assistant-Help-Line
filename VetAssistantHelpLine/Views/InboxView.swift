@@ -37,6 +37,15 @@ struct InboxView: View {
                 ScrollView {
                     VStack(spacing: 18) {
                         overview
+                        if let message = store.errorMessage {
+                            InfoTile {
+                                Label("Inbox connection", systemImage: "icloud.slash")
+                                    .font(.headline)
+                                Text(message).font(.footnote)
+                                Button("Retry") { Task { await store.refresh() } }
+                                    .disabled(store.isLoading)
+                            }
+                        }
                         Picker("Question status", selection: $selectedFilter) {
                             ForEach(QuestionFilter.allCases) { Text($0.rawValue).tag($0) }
                         }
@@ -65,7 +74,6 @@ struct InboxView: View {
                 }
             }
             .task {
-                await store.refresh()
                 await store.ensureSubscription()
             }
             .onReceive(NotificationCenter.default.publisher(for: .openQuestionFromPush)) { notification in
@@ -75,12 +83,6 @@ struct InboxView: View {
                     if store.question(recordName: recordName) != nil { path = [recordName] }
                 }
             }
-            .alert("Something went wrong", isPresented: Binding(
-                get: { store.errorMessage != nil },
-                set: { if !$0 { store.errorMessage = nil } }
-            )) {
-                Button("OK", role: .cancel) { }
-            } message: { Text(store.errorMessage ?? "") }
         }
     }
 

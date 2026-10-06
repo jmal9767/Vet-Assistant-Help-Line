@@ -17,7 +17,7 @@ struct TemplatesView: View {
             icon: "hand.wave.fill",
             tint: AppPalette.brand,
             text: """
-            Hi [name], thanks for reaching out to the Paws & Whiskers Care Line. \
+            Hi [name], thanks for reaching out to the Paws & Whiskers Help Line. \
             I reviewed your question about [dog or cat name / your dog or cat], and here's \
             the general dog-and-cat care guidance I can offer:
             """

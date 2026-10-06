@@ -10,7 +10,7 @@
 4. Review the question and private files. Files may be any type, up to four files and 10 MB each. Download unfamiliar file types only when you recognize and trust the client submission.
 5. Decide whether the request is within the educational scope. Refer diagnosis, medication, dosing, treatment, prognosis, diagnostic interpretation, and other clinical decisions to a licensed veterinarian; refund a paid request when you cannot provide the selected service.
 6. For paid options, confirm payment before beginning the response. Free Community Support requires no payment. PayPal and Apple Pay update automatically. No payment-link messages or manual payment-status changes are needed.
-7. Tap Reply in Care Line, write the response with the standard disclaimer, and tap Send Care Line Reply. A delivered reply marks the question answered; a client follow-up marks it new when CloudKit sync succeeds. For Phone Support, arrange and make the call separately.
+7. Tap Reply in Help Line, write the response with the standard disclaimer, and tap Send Help Line Reply. A delivered reply marks the question answered; a client follow-up marks it new when CloudKit sync succeeds. For Phone Support, arrange and make the call separately.
 8. Archive completed questions. Archived questions remain available in the Inbox’s Archived filter.
 
 ## Before every response

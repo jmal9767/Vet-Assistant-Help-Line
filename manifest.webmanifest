@@ -1,6 +1,6 @@
 {
-  "name": "Paws & Whiskers Care Line",
-  "short_name": "Paws & Whiskers",
+  "name": "Paws & Whiskers Help Line",
+  "short_name": "Paws & Whiskers Help Line",
   "description": "General dog-and-cat care guidance from a veterinary assistant.",
   "start_url": "./index.html",
   "scope": "./",

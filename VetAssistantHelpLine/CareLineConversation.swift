@@ -23,9 +23,9 @@ struct CareLineConversationService {
         proof.setValue("application/json", forHTTPHeaderField: "Content-Type")
         proof.httpBody = try JSONEncoder().encode(CareLineDeviceIdentity.proof())
         let (data, response) = try await URLSession.shared.data(for: proof)
-        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else { throw failure("Care Line replies could not connect on this iPhone. Check your connection and retry.") }
+        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else { throw failure("Help Line replies could not connect on this iPhone. Check your connection and retry.") }
         let key = try JSONDecoder().decode(Connection.self, from: data).connectionKey
-        guard key.range(of: "^[a-f0-9]{64}$", options: .regularExpression) != nil else { throw failure("Care Line access could not be verified.") }
+        guard key.range(of: "^[a-f0-9]{64}$", options: .regularExpression) != nil else { throw failure("Help Line access could not be verified.") }
         var request = URLRequest(url: HelplineConfig.checkoutBaseURL.appendingPathComponent(path))
         request.httpMethod = method; request.timeoutInterval = 30; request.cachePolicy = .reloadIgnoringLocalCacheData
         request.setValue("Bearer " + key, forHTTPHeaderField: "Authorization")

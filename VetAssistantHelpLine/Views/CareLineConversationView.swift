@@ -15,7 +15,7 @@ struct CareLineConversationView: View {
     var body: some View {
         List {
             Section("Reply from your app") {
-                Text("Clients read and reply on their private conversation page. Your sender is Paws & Whiskers Care Line; your personal email and phone number are not shown.")
+                Text("Clients read and reply on their private conversation page. Your sender is Paws & Whiskers Help Line; your personal email and phone number are not shown.")
                 if let error { Text(error).foregroundStyle(.red) }
                 if let thread {
                     LabeledContent("Payment", value: thread.paymentStatus)
@@ -32,7 +32,7 @@ struct CareLineConversationView: View {
                     if thread.messages.isEmpty { Text("No replies yet.").foregroundStyle(.secondary) }
                     ForEach(thread.messages) { message in
                         VStack(alignment: .leading, spacing: 6) {
-                            Text(message.sender == "business" ? "Paws & Whiskers Care Line" : question.name).font(.caption.bold())
+                            Text(message.sender == "business" ? "Paws & Whiskers Help Line" : question.name).font(.caption.bold())
                             Text(message.text).textSelection(.enabled)
                             if let date = ISO8601DateFormatter.fractional.date(from: message.createdAt) { Text(date, format: .dateTime.month().day().hour().minute()).font(.caption).foregroundStyle(.secondary) }
                         }
@@ -41,7 +41,7 @@ struct CareLineConversationView: View {
                 Section("Your reply") {
                     TextField("Write your response", text: $text, axis: .vertical).lineLimit(4...12)
                     NavigationLink("Reply Templates") { TemplatesView() }
-                    Button(busy ? "Please wait…" : "Send Care Line Reply") { Task { await send() } }
+                    Button(busy ? "Please wait…" : "Send Help Line Reply") { Task { await send() } }
                         .disabled(busy || text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || text.count > 4000)
                     Text("Sending posts to the client’s private page. Check payment status before providing a paid response. Phone calls take place separately.").font(.footnote)
                 }

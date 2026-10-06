@@ -5,7 +5,7 @@ enum HelplineConfig {
     /// The client page the QR code points to — the same URL as the printed
     /// poster (docs/share-qr.png), so every QR code lands in the same place.
     static let siteURL = URL(string: "https://paws-whiskers-care-line.dkjmmz6whh.workers.dev/")!
-    static let siteDisplayName = "Paws & Whiskers Care Line intake page"
+    static let siteDisplayName = "Paws & Whiskers Help Line intake page"
     static let checkoutBaseURL = URL(string: "https://vet-helpline-development.dkjmmz6whh.workers.dev")!
 
     static let purpose = """

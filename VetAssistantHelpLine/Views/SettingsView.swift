@@ -14,7 +14,7 @@ struct SettingsView: View {
                     InfoTile {
                         SectionHeader("Contact", subtitle: "These are the only details you may need to change.")
                         CompactLabel(title: "Business support email", value: HelplineConfig.replyEmail, icon: "envelope.fill")
-                        Text("New questions use private conversations: answer with Reply in Care Line. This business mailbox remains available for support and older email requests. Before sending email, check the From address and signature.")
+                        Text("New questions use private conversations: answer with Reply in Help Line. This business mailbox remains available for support and older email requests. Before sending email, check the From address and signature.")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }

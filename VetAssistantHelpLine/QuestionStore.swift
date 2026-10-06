@@ -14,8 +14,8 @@ final class QuestionStore {
 
     // Construct CloudKit only when it is needed, after the interface has opened.
     // Use the same explicit container as the app's iCloud entitlement.
-    private lazy var container = CKContainer(identifier: "iCloud.com.jmal9767.VetAssistantHelpLine")
-    private lazy var database = container.publicCloudDatabase
+    @ObservationIgnored private lazy var container = CKContainer(identifier: "iCloud.com.jmal9767.VetAssistantHelpLine")
+    @ObservationIgnored private lazy var database = container.publicCloudDatabase
     private static let subscriptionID = "new-question-alerts"
 
     var newQuestions: [ClientQuestion] { questions.filter { $0.status == .new } }

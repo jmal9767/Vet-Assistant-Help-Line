@@ -46,7 +46,8 @@ struct CareLineConversationView: View {
                     Text("Sending posts to the client’s private page. Check payment status before providing a paid response. Phone calls take place separately.").font(.footnote)
                 }
             }
-        }.navigationTitle("Private Conversation")
+        }.scrollContentBackground(.hidden).background(AppPalette.appBackground)
+        .navigationTitle("Private Conversation")
         .refreshable { await refresh() }
         .task(id: scenePhase) {
             guard scenePhase == .active else { return }

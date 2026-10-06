@@ -13,3 +13,7 @@ Only the registered Care Line iPhone can obtain its reply credential by signing 
 Each client has a random 32-hex thread reference and separate 64-hex access key. Access remains in the URL fragment and Authorization header, not query strings; no localStorage or conversation caching is used. CloudKit stores the question and conversation reference, never the client access key. Cloudflare Durable Objects store messages and the access key. Each client route checks its own key before looking up question content. Sender labels are chosen on the server; repeated message IDs do not duplicate delivery. Archiving retains the conversation. Permanent deletion erases its access key/messages before deleting CloudKit; repeated deletion safely recovers from CloudKit failure. Deleting CloudKit separately also makes the thread unavailable.
 
 Verification: regression tests cover isolation, replay/tampering, prices, retry-safe delivery, legacy migration, deletion and badge-sync failures; compile the native app and check the private page on a narrow screen before deployment. Live tests use fictional clients only; no real charge is required.
+
+## Shared appearance
+
+The app and care-line web pages use the Bay Area Apps palette: canvas #0e1014, cards #191d24, red #c81e30, gold #f2c65b, and readable white/gray text. The app uses dark appearance consistently, rounded cards and paw-themed service icons. New conversation screens follow those same colors.

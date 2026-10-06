@@ -1,12 +1,14 @@
 import SwiftUI
 
 struct AppPalette {
-    static let brand = Color("AccentColor")
-    static let clinicGreen = Color(red: 0.10, green: 0.43, blue: 0.36)
-    static let warmGold = Color(red: 0.78, green: 0.48, blue: 0.12)
-    static let danger = Color(red: 0.78, green: 0.16, blue: 0.16)
-    static let surface = Color(uiColor: .secondarySystemGroupedBackground)
-    static let appBackground = Color(uiColor: .systemGroupedBackground)
+    // Same tokens as bayareaapps.com/assets/brand-colors.css.
+    static let brand = Color(red: 200/255, green: 30/255, blue: 48/255)
+    static let serviceAccent = brand
+    static let warmGold = Color(red: 242/255, green: 198/255, blue: 91/255)
+    static let danger = Color(red: 1, green: 102/255, blue: 112/255)
+    static let surface = Color(red: 25/255, green: 29/255, blue: 36/255)
+    static let appBackground = Color(red: 14/255, green: 16/255, blue: 20/255)
+
 }
 
 struct HeroPanel<Content: View>: View {
@@ -29,9 +31,9 @@ struct HeroPanel<Content: View>: View {
             HStack(alignment: .top, spacing: 14) {
                 Image(systemName: icon)
                     .font(.title2.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(tint)
                     .frame(width: 44, height: 44)
-                    .background(tint, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .background(tint.opacity(0.16), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
@@ -48,9 +50,9 @@ struct HeroPanel<Content: View>: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(AppPalette.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(AppPalette.surface, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .strokeBorder(tint.opacity(0.18))
         }
     }
@@ -79,7 +81,7 @@ struct MetricPill: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(tint.opacity(0.10), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(tint.opacity(0.10), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 }
 
@@ -115,7 +117,7 @@ struct InfoTile<Content: View>: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(AppPalette.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(AppPalette.surface, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 }
 

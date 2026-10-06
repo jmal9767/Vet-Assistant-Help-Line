@@ -26,7 +26,7 @@ struct TemplatesView: View {
             title: "Received + Next Step",
             intent: "Reassure a client after intake and explain what happens next.",
             icon: "checkmark.message.fill",
-            tint: AppPalette.clinicGreen,
+            tint: AppPalette.serviceAccent,
             text: """
             Hi [name], I received your question about [pet name]. I'll review \
             the details and any files you sent, then reply using your selected \
@@ -49,7 +49,7 @@ struct TemplatesView: View {
             title: "Recommend Seeing a Vet",
             intent: "Use when the pet should be examined soon.",
             icon: "stethoscope",
-            tint: AppPalette.clinicGreen,
+            tint: AppPalette.serviceAccent,
             text: """
             Based on what you've described, this is something a licensed \
             veterinarian should take a look at. I'd recommend scheduling an \

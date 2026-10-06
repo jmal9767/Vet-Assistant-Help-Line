@@ -126,7 +126,7 @@ private struct ShareCard: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(10)
-            .background(AppPalette.clinicGreen.opacity(0.09), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .background(AppPalette.serviceAccent.opacity(0.09), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
 
             CardSectionTitle("Services")
 
@@ -146,7 +146,7 @@ private struct ShareCard: View {
                                     Spacer(minLength: 8)
                                     Text(item.price)
                                         .font(.caption.weight(.bold))
-                                        .foregroundStyle(AppPalette.clinicGreen)
+                                        .foregroundStyle(AppPalette.serviceAccent)
                                 }
                                 Text(item.detail)
                                     .font(.caption2)

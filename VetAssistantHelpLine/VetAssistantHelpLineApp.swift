@@ -55,6 +55,7 @@ struct VetAssistantHelpLineApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .preferredColorScheme(.dark)
                 .task { _ = try? CareLineDeviceIdentity.proof(); try? await CareLineConversationService().verifyConnection() }.environment(store)
         }
     }

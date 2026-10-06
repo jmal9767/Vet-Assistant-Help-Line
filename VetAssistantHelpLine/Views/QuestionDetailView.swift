@@ -73,17 +73,17 @@ struct QuestionDetailView: View {
             icon: question.status == .new ? "exclamationmark.bubble.fill" : "checkmark.message.fill",
             title: question.category,
             subtitle: "Submitted by \(question.name) about \(petDisplayName).",
-            tint: question.status == .new ? AppPalette.warmGold : AppPalette.clinicGreen
+            tint: question.status == .new ? AppPalette.warmGold : AppPalette.serviceAccent
         ) {
             HStack(spacing: 10) {
-                MetricPill(title: "Status", value: question.status == .new ? "New" : "Answered", icon: "circle.fill", tint: question.status == .new ? AppPalette.warmGold : AppPalette.clinicGreen)
+                MetricPill(title: "Status", value: question.status == .new ? "New" : "Answered", icon: "circle.fill", tint: question.status == .new ? AppPalette.warmGold : AppPalette.serviceAccent)
                 MetricPill(title: "Reply", value: question.preferredReply, icon: "bubble.left.and.text.bubble.right.fill", tint: AppPalette.brand)
             }
             HStack(spacing: 10) {
                 MetricPill(title: "Channel", value: question.sourceChannel, icon: "phone.connection.fill", tint: AppPalette.brand)
                 MetricPill(title: "Thread", value: question.conversationStatus, icon: "bubble.left.fill", tint: AppPalette.warmGold)
             }
-            MetricPill(title: "Service", value: question.requestedService, icon: "creditcard.fill", tint: AppPalette.clinicGreen)
+            MetricPill(title: "Service", value: question.requestedService, icon: "creditcard.fill", tint: AppPalette.serviceAccent)
             MetricPill(title: "Client urgency", value: question.urgency, icon: "exclamationmark.triangle.fill", tint: question.urgency.contains("emergency") ? AppPalette.danger : AppPalette.warmGold)
         }
     }
@@ -110,7 +110,7 @@ struct QuestionDetailView: View {
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent)
-                    .tint(AppPalette.clinicGreen)
+                    .tint(AppPalette.serviceAccent)
                 }
 
                 if question.conversationToken == nil {
@@ -134,7 +134,7 @@ struct QuestionDetailView: View {
 
             HStack(spacing: 10) {
                 MetricPill(title: "Payment", value: question.paymentStatus, icon: "creditcard.fill", tint: paymentTint)
-                MetricPill(title: "Amount", value: question.paymentAmount == "$0" ? "Free" : question.paymentAmount, icon: "dollarsign.circle.fill", tint: AppPalette.clinicGreen)
+                MetricPill(title: "Amount", value: question.paymentAmount == "$0" ? "Free" : question.paymentAmount, icon: "dollarsign.circle.fill", tint: AppPalette.serviceAccent)
             }
             CompactLabel(title: "Signed consent", value: signedConsentText, icon: "signature")
 
@@ -230,7 +230,7 @@ struct QuestionDetailView: View {
 
     private var paymentTint: Color {
         switch question.paymentStatus {
-        case "Paid": AppPalette.clinicGreen
+        case "Paid": AppPalette.serviceAccent
         case "Refunded", "Partially refunded": AppPalette.brand
         case "Payment requested": AppPalette.warmGold
         case "Referred — no charge": AppPalette.brand

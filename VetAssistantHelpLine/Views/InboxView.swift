@@ -88,7 +88,7 @@ struct InboxView: View {
         HeroPanel(icon: "stethoscope", title: "Client queue", subtitle: "Read each paid request, reply in your app or call for phone support, and archive completed cases.") {
             HStack(spacing: 10) {
                 MetricPill(title: "New", value: "\(store.newQuestions.count)", icon: "bell.fill", tint: AppPalette.warmGold)
-                MetricPill(title: "Answered", value: "\(store.answeredQuestions.count)", icon: "checkmark.circle.fill", tint: AppPalette.clinicGreen)
+                MetricPill(title: "Answered", value: "\(store.answeredQuestions.count)", icon: "checkmark.circle.fill", tint: AppPalette.serviceAccent)
                 MetricPill(title: "Archived", value: "\(store.archivedQuestions.count)", icon: "archivebox.fill", tint: AppPalette.brand)
             }
         }
@@ -112,7 +112,7 @@ struct InboxView: View {
                         .swipeActions(edge: .trailing) {
                             if question.status == .archived {
                                 Button("Restore") { Task { await store.setStatus(.new, for: question) } }
-                                    .tint(AppPalette.clinicGreen)
+                                    .tint(AppPalette.serviceAccent)
                             } else {
                                 Button("Archive") { Task { await store.setStatus(.archived, for: question) } }
                                     .tint(AppPalette.brand)
@@ -123,7 +123,7 @@ struct InboxView: View {
                                 Button(question.status == .new ? "Answered" : "Reopen") {
                                     Task { await store.setStatus(question.status == .new ? .answered : .new, for: question) }
                                 }
-                                .tint(question.status == .new ? AppPalette.clinicGreen : AppPalette.warmGold)
+                                .tint(question.status == .new ? AppPalette.serviceAccent : AppPalette.warmGold)
                             }
                         }
                 }
@@ -172,7 +172,7 @@ private struct QuestionRow: View {
         }
     }
     private var tint: Color {
-        switch question.status { case .new: AppPalette.warmGold; case .answered: AppPalette.clinicGreen; case .archived: AppPalette.brand }
+        switch question.status { case .new: AppPalette.warmGold; case .answered: AppPalette.serviceAccent; case .archived: AppPalette.brand }
     }
     private var icon: String {
         switch question.status { case .new: "bell.fill"; case .answered: "checkmark.circle.fill"; case .archived: "archivebox.fill" }

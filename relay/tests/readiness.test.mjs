@@ -372,14 +372,17 @@ test('only the business can publish its public service area and invalid coordina
  assert.equal((await locationPatch(s,path,area,{})).status,401);
  for(const invalid of [{...area,latitude:91},{...area,longitude:-181},{...area,latitude:'0'},{...area,label:''}])assert.equal((await locationPatch(s,path,invalid)).status,400);
  assert.equal((await locationPatch(s,path,area)).status,200);
- assert.deepEqual(await (await visitGet(s,'/petassist/service-area')).json(),area);
+ assert.equal(await (await visitGet(s,'/petassist/service-area')).json(),null);
+ assert.deepEqual(await (await visitGet(s,'/petassist/service-area',operatorHeaders)).json(),area);
 });
-test('both sides receive the same calculated distance and checkout never exposes their address or pin',async()=>{
+test('the business sees distance while clients never receive the service area or how far away the business is',async()=>{
  const s=setup();await locationPatch(s,'/petassist/operator/service-area',{label:'Public service area',latitude:0,longitude:0});
  assert.equal((await s.call('/petassist/requests',{...visitFixture,location:{latitude:0,longitude:1},locationConfirmed:true})).status,200);
  const own=await (await visitGet(s,'/petassist/operator/visits/'+visitFixture.token,operatorHeaders)).json();
  const client=await (await visitGet(s,'/petassist/client/visits/'+visitFixture.token,{Authorization:'Bearer '+visitFixture.clientAccess})).json();
- assert.equal(own.distanceMiles,69.1);assert.equal(client.distanceMiles,own.distanceMiles);assert.equal(client.address,visitFixture.address);
+ assert.equal(own.distanceMiles,69.1);assert.equal(own.serviceArea.latitude,0);
+ assert.ok(!Object.hasOwn(client,'distanceMiles') && !Object.hasOwn(client,'serviceArea'));
+ assert.equal(client.address,visitFixture.address);
  assert.equal(client.location.source,'client-shared');assert.ok(!client.clientName && !client.email && !client.clientLink);
  const receipt=await (await visitGet(s,'/petassist/bookings/'+visitFixture.token)).json();assert.ok(!receipt.location && !receipt.address && !receipt.distanceMiles);
 });

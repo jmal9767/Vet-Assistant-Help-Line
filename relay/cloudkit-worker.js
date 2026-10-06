@@ -472,11 +472,15 @@ async function serveCheckout(url, env) {
   const safeQuestion = JSON.stringify(recordName).replace(/</g, "\\u003c");
   const safeAmount = JSON.stringify(offer.amount);
   const safeService = escapeHTML(offer.service);
-  const brand = recordName.startsWith("petassist-") ? "Paws & Whiskers Visits" : "Paws & Whiskers Care Line";
+  const visitsCheckout = recordName.startsWith("petassist-");
+  const brand = visitsCheckout ? "Paws & Whiskers Visits" : "Paws & Whiskers Care Line";
+  const pageStyle = visitsCheckout
+    ? "body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#0e1014;color:#f7f8fa;margin:0}.card{max-width:520px;margin:32px auto;background:#191d24;border:1px solid #35383e;border-radius:18px;padding:24px}.brand{color:#f2c65b;font-weight:800}h1{font-size:1.6rem}a{color:#f2c65b}.amount{font-size:2rem;font-weight:800;margin:.35rem 0 1rem;color:#f2c65b}.note{color:#c9cdd5;line-height:1.45}#applepay-container{margin:14px 0}apple-pay-button{--apple-pay-button-width:100%;--apple-pay-button-height:48px;--apple-pay-button-border-radius:12px}#status{font-weight:650;margin-top:16px}"
+    : "body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f7fa;color:#132238;margin:0}.card{max-width:520px;margin:32px auto;background:white;border-radius:18px;padding:24px;box-shadow:0 10px 35px #13223818}.brand{color:#173f67}h1{font-size:1.6rem}.amount{font-size:2rem;font-weight:800;margin:.35rem 0 1rem}.note{color:#536579;line-height:1.45}#applepay-container{margin:14px 0}apple-pay-button{--apple-pay-button-width:100%;--apple-pay-button-height:48px;--apple-pay-button-border-radius:8px}#status{font-weight:650;margin-top:16px}";
   const sdkURL = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(env.PAYPAL_CLIENT_ID)}&currency=USD&components=buttons,applepay`;
   return new Response(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Secure payment</title><script src="${sdkURL}"></script><script src="https://applepay.cdn-apple.com/jsapi/1.latest/apple-pay-sdk.js"></script>
-<style>body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f7fa;color:#132238;margin:0}.card{max-width:520px;margin:32px auto;background:white;border-radius:18px;padding:24px;box-shadow:0 10px 35px #13223818}.brand{color:#173f67}h1{font-size:1.6rem}.amount{font-size:2rem;font-weight:800;margin:.35rem 0 1rem}.note{color:#536579;line-height:1.45}#applepay-container{margin:14px 0}apple-pay-button{--apple-pay-button-width:100%;--apple-pay-button-height:48px;--apple-pay-button-border-radius:8px}#status{font-weight:650;margin-top:16px}</style></head><body><main class="card"><div class="brand">🐾 ${brand}</div><h1 id="checkout-title">${safeService}</h1><div class="amount">$${offer.amount}</div><p id="checkout-note" class="note">Choose PayPal or Apple Pay. Payment status updates automatically after payment succeeds.</p><div id="checkout-controls"><div id="paypal-buttons"></div><div id="applepay-container"></div><p id="applepay-status" class="note" role="status"></p></div><p id="status" role="status" tabindex="-1"></p>${checkoutNextAction(recordName, true)}</main>
+<style>${pageStyle}</style></head><body><main class="card"><div class="brand">${brand}</div><h1 id="checkout-title">${safeService}</h1><div class="amount">$${offer.amount}</div><p id="checkout-note" class="note">Choose PayPal or Apple Pay. Payment status updates automatically after payment succeeds.</p><div id="checkout-controls"><div id="paypal-buttons"></div><div id="applepay-container"></div><p id="applepay-status" class="note" role="status"></p></div><p id="status" role="status" tabindex="-1"></p>${checkoutNextAction(recordName, true)}</main>
 <script>const question=${safeQuestion}, amount=${safeAmount}, brand=${JSON.stringify(brand)};
 const statusEl=document.getElementById('status');
 const appleStatus=document.getElementById('applepay-status');
@@ -536,13 +540,17 @@ function checkoutNextAction(recordName, hidden = false) {
   const isPetAssist = recordName.startsWith("petassist-");
   const href = isPetAssist ? "https://bayareaapps.com/petassist-local/" : "https://paws-whiskers-care-line.dkjmmz6whh.workers.dev/#askSection";
   const label = isPetAssist ? "Return to Paws & Whiskers Visits" : "Ask another question";
-  return `<p id="checkout-next"${hidden ? " hidden" : ""}><a href="${href}" style="display:inline-block;background:#173f67;color:white;padding:14px 20px;border-radius:10px;text-decoration:none;font-weight:650">${label}</a></p>`;
+  const color = isPetAssist ? "#c81e30" : "#173f67";
+  return `<p id="checkout-next"${hidden ? " hidden" : ""}><a href="${href}" style="display:inline-block;background:${color};color:white;padding:14px 20px;border-radius:12px;text-decoration:none;font-weight:700">${label}</a></p>`;
 }
 
 function paidCheckoutConfirmation(record) {
   const isPetAssist = record.recordName.startsWith("petassist-");
   const next = isPetAssist ? "Keep your private visit link for appointment updates and messages. Contact info@bayareaapps.com if you need help." : "Your reply will arrive through the method you selected. To submit a new question, use the button below.";
-  return new Response(`<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Payment received</title><style>body{font-family:-apple-system,sans-serif;max-width:540px;margin:48px auto;padding:20px;color:#132238;line-height:1.6}h1{color:#173f67}</style></head><body><main><h1>Payment received</h1><p>This request is already paid. Thank you!</p><p>${next}</p>${checkoutNextAction(record.recordName)}</main></body></html>`, { headers: securityHTMLHeaders() });
+  const style = isPetAssist
+    ? "body{font-family:-apple-system,sans-serif;max-width:540px;margin:48px auto;padding:20px;background:#0e1014;color:#f7f8fa;line-height:1.6}h1{color:#f2c65b}a{color:#f2c65b}"
+    : "body{font-family:-apple-system,sans-serif;max-width:540px;margin:48px auto;padding:20px;color:#132238;line-height:1.6}h1{color:#173f67}";
+  return new Response(`<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Payment received</title><style>${style}</style></head><body><main><h1>Payment received</h1><p>This request is already paid. Thank you!</p><p>${next}</p>${checkoutNextAction(record.recordName)}</main></body></html>`, { headers: securityHTMLHeaders() });
 }
 
 async function createPayPalOrder(request, env) {
@@ -1040,8 +1048,8 @@ function distanceMiles(a,b) {
 }
 function visitSummary(record, requestURL, operator=false, serviceArea=null) {
   const receipt=petAssistReceipt(record,requestURL);
-  const summary={...receipt,serviceID:record.serviceID,visitStatus:record.visitStatus,version:record.recordChangeTag,createdAt:record.createdAt,preferredAt:record.details.preferredAt,scheduledAt:record.details.scheduledAt||null,petName:record.details.petName,address:record.details.address,location:record.details.location||null,serviceArea,distanceMiles:distanceMiles(serviceArea,record.details.location),messages:record.messages||[]};
-  if(operator)Object.assign(summary,record.details,{clientLink:"https://bayareaapps.com/petassist-local/#visit="+receipt.token+"."+record.clientAccess});
+  const summary={...receipt,serviceID:record.serviceID,visitStatus:record.visitStatus,version:record.recordChangeTag,createdAt:record.createdAt,preferredAt:record.details.preferredAt,scheduledAt:record.details.scheduledAt||null,petName:record.details.petName,address:record.details.address,location:record.details.location||null,messages:record.messages||[]};
+  if(operator)Object.assign(summary,record.details,{serviceArea,distanceMiles:distanceMiles(serviceArea,record.details.location),clientLink:"https://bayareaapps.com/petassist-local/#visit="+receipt.token+"."+record.clientAccess});
   return summary;
 }
 async function limitedVisitJSON(request) {
@@ -1054,7 +1062,7 @@ async function handleVisits(request,env,url,cors) {
   const bearer=(request.headers.get("Authorization")||"").replace(/^Bearer /,"");
   if(isOperator && !await secretMatches(bearer,env.PETASSIST_OPERATOR_KEY))return json({error:"Connect your business app to access visits."},401,cors);
   const serviceArea=await (await visitsIndex(env).fetch("https://booking.invalid/service-area")).json();
-  if(url.pathname==="/petassist/service-area" && request.method==="GET")return json(serviceArea,200,cors);
+  if(url.pathname==="/petassist/service-area" && request.method==="GET")return json(await secretMatches(bearer,env.PETASSIST_OPERATOR_KEY)?serviceArea:null,200,cors);
   if(url.pathname==="/petassist/operator/service-area" && request.method==="PATCH") {
     const input=await limitedVisitJSON(request);
     if(!validVisitLocation(input) || typeof input.label!=="string" || !input.label.trim() || input.label.length>200 || /[\u0000-\u001f]/.test(input.label))return json({error:"Choose a public business city, ZIP code, or address."},400,cors);

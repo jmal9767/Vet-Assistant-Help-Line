@@ -53,5 +53,11 @@
         "PetAssistPayments"
       ]
     }
+  ],
+  "services": [
+    {
+      "binding": "VISITS_MARKETPLACE",
+      "service": "petassist-local-marketplace"
+    }
   ]
 }

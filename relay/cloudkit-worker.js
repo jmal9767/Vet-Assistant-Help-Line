@@ -994,8 +994,8 @@ function distanceMiles(a,b) {
 }
 function visitSummary(record, requestURL, operator=false, serviceArea=null) {
   const receipt=petAssistReceipt(record,requestURL);
-  const summary={...receipt,serviceID:record.serviceID,visitStatus:record.visitStatus,version:record.recordChangeTag,createdAt:record.createdAt,preferredAt:record.details.preferredAt,scheduledAt:record.details.scheduledAt||null,petName:record.details.petName,address:record.details.address,location:record.details.location||null,serviceArea,distanceMiles:distanceMiles(serviceArea,record.details.location),messages:record.messages||[]};
-  if(operator)Object.assign(summary,record.details,{clientLink:"https://bayareaapps.com/petassist-local/#visit="+receipt.token+"."+record.clientAccess});
+  const summary={...receipt,serviceID:record.serviceID,visitStatus:record.visitStatus,version:record.recordChangeTag,createdAt:record.createdAt,preferredAt:record.details.preferredAt,scheduledAt:record.details.scheduledAt||null,petName:record.details.petName,address:record.details.address,location:record.details.location||null,messages:record.messages||[]};
+  if(operator)Object.assign(summary,record.details,{serviceArea,distanceMiles:distanceMiles(serviceArea,record.details.location),clientLink:"https://bayareaapps.com/petassist-local/#visit="+receipt.token+"."+record.clientAccess});
   return summary;
 }
 async function limitedVisitJSON(request) {
@@ -1008,7 +1008,7 @@ async function handleVisits(request,env,url,cors) {
   const bearer=(request.headers.get("Authorization")||"").replace(/^Bearer /,"");
   if(isOperator && !await secretMatches(bearer,env.PETASSIST_OPERATOR_KEY))return json({error:"Connect your business app to access visits."},401,cors);
   const serviceArea=await (await visitsIndex(env).fetch("https://booking.invalid/service-area")).json();
-  if(url.pathname==="/petassist/service-area" && request.method==="GET")return json(serviceArea,200,cors);
+  if(url.pathname==="/petassist/service-area" && request.method==="GET")return json(await secretMatches(bearer,env.PETASSIST_OPERATOR_KEY)?serviceArea:null,200,cors);
   if(url.pathname==="/petassist/operator/service-area" && request.method==="PATCH") {
     const input=await limitedVisitJSON(request);
     if(!validVisitLocation(input) || typeof input.label!=="string" || !input.label.trim() || input.label.length>200 || /[\u0000-\u001f]/.test(input.label))return json({error:"Choose a public business city, ZIP code, or address."},400,cors);

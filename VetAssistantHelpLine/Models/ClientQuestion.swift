@@ -73,6 +73,16 @@ struct ClientQuestion: Identifiable {
     var paymentMethod: String { (string(for: "paymentMethod") ?? "Client has no preference").replacingOccurrences(of: "Community Access", with: "Free Community Support") }
     var paymentAmount: String { string(for: "paymentAmount") ?? amountFromRequestedService }
     var paymentLink: String? { string(for: "paymentLink") }
+    var awaitingApproval: Bool { paymentStatus == "Awaiting approval" }
+    var canDecideAvailability: Bool { awaitingApproval && status == .new }
+
+    func recordAvailabilityDecision(approved: Bool) throws {
+        guard canDecideAvailability else { throw AvailabilityError.alreadyDecided }
+        setString(approved ? "Payment requested" : "Declined — no charge", for: "paymentStatus")
+        setString(approved ? "Approved — awaiting payment" : "Declined — unavailable", for: "conversationStatus")
+        if !approved { record["status"] = Status.archived.rawValue }
+    }
+
     var signedConsentName: String? { string(for: "signedConsentName") }
     var signedConsentAt: String? { string(for: "signedConsentAt") }
 
@@ -113,5 +123,12 @@ struct ClientQuestion: Identifiable {
         if requestedService.hasPrefix("Free Community Support") { return "$0" }
         guard let range = requestedService.range(of: "$", options: .backwards) else { return "Confirm" }
         return String(requestedService[range.lowerBound...])
+    }
+}
+
+private enum AvailabilityError: LocalizedError {
+    case alreadyDecided
+    var errorDescription: String? {
+        "This request is no longer waiting for approval. Review its latest status before continuing."
     }
 }

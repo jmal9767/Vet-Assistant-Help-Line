@@ -19,7 +19,7 @@ xcodebuild -project VetAssistantHelpLine.xcodeproj -scheme VetAssistantHelpLine 
 
 ## Publish
 
-Use the existing Cloudflare account and secrets. Deploy the backend and matching intake consecutively:
+Install the updated operator app with the approval controls first. Then use the existing Cloudflare account and secrets to deploy the backend and matching intake consecutively:
 
 ```sh
 cd relay
@@ -29,7 +29,7 @@ node scripts/build-site.mjs
 npx wrangler deploy --config website.wrangler.jsonc
 ```
 
-After publication, verify both service menus, consent fields, Free Community Support without checkout, and a paid request's checkout page. Test with clearly labeled fictional records; never use real client data for release tests. Check private-file access and expiry, PayPal capture retry and completion/refund reconciliation, and app inbox/notification/answer/archive behavior. Confirm the original merchant and all webhook subscriptions in PayPal.
+After publication, verify both service menus, consent fields, Free Community Support without checkout, and a paid question's waiting page. Confirm checkout APIs reject it before approval, approve from the iPhone, verify payment appears in the existing private conversation, and confirm declining prevents checkout. New approval states use existing fields and require no schema migration. Test with clearly labeled fictional records; never use real client data for release tests. Check private-file access and expiry, PayPal capture retry and completion/refund reconciliation, and app inbox/notification/answer/archive behavior. Confirm the original merchant and all webhook subscriptions in PayPal.
 
 Four files of 10 MB each are supported, with a 40 MB combined limit. Private URLs expire after 30 days; URL expiry does not delete stored objects. Verify retention and deletion procedures separately.
 

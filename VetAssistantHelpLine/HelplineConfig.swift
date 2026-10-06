@@ -17,14 +17,14 @@ enum HelplineConfig {
     static let costExplanation = """
     Clients choose Quick Question for $10, Detailed Guidance for $15, Phone Support \
     for $25, or Free Community Support and see the price before submitting. \
-    Paid requests continue to PayPal or Apple Pay checkout automatically. \
+    Paid requests require my availability approval before PayPal or Apple Pay checkout. \
     Free Community Support requires no payment.
     """
 
     // The three steps shown on the shareable card and welcome page.
     static let howItWorks = [
         "Scan the code and choose the option that works for you",
-        "Tell me what is happening with your dog or cat; paid options continue to checkout",
+        "Tell me what is happening with your dog or cat; paid questions wait for my availability approval before checkout",
         "I review the details and files, then answer on your private conversation page or by phone"
     ]
 

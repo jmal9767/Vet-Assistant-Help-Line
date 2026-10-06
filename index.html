@@ -212,7 +212,7 @@ body{background:#0e1014;color:#f7f8fa}main,.wrap,.card,.form-card,.service-card{
     <h2>How it works</h2>
     <div class="promise-grid">
       <div class="promise"><strong>1. Choose what works for you</strong>Select a small-fee option or Free Community Support. No explanation is required for Free Community Support.</div>
-      <div class="promise"><strong>2. Send your question</strong>Paid options continue to checkout. Free Community Support skips payment and sends your question directly.</div>
+      <div class="promise"><strong>2. Send your question</strong>Paid questions wait for the operator to confirm availability before payment. Free Community Support skips payment.</div>
       <div class="promise"><strong>3. Get your reply</strong>Your answer comes through the option you selected. Free Community Support receives the same respectful service without a payment requirement.</div>
     </div>
   </section>
@@ -233,7 +233,7 @@ body{background:#0e1014;color:#f7f8fa}main,.wrap,.card,.form-card,.service-card{
       <li><strong>Free Community Support — Free:</strong> no-cost access is always available when needed. No explanation required.</li>
     </ul>
     <p><strong>📎 Private file uploads are included:</strong> up to 4 files of any type, 10 MB per file.</p>
-    <p class="note">Choose what works for you. Paid options continue to secure checkout after submission. Free Community Support does not require payment.</p>
+    <p class="note">Choose what works for you. Paid questions require availability approval before checkout. Free Community Support does not require payment.</p>
   </section>
 
   <section class="card">
@@ -278,7 +278,7 @@ body{background:#0e1014;color:#f7f8fa}main,.wrap,.card,.form-card,.service-card{
       <select id="paymentMethod">
         <option>PayPal or Apple Pay</option>
       </select>
-      <p class="note">Paid requests continue to secure checkout automatically. No separate payment message is needed.</p></div>
+      <p class="note">Submitting does not charge you. The operator first approves your question; payment then becomes available in your private conversation.</p></div>
 
       <!-- Honeypot: humans never see or fill this. -->
       <div style="position:absolute; left:-9999px;" aria-hidden="true">
@@ -469,7 +469,7 @@ body{background:#0e1014;color:#f7f8fa}main,.wrap,.card,.form-card,.service-card{
       question: document.getElementById("question").value.trim(),
       sourceChannel: "Website",
       conversationStatus: "Needs response",
-      paymentStatus: isFreeSupport(document.getElementById("requestedService").value) ? "No payment required" : "Payment requested",
+      paymentStatus: isFreeSupport(document.getElementById("requestedService").value) ? "No payment required" : "Awaiting approval",
       paymentMethod: isFreeSupport(document.getElementById("requestedService").value) ? "Free Community Support" : document.getElementById("paymentMethod").value,
       paymentAmount: amountFromService(document.getElementById("requestedService").value),
       paymentLink: "",
@@ -605,10 +605,6 @@ body{background:#0e1014;color:#f7f8fa}main,.wrap,.card,.form-card,.service-card{
         if (conversation.origin !== "https://paws-whiskers-care-line.dkjmmz6whh.workers.dev" || conversation.pathname !== "/conversation.html" || !/^#thread=[a-f0-9]{32}\.[a-f0-9]{64}$/.test(conversation.hash)) throw new Error("Your private conversation could not be verified.");
         window.location.assign(conversation.href); return;
       }
-      if (data.checkoutURL) {
-        window.location.assign(data.checkoutURL);
-        return;
-      }
       var section = document.getElementById("askSection");
       section.replaceChildren();
       var heading = document.createElement("h2");
@@ -616,8 +612,15 @@ body{background:#0e1014;color:#f7f8fa}main,.wrap,.card,.form-card,.service-card{
       var message = document.createElement("p");
       message.textContent = isFreeSupport(payload.requestedService)
         ? "Thanks, " + payload.name + ". Your Free Community Support request for " + (payload.petName || "your dog or cat") + " was received. No payment is required."
-        : "Thanks, " + payload.name + ". Your " + payload.requestedService + " request for " + (payload.petName || "your dog or cat") + " was received. Complete checkout before your paid response. Your payment status will update automatically.";
+        : "Thanks, " + payload.name + ". Your " + payload.requestedService + " request for " + (payload.petName || "your dog or cat") + " was received and is waiting for availability approval. You have not been charged. Payment will become available after the operator approves your question.";
       section.append(heading, message);
+      if (data.statusURL) {
+        var statusLink = document.createElement("a");
+        statusLink.href = data.statusURL;
+        statusLink.textContent = "Check approval status";
+        statusLink.className = "btn btn-navy";
+        section.append(statusLink);
+      }
     }).catch(function (error) {
       window.clearTimeout(timeout);
       button.disabled = false;

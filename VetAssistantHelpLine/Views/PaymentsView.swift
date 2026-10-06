@@ -152,7 +152,8 @@ private struct PaymentRow: View {
         case "Paid": AppPalette.serviceAccent
         case "Refunded", "Partially refunded": AppPalette.brand
         case "Referred — no charge": AppPalette.brand
-        case "Payment requested": AppPalette.warmGold
+        case "Awaiting approval", "Payment requested": AppPalette.warmGold
+        case "Declined — no charge": AppPalette.serviceAccent
         default: AppPalette.danger
         }
     }

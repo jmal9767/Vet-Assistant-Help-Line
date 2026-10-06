@@ -34,3 +34,9 @@ A verified completed capture returns payment success even if CloudKit synchroniz
 Before release, run the backend and checkout script tests. Then open an unpaid test request on the deployed checkout, verify PayPal/card buttons and the Apple Pay payment sheet, and cancel before authorization. Actual wallet authorization and settlement require a buyer test on a supported device; opening the sheet alone does not prove capture.
 
 After a verified capture, checkout removes payment controls, shows receipt confirmation and the expected reply method, and offers **Ask another question** to start a separate intake. Reopening a paid request shows confirmation with no payment SDK or buttons. The server rejects new orders for paid requests. PetAssist confirmation links back to PetAssist instead.
+
+## Availability approval
+
+New paid website questions start **Awaiting approval**. The authenticated operator app changes this to **Payment requested** only when **Approve — I’m Available** is tapped. A decline sets **Declined — no charge** and archives the question. Submission cannot enable payment by providing forged status fields. Checkout creation and capture both read the saved state; awaiting and declined questions cannot pay. Free Community Support keeps **No payment required** and never opens checkout.
+
+The private conversation refreshes status every 15 seconds while open and shows payment only after approval. Clients may also use Refresh. Approval itself neither charges the client nor sends an email/SMS. Scheduling messages preserve the availability decision. These states use existing fields and the existing schema-compatibility envelope; no new CloudKit fields are needed. Existing requests already marked Payment requested keep their previous payment eligibility.

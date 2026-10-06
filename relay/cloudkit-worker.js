@@ -1,3 +1,4 @@
+import { visitsPayment } from "./visits-payments.js";
 /**
  * Paws & Whiskers Help Line intake relay.
  * Website submissions are saved to CloudKit. Optional files are stored in a
@@ -32,7 +33,9 @@ export default {
 
 async function handleRequest(request, env) {
     const url = new URL(request.url);
+    if (request.method === "POST" && /^\/petassist\/workflow-payment\/(order|authorize|capture|void)$/.test(url.pathname)) return visitsPayment(request, env, url.pathname.split("/").pop());
     if (url.pathname.startsWith("/careline/")) return handleCareline(request, env, url);
+    if (env.VISITS_WORKFLOW_V2 === "true" && request.method === "POST" && url.pathname === "/petassist/visits") return json({error:"Use the updated Paws & Whiskers Visits request form."},410,corsHeaders(request,env));
     if (url.pathname.startsWith("/petassist/")) return handlePetAssist(request, env, url);
 
     if (request.method === "GET" && url.pathname === "/.well-known/apple-developer-merchantid-domain-association") {

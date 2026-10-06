@@ -59,11 +59,20 @@ function setup(){
   const call=(path,body,headers={})=>worker.fetch(new Request('https://checkout.test'+path,{method:'POST',headers:{Origin:origin,'Content-Type':'application/json',...headers},body:JSON.stringify(body)}),env);
   return {state,env,worker,context,call};
 }
-async function paidSetup(){const s=setup();assert.equal((await s.call('/intake',fixture)).status,200);assert.equal((await s.call('/api/paypal/orders',{question:'question-1',amount:'0.01'})).status,200);return s;}
+function decide(s, approved=true, id='question-1') {
+  const record=s.state.records.get(id);
+  const values={paymentStatus:approved?'Payment requested':'Declined — no charge',conversationStatus:approved?'Approved — awaiting payment':'Declined — unavailable'};
+  for(const [key,value] of Object.entries(values)) {
+    if(record.fields[key])record.fields[key]={value};
+    else {const packed=JSON.parse(record.fields.question.value);packed.details[key]=value;record.fields.question.value=JSON.stringify(packed);}
+  }
+  if(!approved)record.fields.status={value:'archived'};
+}
+async function paidSetup(){const s=setup();assert.equal((await s.call('/intake',fixture)).status,200);decide(s);assert.equal((await s.call('/api/paypal/orders',{question:'question-1',amount:'0.01'})).status,200);return s;}
 
-test('new menu persists server-priced, signed intake and a checkout link',async()=>{
-  const s=setup();const r=await s.call('/intake',{...fixture,paymentAmount:'$1',paymentStatus:'Paid'});assert.equal(r.status,200);assert.match((await r.json()).checkoutURL,/\/pay\?question=question-1$/);
-  const fields=s.state.records.get('question-1').fields;assert.equal(fields.paymentAmount.value,'$10');assert.equal(fields.paymentStatus.value,'Payment requested');assert.equal(fields.signedConsentName.value,fixture.signedConsentName);
+test('new menu persists server-priced intake and waits for approval',async()=>{
+  const s=setup();const r=await s.call('/intake',{...fixture,paymentAmount:'$1',paymentStatus:'Paid'});assert.equal(r.status,200);const receipt=await r.json();assert.equal(receipt.checkoutURL,'');assert.match(receipt.statusURL,/\/pay\?question=question-1$/);
+  const fields=s.state.records.get('question-1').fields;assert.equal(fields.paymentAmount.value,'$10');assert.equal(fields.paymentStatus.value,'Awaiting approval');assert.equal(fields.signedConsentName.value,fixture.signedConsentName);
 });
 test('all seven service variants have the intended price and channel',async()=>{
   const s=setup();const variants=[['Quick Question — Email · $10','$10','Email'],['Quick Question — Text · $10','$10','Text message'],['Detailed Guidance — Email · $15','$15','Email'],['Detailed Guidance — Text · $15','$15','Text message'],['Phone Support · $25','$25','Phone call'],['Free Community Support — Email','$0','Email'],['Free Community Support — Text','$0','Text message']];
@@ -107,15 +116,15 @@ test('refund capture links cannot send credentials to another host or environmen
 });
 test('older CloudKit schemas preserve missing fields and checkout status in a versioned envelope',async()=>{
   const s=setup();s.state.unsupportedFields=new Set(['breed','sex','paymentAmount','paymentStatus','paymentLink','signedConsentName']);
-  const r=await s.call('/intake',{...fixture,breed:'Fictional mix'});assert.equal(r.status,200);assert.match((await r.json()).checkoutURL,/question-1/);
-  const record=s.state.records.get('question-1');let packed=JSON.parse(record.fields.question.value);assert.equal(packed.question,fixture.question);assert.equal(packed.details.breed,'Fictional mix');assert.equal(packed.details.signedConsentName,fixture.signedConsentName);assert.equal(packed.details.paymentStatus,'Payment requested');assert.match(packed.details.paymentLink,/question-1/);
+  const r=await s.call('/intake',{...fixture,breed:'Fictional mix'});assert.equal(r.status,200);assert.match((await r.json()).statusURL,/question-1/);
+  const record=s.state.records.get('question-1');let packed=JSON.parse(record.fields.question.value);assert.equal(packed.question,fixture.question);assert.equal(packed.details.breed,'Fictional mix');assert.equal(packed.details.signedConsentName,fixture.signedConsentName);assert.equal(packed.details.paymentStatus,'Awaiting approval');assert.equal(packed.details.paymentLink,'');decide(s);
   assert.equal((await s.call('/api/paypal/orders',{question:'question-1'})).status,200);assert.equal(s.state.order.purchase_units[0].amount.value,'10.00');assert.equal((await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'})).status,200);
   packed=JSON.parse(record.fields.question.value);const updated=JSON.parse(s.state.records.get('question-1').fields.question.value);assert.equal(updated.details.paymentStatus,'Paid');assert.equal(updated.details.breed,'Fictional mix');assert.equal(updated.details.signedConsentName,fixture.signedConsentName);
   assert.equal((await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'})).status,200);assert.equal(s.state.captures,1);
 });
 
 test('a thrown CloudKit save cleans up uploads',async()=>{const s=setup();s.state.networkFails=true;const form=new FormData();for(const [k,v]of Object.entries(fixture))form.append(k,v);form.append('attachments',new File(['test'],'fixture.txt'));assert.equal((await s.worker.fetch(new Request('https://checkout.test/intake',{method:'POST',headers:{Origin:origin},body:form}),s.env)).status,503);assert.equal(s.state.files.size,0);});
-test('committed intake remains successful when optional checkout enrichment throws',async()=>{const s=setup();s.state.failEnrichment=true;const r=await s.call('/intake',fixture);assert.equal(r.status,200);assert.match((await r.json()).checkoutURL,/question-1/);assert.equal(s.state.records.size,1);});
+test('intake succeeds without a follow-up payment-link write',async()=>{const s=setup();s.state.failEnrichment=true;const r=await s.call('/intake',fixture);assert.equal(r.status,200);assert.match((await r.json()).statusURL,/question-1/);assert.equal(s.state.records.size,1);});
 test('concurrent refund wins over completion using a conditional record update',async()=>{const s=await paidSetup();s.state.completionConflict=true;const r=await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'});assert.equal(r.status,200);assert.equal((await r.json()).status,'Refunded');assert.equal(s.state.records.get('question-1').fields.paymentStatus.value,'Refunded');assert.equal(s.state.captures,1);});
 test('partial refund is recorded and cannot downgrade a full refund',async()=>{const s=await paidSetup();await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'});const event={event_type:'PAYMENT.CAPTURE.REFUNDED',resource:{supplementary_data:{related_ids:{order_id:'ORDER123'}}}};s.state.order.purchase_units[0].payments.captures[0].status='PARTIALLY_REFUNDED';assert.equal((await s.call('/paypal/webhook',event)).status,200);assert.equal(s.state.records.get('question-1').fields.paymentStatus.value,'Partially refunded');s.state.order.purchase_units[0].payments.captures[0].status='REFUNDED';await s.call('/paypal/webhook',event);s.state.order.purchase_units[0].payments.captures[0].status='PARTIALLY_REFUNDED';await s.call('/paypal/webhook',event);assert.equal(s.state.records.get('question-1').fields.paymentStatus.value,'Refunded');});
 
@@ -161,6 +170,7 @@ test('PetAssist uses common capture and refund verification without resurrecting
 async function checkoutFixture(patch = {}) {
   const s = setup();
   await s.call('/intake', fixture);
+  decide(s);
   const response = await s.worker.fetch(new Request('https://checkout.test/pay?question=question-1'), s.env);
   const html = await response.text();
   const script = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)][0][1];
@@ -246,7 +256,7 @@ test('PayPal cancellation before payment preserves checkout choices',async()=>{c
 
 test('historical unpaid requests retain their original price after the increase',async()=>{
   for(const amount of [5,10,20,30,35]){
-    const s=setup();await s.call('/intake',fixture);s.state.records.get('question-1').fields.paymentAmount={value:'$'+amount};
+    const s=setup();await s.call('/intake',fixture);decide(s);s.state.records.get('question-1').fields.paymentAmount={value:'$'+amount};
     const r=await s.call('/api/paypal/orders',{question:'question-1'});assert.equal(r.status,200);assert.equal(s.state.order.purchase_units[0].amount.value,amount.toFixed(2));
   }
 });
@@ -411,11 +421,55 @@ test('address lookup pins stay private and redaction removes all location inform
 const careToken='1'.repeat(32), careAccess='2'.repeat(64), careOwner={Authorization:'Bearer '+'9'.repeat(64)};
 async function careSetup(){const s=setup();s.env.CARELINE_OPERATOR_KEY='9'.repeat(64);const response=await s.call('/intake',{...fixture,requestedService:'Quick Question — Private Message · $10',phone:'',conversationToken:careToken,conversationAccess:careAccess});assert.equal(response.status,200);s.receipt=await response.json();return s;}
 const careGet=(s,token=careToken,headers={Authorization:'Bearer '+careAccess})=>visitGet(s,'/careline/client/threads/'+token,headers);
-test('private-message intake returns recoverable private link, server price and no duplicate question on retry',async()=>{const s=await careSetup();assert.match(s.receipt.conversationURL,/conversation.html#thread=1{32}\.2{64}$/);assert.equal(s.state.records.size,1);const again=await s.call('/intake',{...fixture,conversationToken:careToken,conversationAccess:careAccess});assert.equal(again.status,200);assert.equal(s.state.records.size,1);assert.equal((await s.call('/intake',{...fixture,conversationToken:careToken,conversationAccess:'3'.repeat(64)})).status,409);const thread=await(await careGet(s)).json();assert.equal(thread.question,fixture.question);assert.equal(thread.paymentStatus,'Payment requested');assert.ok(!thread.conversationURL&&!thread.email&&!thread.phone);assert.equal(s.state.records.get('careline-'+careToken).fields.paymentAmount.value,'$10');});
+test('private-message intake returns recoverable private link, server price and no duplicate question on retry',async()=>{const s=await careSetup();assert.match(s.receipt.conversationURL,/conversation.html#thread=1{32}\.2{64}$/);assert.equal(s.state.records.size,1);const again=await s.call('/intake',{...fixture,conversationToken:careToken,conversationAccess:careAccess});assert.equal(again.status,200);assert.equal(s.state.records.size,1);assert.equal((await s.call('/intake',{...fixture,conversationToken:careToken,conversationAccess:'3'.repeat(64)})).status,409);const thread=await(await careGet(s)).json();assert.equal(thread.question,fixture.question);assert.equal(thread.paymentStatus,'Awaiting approval');assert.equal(thread.checkoutURL,'');assert.ok(!thread.conversationURL&&!thread.email&&!thread.phone);assert.equal(s.state.records.get('careline-'+careToken).fields.paymentAmount.value,'$10');});
 test('each client access key isolates its conversation and public checkout has no conversation access',async()=>{const s=await careSetup();assert.equal((await careGet(s,careToken,{})).status,401);assert.equal((await careGet(s,careToken,{Authorization:'Bearer '+ '3'.repeat(64)})).status,401);await s.call('/intake',{...fixture,conversationToken:'4'.repeat(32),conversationAccess:'5'.repeat(64)});assert.equal((await careGet(s,'4'.repeat(32))).status,401);assert.equal((await visitGet(s,'/careline/operator/threads/'+careToken,{Authorization:'Bearer '+careAccess})).status,401);const checkout=await(await visitGet(s,'/pay?question=careline-'+careToken)).text();assert.ok(!checkout.includes(careAccess));});
-test('two-way messages label senders on the server and retries send once',async()=>{const s=await careSetup(),input={id:'6'.repeat(32),text:'A client follow-up',sender:'business'},client={Authorization:'Bearer '+careAccess};const path='/careline/client/threads/'+careToken+'/messages';assert.equal((await s.call(path,input,client)).status,200);assert.equal((await s.call(path,input,client)).status,200);assert.equal((await s.call(path,{...input,text:'different'},client)).status,409);assert.equal((await s.call('/careline/operator/threads/'+careToken+'/messages',{id:'7'.repeat(32),text:'Your app reply',sender:'client'},careOwner)).status,200);const thread=await(await careGet(s)).json();assert.equal(thread.messages.length,2);assert.equal(thread.messages[0].sender,'client');assert.equal(thread.messages[1].sender,'business');assert.equal(s.state.records.get('careline-'+careToken).fields.status.value,'answered');await s.call(path,{id:'8'.repeat(32),text:'Thank you'},client);assert.equal(s.state.records.get('careline-'+careToken).fields.status.value,'new');});
+test('two-way messages label senders on the server and retries send once',async()=>{const s=await careSetup();s.state.records.get('careline-'+careToken).fields.paymentStatus={value:'Paid'};const input={id:'6'.repeat(32),text:'A client follow-up',sender:'business'},client={Authorization:'Bearer '+careAccess};const path='/careline/client/threads/'+careToken+'/messages';assert.equal((await s.call(path,input,client)).status,200);assert.equal((await s.call(path,input,client)).status,200);assert.equal((await s.call(path,{...input,text:'different'},client)).status,409);assert.equal((await s.call('/careline/operator/threads/'+careToken+'/messages',{id:'7'.repeat(32),text:'Your app reply',sender:'client'},careOwner)).status,200);const thread=await(await careGet(s)).json();assert.equal(thread.messages.length,2);assert.equal(thread.messages[0].sender,'client');assert.equal(thread.messages[1].sender,'business');assert.equal(s.state.records.get('careline-'+careToken).fields.status.value,'answered');await s.call(path,{id:'8'.repeat(32),text:'Thank you'},client);assert.equal(s.state.records.get('careline-'+careToken).fields.status.value,'new');});
 test('messages enforce limits and moderation and remain delivered if badge sync fails',async()=>{const s=await careSetup(),path='/careline/client/threads/'+careToken+'/messages',headers={Authorization:'Bearer '+careAccess};for(const text of ['', 'x'.repeat(4001),'I will kill you'])assert.equal((await s.call(path,{id:'6'.repeat(32),text},headers)).status,400);s.state.failEnrichment=true;assert.equal((await s.call(path,{id:'7'.repeat(32),text:'A retry-safe message'},headers)).status,200);assert.equal((await(await careGet(s)).json()).messages.length,1);});
 test('owner deletion revokes private page immediately and is safe to repeat after CloudKit failure',async()=>{const s=await careSetup(),url='https://checkout.test/careline/operator/threads/'+careToken;const remove=headers=>s.worker.fetch(new Request(url,{method:'DELETE',headers}),s.env);assert.equal((await remove({Authorization:'Bearer '+careAccess})).status,401);assert.equal((await remove(careOwner)).status,200);assert.equal((await remove(careOwner)).status,200);assert.equal((await careGet(s)).status,401);assert.equal((await s.call('/careline/client/threads/'+careToken+'/messages',{id:'6'.repeat(32),text:'After deletion'},{Authorization:'Bearer '+careAccess})).status,401);});
 test('legacy questions get a private conversation only through authorized owner and preserve question details',async()=>{const s=setup();s.env.CARELINE_OPERATOR_KEY='9'.repeat(64);await s.call('/intake',fixture);const path='/careline/operator/questions/question-1/conversation';assert.equal((await s.call(path,{},{})).status,401);const result=await s.call(path,{},careOwner);assert.equal(result.status,200);const thread=await result.json();assert.equal(thread.question,fixture.question);assert.match(thread.conversationURL,/conversation.html#thread=/);assert.equal((await(await s.call(path,{},careOwner)).json()).token,thread.token);});
 test('deleted CloudKit question no longer exposes its conversation',async()=>{const s=await careSetup();s.state.records.delete('careline-'+careToken);assert.equal((await careGet(s)).status,404);});
 test('Care Line device proof is separate from Visits, rejects replay, tampering and unregistered phones',async()=>{const s=setup();s.env.CARELINE_OPERATOR_KEY='9'.repeat(64);const keys=await webcrypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify']),publicKey=Buffer.from(await webcrypto.subtle.exportKey('raw',keys.publicKey)).toString('base64');s.env.CARELINE_DEVICE_PUBLIC_KEY=publicKey;const proof=async()=>{const nonce=webcrypto.randomUUID().replaceAll('-',''),timestamp=String(Math.floor(Date.now()/1000)),signature=Buffer.from(await webcrypto.subtle.sign({name:'ECDSA',hash:'SHA-256'},keys.privateKey,new TextEncoder().encode('PawsCareLineDevice/v1\n'+publicKey+'\n'+nonce+'\n'+timestamp))).toString('base64');return{publicKey,nonce,timestamp,signature};};const input=await proof();const result=await s.call('/careline/device-connection',input);assert.equal(result.status,200);assert.equal((await result.json()).connectionKey,s.env.CARELINE_OPERATOR_KEY);assert.equal((await s.call('/careline/device-connection',input)).status,401);assert.equal((await s.call('/careline/device-connection',{...await proof(),signature:'wrong'})).status,401);assert.equal((await s.call('/careline/device-connection',await signedDeviceProof(keys.privateKey,publicKey))).status,401);assert.equal((await s.call('/careline/device-connection',{...await proof(),publicKey:'wrong'})).status,401);});
+
+
+test('paid intake cannot create or capture an order before approval, including forged input', async () => {
+  const s=setup();
+  const result=await s.call('/intake',{...fixture,paymentStatus:'Payment requested',conversationStatus:'Approved — awaiting payment'});
+  const data=await result.json();assert.equal(data.checkoutURL,'');assert.ok(data.statusURL);
+  assert.equal((await s.call('/api/paypal/orders',{question:'question-1',approved:true})).status,400);
+  assert.equal(s.state.order,null);
+  s.state.order={id:'ORDER123',status:'APPROVED',purchase_units:[{custom_id:'question-1',amount:{value:'10.00',currency_code:'USD'}}]};
+  assert.equal((await s.call('/api/paypal/orders/ORDER123/capture',{question:'question-1'})).status,409);
+  assert.equal(s.state.captures,0);
+  const page=await s.worker.fetch(new Request(data.statusURL),s.env),html=await page.text();
+  assert.equal(page.headers.get('Cache-Control'),'no-store');assert.match(html,/Waiting for approval/);assert.doesNotMatch(html,/paypal-buttons|How can I provide enrichment/);
+});
+test('approval unlocks payment in the existing private conversation and decline blocks it',async()=>{
+  const s=await careSetup(),id='careline-'+careToken;
+  assert.equal((await(await careGet(s)).json()).checkoutURL,'');
+  decide(s,true,id);
+  assert.match((await(await careGet(s)).json()).checkoutURL,/pay\?question=careline-/);
+  assert.equal((await s.call('/api/paypal/orders',{question:id})).status,200);
+  decide(s,false,id);
+  assert.equal((await(await careGet(s)).json()).checkoutURL,'');
+  assert.equal((await s.call('/api/paypal/orders',{question:id})).status,400);
+  assert.equal((await s.call('/api/paypal/orders/ORDER123/capture',{question:id})).status,409);
+  assert.equal(s.state.captures,0);
+  assert.match(await(await visitGet(s,'/pay?question='+id)).text(),/Request not accepted/);
+});
+test('clarifying messages do not close an unapproved request or reopen a declined one',async()=>{
+  const s=await careSetup(),id='careline-'+careToken;
+  for(const paymentStatus of ['Awaiting approval','Payment requested','Declined — no charge']) {
+    const record=s.state.records.get(id);record.fields.paymentStatus={value:paymentStatus};record.fields.status={value:paymentStatus==='Declined — no charge'?'archived':'new'};
+    const before=record.fields.status.value;
+    for(const role of ['operator','client']) {
+      const r=await s.call('/careline/'+role+'/threads/'+careToken+'/messages',{id:webcrypto.randomUUID().replaceAll('-',''),text:'A scheduling clarification'},role==='operator'?careOwner:{Authorization:'Bearer '+careAccess});
+      assert.equal(r.status,200);assert.equal(s.state.records.get(id).fields.status.value,before);assert.equal(s.state.records.get(id).fields.paymentStatus.value,paymentStatus);
+    }
+  }
+});
+test('free private conversations remain free and never offer checkout',async()=>{
+  const s=setup();s.env.CARELINE_OPERATOR_KEY='9'.repeat(64);
+  const r=await s.call('/intake',{...fixture,requestedService:'Free Community Support — Private Message',conversationToken:careToken,conversationAccess:careAccess});
+  assert.equal(r.status,200);assert.equal((await r.json()).checkoutURL,'');
+  const thread=await(await careGet(s)).json();assert.equal(thread.paymentStatus,'No payment required');assert.equal(thread.checkoutURL,'');
+});

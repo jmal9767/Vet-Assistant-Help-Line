@@ -5,7 +5,9 @@ struct QuestionDetailView: View {
     @Environment(QuestionStore.self) private var store
     @Environment(\.openURL) private var openURL
 
-    let question: ClientQuestion
+    private let initialQuestion: ClientQuestion
+    private var question: ClientQuestion { store.question(recordName: initialQuestion.id.recordName) ?? initialQuestion }
+    init(question: ClientQuestion) { initialQuestion = question }
     @State private var showMailError = false
     @State private var emailDraft: BusinessEmailDraft?
     @State private var showArchiveConfirmation = false
@@ -16,6 +18,7 @@ struct QuestionDetailView: View {
             VStack(spacing: 16) {
                 header
                 questionCard
+                availabilityCard
                 currentConditionCard
                 petCard
                 attachmentsCard
@@ -25,6 +28,8 @@ struct QuestionDetailView: View {
             }
             .padding(16)
         }
+        .disabled(store.isSaving)
+        .refreshable { await store.refresh() }
         .background(AppPalette.appBackground.ignoresSafeArea())
         .navigationTitle(question.name)
         .navigationBarTitleDisplayMode(.inline)
@@ -76,7 +81,7 @@ struct QuestionDetailView: View {
             tint: question.status == .new ? AppPalette.warmGold : AppPalette.serviceAccent
         ) {
             HStack(spacing: 10) {
-                MetricPill(title: "Status", value: question.status == .new ? "New" : "Answered", icon: "circle.fill", tint: question.status == .new ? AppPalette.warmGold : AppPalette.serviceAccent)
+                MetricPill(title: "Status", value: question.status == .new ? "New" : question.status == .archived ? "Archived" : "Answered", icon: "circle.fill", tint: question.status == .new ? AppPalette.warmGold : AppPalette.serviceAccent)
                 MetricPill(title: "Reply", value: question.preferredReply, icon: "bubble.left.and.text.bubble.right.fill", tint: AppPalette.brand)
             }
             HStack(spacing: 10) {
@@ -85,6 +90,36 @@ struct QuestionDetailView: View {
             }
             MetricPill(title: "Service", value: question.requestedService, icon: "creditcard.fill", tint: AppPalette.serviceAccent)
             MetricPill(title: "Client urgency", value: question.urgency, icon: "exclamationmark.triangle.fill", tint: question.urgency.contains("emergency") ? AppPalette.danger : AppPalette.warmGold)
+        }
+    }
+
+    @ViewBuilder
+    private var availabilityCard: some View {
+        if question.canDecideAvailability {
+            InfoTile {
+                SectionHeader("Approve this question", subtitle: "Confirm you have time for the selected service. The client cannot pay until you approve.")
+                Button {
+                    Task { await store.decideAvailability(approved: true, for: question) }
+                } label: {
+                    Label("Approve — I'm Available", systemImage: "checkmark.circle.fill")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(AppPalette.brand)
+                Button {
+                    Task { await store.decideAvailability(approved: false, for: question) }
+                } label: {
+                    Label("Decline — Unavailable", systemImage: "xmark.circle")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                Text("Declining closes the request without payment and moves it to Archived. The client can check your decision in their private conversation.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+        } else if question.paymentStatus == "Declined — no charge" {
+            InfoTile {
+                SectionHeader("Declined — no charge", subtitle: "You were unavailable for this question. Payment is disabled. The client can see this decision in their private conversation.")
+            }
         }
     }
 
@@ -130,7 +165,7 @@ struct QuestionDetailView: View {
 
     private var paymentCard: some View {
         InfoTile {
-            SectionHeader("Service and payment", subtitle: question.paymentAmount == "$0" ? "Free Community Support — no payment required." : "Payment and refund status update automatically through PayPal or Apple Pay.")
+            SectionHeader("Service and payment", subtitle: question.awaitingApproval ? "Payment is blocked until you confirm availability." : question.paymentAmount == "$0" ? "Free Community Support — no payment required." : "Payment and refund status update automatically through PayPal or Apple Pay.")
 
             HStack(spacing: 10) {
                 MetricPill(title: "Payment", value: question.paymentStatus, icon: "creditcard.fill", tint: paymentTint)
@@ -232,7 +267,8 @@ struct QuestionDetailView: View {
         switch question.paymentStatus {
         case "Paid": AppPalette.serviceAccent
         case "Refunded", "Partially refunded": AppPalette.brand
-        case "Payment requested": AppPalette.warmGold
+        case "Awaiting approval", "Payment requested": AppPalette.warmGold
+        case "Declined — no charge": AppPalette.serviceAccent
         case "Referred — no charge": AppPalette.brand
         case "Reviewing": AppPalette.warmGold
         default: AppPalette.danger

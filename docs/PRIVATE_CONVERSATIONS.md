@@ -17,3 +17,5 @@ Verification: regression tests cover isolation, replay/tampering, prices, retry-
 ## Shared appearance
 
 The app and care-line web pages use the Bay Area Apps palette: canvas #0e1014, cards #191d24, red #c81e30, gold #f2c65b, and readable white/gray text. The app uses dark appearance consistently, rounded cards and paw-themed service icons. New conversation screens follow those same colors.
+
+Paid questions wait for operator availability approval before the conversation offers checkout. Free questions stay free. An operator or client scheduling message cannot close an unpaid question or reopen a declined request.

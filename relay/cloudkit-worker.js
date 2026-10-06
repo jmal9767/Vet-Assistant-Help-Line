@@ -149,20 +149,13 @@ async function handleRequest(request, env) {
       return json({ error: "Could not save the question" }, 502, cors);
     }
 
-    const checkoutURL = fields.paymentStatus === "Payment requested" && fields.paymentMethod === "PayPal or Apple Pay" && result.recordName
-      ? `${url.origin}/pay?question=${encodeURIComponent(result.recordName)}`
-      : "";
-    if (checkoutURL) {
-      // Intake is already committed; optional link enrichment must not invite a duplicate submission.
-      try { await updateQuestionPayment(env, result.recordName, { paymentLink: checkoutURL }); }
-      catch { console.error("Checkout link enrichment unavailable"); }
-    }
+    const statusURL = result.recordName ? `${url.origin}/pay?question=${encodeURIComponent(result.recordName)}` : "";
     if(conversation) {
       const bound=await conversation.fetch("https://care.invalid/thread-bind",{method:"POST",body:JSON.stringify({recordName:result.recordName})});
       if(!bound.ok)return json({error:"Your question was saved; retry to recover its private conversation."},503,cors);
       return careIntakeReceipt(result.recordName,body.conversationToken,body.conversationAccess,url,env,cors);
     }
-    return json({ ok: true, recordName: result.recordName, checkoutURL }, 200, cors);
+    return json({ ok: true, recordName: result.recordName, statusURL, checkoutURL: "" }, 200, cors);
 }
 
 function moderateClientMessage(message) {
@@ -224,8 +217,8 @@ function validatedFields(body) {
     return { error: "This answer may describe an emergency. Please contact an emergency veterinarian now instead of submitting a paid request." };
   }
   fields.sourceChannel = "Website";
-  fields.conversationStatus = "Needs response";
-  fields.paymentStatus = selectedService.community ? "No payment required" : "Payment requested";
+  fields.conversationStatus = selectedService.community ? "Needs response" : "Awaiting approval";
+  fields.paymentStatus = selectedService.community ? "No payment required" : "Awaiting approval";
   if (selectedService.community) {
     fields.paymentMethod = "Free Community Support";
   } else if (fields.paymentMethod !== "PayPal or Apple Pay") {
@@ -411,7 +404,7 @@ async function fetchQuestionFromCloudKit(env, recordName) {
   return record && !record.serverErrorCode ? record : null;
 }
 
-async function updateQuestionPayment(env, recordName, values) {
+async function updateQuestionPayment(env, recordName, values, preserveAvailability = false) {
   if (recordName.startsWith("petassist-")) {
     const object = petAssistObject(env, recordName);
     if (!object) return { ok: false };
@@ -422,6 +415,7 @@ async function updateQuestionPayment(env, recordName, values) {
     const current = await fetchQuestionFromCloudKit(env, recordName);
     if (!current?.recordChangeTag) return { ok: false };
     const status = fieldValue(current, "paymentStatus");
+    if (preserveAvailability && ["Awaiting approval", "Payment requested", "Declined — no charge"].includes(status)) return { ok: true, paymentStatus: status };
     if (values.paymentStatus === "Paid" && !["Payment requested", "Paid"].includes(status)) {
       return { ok: true, paymentStatus: status };
     }
@@ -451,6 +445,7 @@ function paidOffer(record) {
   // Honor existing requests from the previous menu without offering them to new clients.
   const isPetAssist = record.recordName.startsWith("petassist-");
   if (isPetAssist && record.visitStatus && !["accepted", "en-route", "in-progress", "completed"].includes(record.visitStatus)) return null;
+  if (!isPetAssist && fieldValue(record, "paymentStatus") !== "Paid" && ["archived", "answered"].includes(fieldValue(record, "status"))) return null;
   const allowedAmounts = new Set(isPetAssist ? Object.values(PETASSIST_SERVICES).map(service => service.amount) : [10, 15, 25, 5, 20, 30, 35]);
   if (!["Payment requested", "Paid"].includes(fieldValue(record, "paymentStatus")) || !allowedAmounts.has(amount)) return null;
   return {
@@ -462,6 +457,12 @@ function paidOffer(record) {
 async function serveCheckout(url, env) {
   const recordName = url.searchParams.get("question") || "";
   const record = await fetchQuestionFromCloudKit(env, recordName);
+  const status = fieldValue(record, "paymentStatus");
+  if (status === "Declined — no charge" || (status === "Awaiting approval" && ["archived", "answered"].includes(fieldValue(record, "status")))) {
+    return checkoutMessage("Request not accepted", "The care line cannot take this question at this time. No payment was requested or charged for this request.", 200);
+  }
+  if (status === "Awaiting approval") return checkoutMessage("Waiting for approval", "Your question was received. The operator needs to confirm availability before you can pay. You have not been charged. Return to your private conversation to check for updates. For urgent concerns, contact a veterinarian instead of waiting.", 200, true);
+  if (status === "No payment required") return checkoutMessage("No payment required", "Your Free Community Support request has been received. Check your private conversation for replies.", 200);
   const offer = record && paidOffer(record);
   if (!offer) return checkoutMessage("Payment link unavailable", "This payment request is no longer available. Please contact the care line.", 404);
   if (fieldValue(record, "paymentStatus") === "Paid") return paidCheckoutConfirmation(record);
@@ -711,8 +712,8 @@ async function safeJSON(request) {
   try { return await request.json(); } catch { return null; }
 }
 
-function checkoutMessage(title, message, status) {
-  return new Response(`<!doctype html><meta name="viewport" content="width=device-width"><title>${escapeHTML(title)}</title><style>body{font-family:-apple-system,sans-serif;max-width:540px;margin:48px auto;padding:20px;color:#132238}h1{color:#173f67}</style><h1>${escapeHTML(title)}</h1><p>${escapeHTML(message)}</p>`, { status, headers: securityHTMLHeaders() });
+function checkoutMessage(title, message, status, refresh = false) {
+  return new Response(`<!doctype html><meta name="viewport" content="width=device-width"><title>${escapeHTML(title)}</title><style>body{font-family:-apple-system,sans-serif;max-width:540px;margin:48px auto;padding:20px;color:#132238}h1{color:#173f67}</style><h1>${escapeHTML(title)}</h1><p>${escapeHTML(message)}</p>${refresh ? '<button type="button" onclick="location.reload()">Check again</button>' : ""}`, { status, headers: securityHTMLHeaders() });
 }
 
 function securityHTMLHeaders() {
@@ -1165,7 +1166,7 @@ function careObject(env,token) {return env.PETASSIST_PAYMENTS.get(env.PETASSIST_
 async function careIntakeReceipt(recordName,token,access,url,env,cors) {
   const record=await fetchQuestionFromCloudKit(env,recordName);
   if(!record)return json({error:"Your question could not be confirmed. Retry with the same form."},503,cors);
-  const checkoutURL=fieldValue(record,"paymentStatus")==="Payment requested"?url.origin+"/pay?question="+encodeURIComponent(recordName):"";
+  const checkoutURL=fieldValue(record,"paymentStatus")==="Payment requested" && paidOffer(record)?url.origin+"/pay?question="+encodeURIComponent(recordName):"";
   return json({ok:true,recordName,checkoutURL,conversationURL:"https://paws-whiskers-care-line.dkjmmz6whh.workers.dev/conversation.html#thread="+token+"."+access},200,cors);
 }
 async function careDeviceConnection(request,env,cors) {
@@ -1242,10 +1243,10 @@ async function handleCareline(request,env,url) {
     const result=await object.fetch("https://care.invalid/thread-message",{method:"POST",body:JSON.stringify({id:input.id,text,sender:operator?"business":"client",clientAccess:operator?undefined:bearer})});
     if(!result.ok)return json(await result.json(),result.status,cors);
     // Delivery is already durable. A CloudKit badge failure must not invite a duplicate reply.
-    try {await updateQuestionPayment(env,thread.recordName,{conversationStatus:operator?"Reply sent":"Needs response",status:operator?"answered":"new"});}catch{console.error("Conversation badge update unavailable");}
+    try {await updateQuestionPayment(env,thread.recordName,{conversationStatus:operator?"Reply sent":"Needs response",status:operator?"answered":"new"},true);}catch{console.error("Conversation badge update unavailable");}
   } else if(request.method!=="GET" || match[3])return json({error:"Method not allowed"},405,cors);
   const fresh=await (await object.fetch("https://care.invalid/thread")).json();
   if(fresh.deleted)return json({error:"Conversation unavailable"},404,cors);
   const packed=intakeEnvelope(fieldValue(record,"question"));
-  return json({token:match[2],petName:fieldValue(record,"petName"),question:packed?.question||fieldValue(record,"question"),service:fieldValue(record,"requestedService"),paymentStatus:fieldValue(record,"paymentStatus"),checkoutURL:fieldValue(record,"paymentStatus")==="Payment requested"?url.origin+"/pay?question="+encodeURIComponent(thread.recordName):"",messages:fresh.messages,conversationURL:operator?"https://paws-whiskers-care-line.dkjmmz6whh.workers.dev/conversation.html#thread="+match[2]+"."+fresh.clientAccess:undefined},200,cors);
+  return json({token:match[2],petName:fieldValue(record,"petName"),question:packed?.question||fieldValue(record,"question"),service:fieldValue(record,"requestedService"),paymentStatus:fieldValue(record,"paymentStatus"),checkoutURL:fieldValue(record,"paymentStatus")==="Payment requested" && paidOffer(record)?url.origin+"/pay?question="+encodeURIComponent(thread.recordName):"",messages:fresh.messages,conversationURL:operator?"https://paws-whiskers-care-line.dkjmmz6whh.workers.dev/conversation.html#thread="+match[2]+"."+fresh.clientAccess:undefined},200,cors);
 }

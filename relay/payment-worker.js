@@ -184,7 +184,7 @@ function escapeHtml(text) {
 function html(body, status = 200) {
   return new Response(
     `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Paws & Whiskers Care Line</title>
+    <title>Paws & Whiskers Help Line</title>
     <style>body{font-family:-apple-system,sans-serif;max-width:600px;margin:2rem auto;padding:0 1rem;line-height:1.6;color:#14181c}
     a{color:#1f3a5f;word-break:break-all}h2{color:#1f3a5f}</style></head><body>${body}</body></html>`,
     { status, headers: { "Content-Type": "text/html; charset=utf-8" } }

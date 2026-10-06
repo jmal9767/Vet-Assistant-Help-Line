@@ -129,12 +129,12 @@ struct QuestionDetailView: View {
 
             CompactLabel(
                 title: "Client-facing sender",
-                value: question.conversationToken == nil ? publicReplyAddressText : "Paws & Whiskers Care Line",
+                value: question.conversationToken == nil ? publicReplyAddressText : "Paws & Whiskers Help Line",
                 icon: "eye.slash.fill"
             )
 
             VStack(spacing: 10) {
-                NavigationLink { CareLineConversationView(question: question) } label: { Label("Reply in Care Line", systemImage: "bubble.left.and.bubble.right.fill").frame(maxWidth: .infinity) }.buttonStyle(.borderedProminent)
+                NavigationLink { CareLineConversationView(question: question) } label: { Label("Reply in Help Line", systemImage: "bubble.left.and.bubble.right.fill").frame(maxWidth: .infinity) }.buttonStyle(.borderedProminent)
 
                 if let url = phoneCallURL, question.preferredReply == "Phone call" {
                     Text("Calls use your phone carrier. Confirm your caller-ID privacy before calling; this app does not mask your number.").font(.footnote)
@@ -310,7 +310,7 @@ struct QuestionDetailView: View {
         guard let phone = question.phone else { return nil }
         let digits = phone.filter { $0.isNumber || $0 == "+" }
         guard !digits.isEmpty else { return nil }
-        let greeting = "Hi \(question.name), this is the Paws & Whiskers Care Line replying about \(petDisplayName). "
+        let greeting = "Hi \(question.name), this is the Paws & Whiskers Help Line replying about \(petDisplayName). "
         var components = URLComponents()
         components.scheme = "sms"
         components.path = digits
@@ -333,7 +333,7 @@ struct QuestionDetailView: View {
         let body = """
         Hi \(question.name),
 
-        Thanks for reaching out to the Paws & Whiskers Care Line about \(petDisplayName).
+        Thanks for reaching out to the Paws & Whiskers Help Line about \(petDisplayName).
 
 
         \(HelplineConfig.disclaimerFooter)

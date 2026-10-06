@@ -30,7 +30,7 @@ struct CommunicationsView: View {
                         HeroPanel(
                             icon: "bubble.left.and.bubble.right.fill",
                             title: "Messages",
-                            subtitle: "Read each client’s concern and tap Reply in Care Line to answer on their private page. Phone calls remain separate."
+                            subtitle: "Read each client’s concern and tap Reply in Help Line to answer on their private page. Phone calls remain separate."
                         ) {
                             HStack(spacing: 10) {
                                 MetricPill(title: "Open", value: "\(openCount)", icon: "bubble.left.fill", tint: AppPalette.warmGold)

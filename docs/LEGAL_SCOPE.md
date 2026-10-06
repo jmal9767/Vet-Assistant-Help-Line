@@ -1,4 +1,4 @@
-# California scope guide for the Paws & Whiskers Care Line
+# California scope guide for the Paws & Whiskers Help Line
 
 **Operational guidance only; not legal advice.** This review is based on California sources current on September 20, 2026. Rules may differ when the operator or animal is outside California. Before accepting paying clients, obtain advice for the actual business model and jurisdictions served.
 

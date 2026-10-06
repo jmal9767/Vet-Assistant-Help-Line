@@ -1,5 +1,5 @@
 /**
- * Paws & Whiskers Care Line intake relay.
+ * Paws & Whiskers Help Line intake relay.
  * Website submissions are saved to CloudKit. Optional files are stored in a
  * private R2 bucket and exposed only through signed, expiring download URLs.
  */
@@ -259,7 +259,7 @@ async function handleTwilioSMS(request, env, cors) {
   });
   const result = await saveQuestionToCloudKit(env, cloudKitCreateBody(fields));
   if (!result.ok) return json({ error: "Could not save SMS" }, 502, cors);
-  return new Response("<Response><Message>Thanks — your message reached the Paws & Whiskers Care Line.</Message></Response>", {
+  return new Response("<Response><Message>Thanks — your message reached the Paws & Whiskers Help Line.</Message></Response>", {
     status: 200, headers: { "Content-Type": "text/xml", ...cors },
   });
 }
@@ -286,7 +286,7 @@ function handleTwilioVoice(request, env) {
   const operatorPhone = env.OPERATOR_PHONE || "";
   const callerID = env.TWILIO_CALLER_ID || "";
   const body = operatorPhone
-    ? `<Response><Say>Connecting you to the Paws & Whiskers Care Line.</Say><Dial${callerID ? ` callerId="${escapeXML(callerID)}"` : ""}>${escapeXML(operatorPhone)}</Dial></Response>`
+    ? `<Response><Say>Connecting you to the Paws & Whiskers Help Line.</Say><Dial${callerID ? ` callerId="${escapeXML(callerID)}"` : ""}>${escapeXML(operatorPhone)}</Dial></Response>`
     : "<Response><Say>The care line phone relay is not configured. Please use the website.</Say></Response>";
   return new Response(body, { status: 200, headers: { "Content-Type": "text/xml" } });
 }
@@ -450,7 +450,7 @@ function paidOffer(record) {
   if (!["Payment requested", "Paid"].includes(fieldValue(record, "paymentStatus")) || !(allowedAmounts.has(amount) || (isPetAssist && record.marketplace === true && Number.isFinite(amount) && amount >= 1 && amount <= 5000))) return null;
   return {
     amount: amount.toFixed(2),
-    service: fieldValue(record, "requestedService") || "Paws & Whiskers Care Line service",
+    service: fieldValue(record, "requestedService") || "Paws & Whiskers Help Line service",
   };
 }
 
@@ -474,7 +474,7 @@ async function serveCheckout(url, env) {
   const safeAmount = JSON.stringify(offer.amount);
   const safeService = escapeHTML(offer.service);
   const visitsCheckout = recordName.startsWith("petassist-");
-  const brand = visitsCheckout ? "Paws & Whiskers Visits" : "Paws & Whiskers Care Line";
+  const brand = visitsCheckout ? "Paws & Whiskers Visit" : "Paws & Whiskers Help Line";
   const pageStyle = visitsCheckout
     ? "body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#0e1014;color:#f7f8fa;margin:0}.card{max-width:520px;margin:32px auto;background:#191d24;border:1px solid #35383e;border-radius:18px;padding:24px}.brand{color:#f2c65b;font-weight:800}h1{font-size:1.6rem}a{color:#f2c65b}.amount{font-size:2rem;font-weight:800;margin:.35rem 0 1rem;color:#f2c65b}.note{color:#c9cdd5;line-height:1.45}#applepay-container{margin:14px 0}apple-pay-button{--apple-pay-button-width:100%;--apple-pay-button-height:48px;--apple-pay-button-border-radius:12px}#status{font-weight:650;margin-top:16px}"
     : "body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f7fa;color:#132238;margin:0}.card{max-width:520px;margin:32px auto;background:white;border-radius:18px;padding:24px;box-shadow:0 10px 35px #13223818}.brand{color:#173f67}h1{font-size:1.6rem}.amount{font-size:2rem;font-weight:800;margin:.35rem 0 1rem}.note{color:#536579;line-height:1.45}#applepay-container{margin:14px 0}apple-pay-button{--apple-pay-button-width:100%;--apple-pay-button-height:48px;--apple-pay-button-border-radius:8px}#status{font-weight:650;margin-top:16px}";
@@ -540,7 +540,7 @@ setupApplePay();
 function checkoutNextAction(recordName, hidden = false) {
   const isPetAssist = recordName.startsWith("petassist-");
   const href = isPetAssist ? "https://bayareaapps.com/petassist-local/" : "https://paws-whiskers-care-line.dkjmmz6whh.workers.dev/#askSection";
-  const label = isPetAssist ? "Return to Paws & Whiskers Visits" : "Ask another question";
+  const label = isPetAssist ? "Return to Paws & Whiskers Visit" : "Ask another question";
   const color = isPetAssist ? "#c81e30" : "#173f67";
   return `<p id="checkout-next"${hidden ? " hidden" : ""}><a href="${href}" style="display:inline-block;background:${color};color:white;padding:14px 20px;border-radius:12px;text-decoration:none;font-weight:700">${label}</a></p>`;
 }
@@ -994,7 +994,7 @@ export class PetAssistPayments {
       if (path === "/index-add") { await txn.put("visit:"+input.token,true); return Response.json({ok:true}); }
       if (path === "/visit-create") {
         if (record) return Response.json(record, {status:record.clientAccess===input.clientAccess?200:409});
-        const fields = Object.fromEntries(Object.entries({requestedService:input.serviceTitle,paymentAmount:"$"+input.amount,paymentStatus:"Payment requested",paymentMethod:"PayPal or Apple Pay",sourceChannel:"Paws & Whiskers Visits"}).map(([key,value])=>[key,{value}]));
+        const fields = Object.fromEntries(Object.entries({requestedService:input.serviceTitle,paymentAmount:"$"+input.amount,paymentStatus:"Payment requested",paymentMethod:"PayPal or Apple Pay",sourceChannel:"Paws & Whiskers Visit"}).map(([key,value])=>[key,{value}]));
         record={recordName:"petassist-"+input.token,recordType:"PetAssistPayment",recordChangeTag:"1",serviceID:input.service,fields,visitStatus:"requested",createdAt:new Date().toISOString(),clientAccess:input.clientAccess,details:input.details,messages:[]};
         await txn.put("record",record); return Response.json(record);
       }
@@ -1188,7 +1188,7 @@ async function careIntakeReceipt(recordName,token,access,url,env,cors) {
   return json({ok:true,recordName,checkoutURL,conversationURL:"https://paws-whiskers-care-line.dkjmmz6whh.workers.dev/conversation.html#thread="+token+"."+access},200,cors);
 }
 async function careDeviceConnection(request,env,cors) {
-  const rejected=()=>json({error:"This iPhone is not authorized for Care Line replies."},401,cors);
+  const rejected=()=>json({error:"This iPhone is not authorized for Help Line replies."},401,cors);
   if(!env.CARELINE_DEVICE_PUBLIC_KEY || !env.CARELINE_OPERATOR_KEY)return rejected();
   const input=await limitedVisitJSON(request);
   if(!input || input.publicKey!==env.CARELINE_DEVICE_PUBLIC_KEY.trim() || !/^[a-f0-9]{32}$/.test(input.nonce||"") || !/^\d{10}$/.test(input.timestamp||"") || Math.abs(Date.now()-Number(input.timestamp)*1000)>60000)return rejected();
@@ -1244,7 +1244,7 @@ async function handleCareline(request,env,url) {
   const match=url.pathname.match(/^\/careline\/(operator|client)\/threads\/([a-f0-9]{32})(?:\/(messages))?$/);
   if(!match)return json({error:"Not found"},404,cors);
   const operator=match[1]==="operator",bearer=(request.headers.get("Authorization")||"").replace(/^Bearer /,"");
-  if(operator && !await secretMatches(bearer,env.CARELINE_OPERATOR_KEY))return json({error:"Open Care Line on your authorized iPhone."},401,cors);
+  if(operator && !await secretMatches(bearer,env.CARELINE_OPERATOR_KEY))return json({error:"Open Help Line on your authorized iPhone."},401,cors);
   const object=careObject(env,match[2]),thread=await (await object.fetch("https://care.invalid/thread")).json();
   if(!operator && !await secretMatches(bearer,thread?.clientAccess))return json({error:"This private conversation link is invalid."},401,cors);
   if(operator && request.method==="DELETE" && !match[3] && thread?.deleted)return json({ok:true},200,cors);

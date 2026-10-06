@@ -27,7 +27,7 @@ struct ShareView: View {
                             if let cardImage {
                                 ShareLink(
                                     item: cardImage,
-                                    preview: SharePreview("Paws & Whiskers Care Line", image: cardImage)
+                                    preview: SharePreview("Paws & Whiskers Help Line", image: cardImage)
                                 ) {
                                     Label("Share Card", systemImage: "square.and.arrow.up")
                                         .frame(maxWidth: .infinity)
@@ -92,7 +92,7 @@ private struct ShareCard: View {
                     .background(AppPalette.brand, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Paws & Whiskers Care Line")
+                    Text("Paws & Whiskers Help Line")
                         .font(.title3.weight(.bold))
                         .foregroundStyle(ink)
                     Text("Practical dog-and-cat care guidance")

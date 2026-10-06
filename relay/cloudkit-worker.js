@@ -32,6 +32,7 @@ export default {
 
 async function handleRequest(request, env) {
     const url = new URL(request.url);
+    if (url.pathname.startsWith("/careline/")) return handleCareline(request, env, url);
     if (url.pathname.startsWith("/petassist/")) return handlePetAssist(request, env, url);
 
     if (request.method === "GET" && url.pathname === "/.well-known/apple-developer-merchantid-domain-association") {
@@ -115,12 +116,30 @@ async function handleRequest(request, env) {
       return json({ error: "Private file uploads are temporarily unavailable. Remove the files and try again." }, 503, cors);
     }
 
+    let conversation = null;
+    if (body.conversationToken !== undefined || body.conversationAccess !== undefined) {
+      if (!/^[a-f0-9]{32}$/.test(body.conversationToken||"") || !/^[a-f0-9]{64}$/.test(body.conversationAccess||"")) return json({error:"Your private conversation could not be verified. Reload and retry."},400,cors);
+      if (!env.PETASSIST_PAYMENTS) return json({error:"Private conversations are unavailable. Please retry later."},503,cors);
+      conversation = careObject(env,body.conversationToken);
+      const previous = await (await conversation.fetch("https://care.invalid/thread")).json();
+      if(previous && !await secretMatches(body.conversationAccess,previous.clientAccess)) return json({error:"This private conversation cannot be reused."},409,cors);
+      if(previous?.recordName) return careIntakeReceipt(previous.recordName,body.conversationToken,body.conversationAccess,url,env,cors);
+      const prepared=await conversation.fetch("https://care.invalid/thread-init",{method:"POST",body:JSON.stringify({clientAccess:body.conversationAccess})});
+      if(!prepared.ok)return json({error:"Your private conversation could not be prepared. Please retry."},409,cors);
+      fields.question=JSON.stringify({format:"paws-intake-v1",question:fields.question,details:{conversationToken:body.conversationToken}});
+    }
     const storedFiles = await storeAttachments(uploadedFiles, request, env);
     if (storedFiles.length) fields.attachmentSummary = storedFiles.map(formatStoredFile).join("\n");
 
     let result;
     try {
-      result = await saveQuestionToCloudKit(env, cloudKitCreateBody(fields));
+      const payload=JSON.parse(cloudKitCreateBody(fields));
+      if(conversation) {
+        payload.operations[0].record.recordName="careline-"+body.conversationToken;
+        const existing=await fetchQuestionFromCloudKit(env,payload.operations[0].record.recordName);
+        if(existing && storedFiles.length)await env.ATTACHMENTS_BUCKET.delete(storedFiles.map(file=>file.key));
+        result=existing?{ok:true,recordName:existing.recordName}:await saveQuestionToCloudKit(env,JSON.stringify(payload));
+      } else result = await saveQuestionToCloudKit(env,JSON.stringify(payload));
     } catch (error) {
       if (storedFiles.length) await env.ATTACHMENTS_BUCKET.delete(storedFiles.map(file => file.key));
       throw error;
@@ -137,6 +156,11 @@ async function handleRequest(request, env) {
       // Intake is already committed; optional link enrichment must not invite a duplicate submission.
       try { await updateQuestionPayment(env, result.recordName, { paymentLink: checkoutURL }); }
       catch { console.error("Checkout link enrichment unavailable"); }
+    }
+    if(conversation) {
+      const bound=await conversation.fetch("https://care.invalid/thread-bind",{method:"POST",body:JSON.stringify({recordName:result.recordName})});
+      if(!bound.ok)return json({error:"Your question was saved; retry to recover its private conversation."},503,cors);
+      return careIntakeReceipt(result.recordName,body.conversationToken,body.conversationAccess,url,env,cors);
     }
     return json({ ok: true, recordName: result.recordName, checkoutURL }, 200, cors);
 }
@@ -172,6 +196,9 @@ function validatedFields(body) {
     return { error: "Please select the spay or neuter status." };
   }
   const services = {
+    "Quick Question — Private Message · $10": { reply: "Private website conversation", amount: "$10" },
+    "Detailed Guidance — Private Message · $15": { reply: "Private website conversation", amount: "$15" },
+    "Free Community Support — Private Message": { reply: "Private website conversation", amount: "$0", community: true },
     "Quick Question — Email · $10": { reply: "Email", amount: "$10" },
     "Quick Question — Text · $10": { reply: "Text message", amount: "$10" },
     "Detailed Guidance — Email · $15": { reply: "Email", amount: "$15" },
@@ -890,6 +917,33 @@ export class PetAssistPayments {
   constructor(state) { this.state = state; }
   async fetch(request) {
     const path = new URL(request.url).pathname;
+    if (path === "/thread") return Response.json(await this.state.storage.get("care-thread") || null);
+    if(path.startsWith("/thread-")) {
+      const input=await request.json();
+      return this.state.storage.transaction(async txn=>{
+        let thread=await txn.get("care-thread");
+        if(path==="/thread-init") {
+          if(thread && (thread.deleted || thread.clientAccess!==input.clientAccess))return Response.json({error:"Conflict"},{status:409});
+          if(!thread){thread={clientAccess:input.clientAccess,messages:[]};await txn.put("care-thread",thread);}
+          return Response.json({ok:true});
+        }
+        if(!thread || thread.deleted)return Response.json({error:"Conversation unavailable"},{status:404});
+        if(path==="/thread-bind") {
+          if(thread.recordName && thread.recordName!==input.recordName)return Response.json({error:"Conflict"},{status:409});
+          thread.recordName=input.recordName;
+        } else if(path==="/thread-delete") {thread={deleted:true};}
+        else if(path==="/thread-message") {
+          if(input.sender==="client" && input.clientAccess!==thread.clientAccess)return Response.json({error:"Unauthorized"},{status:401});
+          const previous=thread.messages.find(message=>message.id===input.id);
+          if(previous && (previous.sender!==input.sender || previous.text!==input.text))return Response.json({error:"Message reference already used. Refresh and retry."},{status:409});
+          if(!previous) {
+            if(thread.messages.length>=1000)return Response.json({error:"This conversation is full. Contact info@bayareaapps.com."},{status:409});
+            thread.messages.push({id:input.id,sender:input.sender,text:input.text,createdAt:new Date().toISOString()});
+          }
+        } else return Response.json({error:"Not found"},{status:404});
+        await txn.put("care-thread",thread);return Response.json({ok:true});
+      });
+    }
     if (path === "/service-area") return Response.json(await this.state.storage.get("service-area") || null);
     if (path === "/record") return Response.json(await this.state.storage.get("record") || null);
     if (path === "/index") {
@@ -1097,4 +1151,93 @@ async function ownerDeviceConnection(request, env, cors) {
     if(!proof.ok)return rejected();
     return json({connectionKey:env.PETASSIST_OPERATOR_KEY},200,{...cors,"Cache-Control":"no-store"});
   } catch { return rejected(); }
+}
+
+function careObject(env,token) {return env.PETASSIST_PAYMENTS.get(env.PETASSIST_PAYMENTS.idFromName("careline-thread-"+token));}
+async function careIntakeReceipt(recordName,token,access,url,env,cors) {
+  const record=await fetchQuestionFromCloudKit(env,recordName);
+  if(!record)return json({error:"Your question could not be confirmed. Retry with the same form."},503,cors);
+  const checkoutURL=fieldValue(record,"paymentStatus")==="Payment requested"?url.origin+"/pay?question="+encodeURIComponent(recordName):"";
+  return json({ok:true,recordName,checkoutURL,conversationURL:"https://paws-whiskers-care-line.dkjmmz6whh.workers.dev/conversation.html#thread="+token+"."+access},200,cors);
+}
+async function careDeviceConnection(request,env,cors) {
+  const rejected=()=>json({error:"This iPhone is not authorized for Care Line replies."},401,cors);
+  if(!env.CARELINE_DEVICE_PUBLIC_KEY || !env.CARELINE_OPERATOR_KEY)return rejected();
+  const input=await limitedVisitJSON(request);
+  if(!input || input.publicKey!==env.CARELINE_DEVICE_PUBLIC_KEY.trim() || !/^[a-f0-9]{32}$/.test(input.nonce||"") || !/^\d{10}$/.test(input.timestamp||"") || Math.abs(Date.now()-Number(input.timestamp)*1000)>60000)return rejected();
+  try {
+    const decode=text=>Uint8Array.from(atob(text),char=>char.charCodeAt(0));
+    const signature=decode(input.signature||"");if(signature.length!==64)return rejected();
+    const key=await crypto.subtle.importKey("raw",decode(input.publicKey),{name:"ECDSA",namedCurve:"P-256"},false,["verify"]);
+    const payload=new TextEncoder().encode("PawsCareLineDevice/v1\n"+input.publicKey+"\n"+input.nonce+"\n"+input.timestamp);
+    if(!await crypto.subtle.verify({name:"ECDSA",hash:"SHA-256"},key,signature,payload))return rejected();
+    const nonce=await visitsIndex(env).fetch("https://care.invalid/device-proof",{method:"POST",body:JSON.stringify({nonce:input.nonce})});
+    if(!nonce.ok)return rejected();
+    return json({connectionKey:env.CARELINE_OPERATOR_KEY},200,cors);
+  } catch{return rejected();}
+}
+async function handleCareline(request,env,url) {
+  const cors={...corsHeaders(request,env),"Access-Control-Allow-Methods":"GET, POST, DELETE, OPTIONS","Access-Control-Allow-Headers":"Content-Type, Authorization","Cache-Control":"private, no-store","Referrer-Policy":"no-referrer"};
+  if(request.headers.has("Origin") && !isAllowedOrigin(request,env))return json({error:"Origin not allowed"},403,cors);
+  if(request.method==="OPTIONS")return new Response(null,{status:204,headers:cors});
+  if(!env.PETASSIST_PAYMENTS)return json({error:"Conversations are unavailable."},503,cors);
+  if(url.pathname==="/careline/device-connection" && request.method==="POST")return careDeviceConnection(request,env,cors);
+  if(url.pathname==="/careline/operator/status" && request.method==="GET") {
+    const bearer=(request.headers.get("Authorization")||"").replace(/^Bearer /,"");
+    return await secretMatches(bearer,env.CARELINE_OPERATOR_KEY)?json({ok:true},200,cors):json({error:"Unauthorized"},401,cors);
+  }
+  const legacy=url.pathname.match(/^\/careline\/operator\/questions\/([A-Za-z0-9_.:-]{1,255})\/conversation$/);
+  if(legacy && request.method==="POST") {
+    const bearer=(request.headers.get("Authorization")||"").replace(/^Bearer /,"");
+    if(!await secretMatches(bearer,env.CARELINE_OPERATOR_KEY))return json({error:"Unauthorized"},401,cors);
+    for(let attempt=0;attempt<3;attempt++) {
+      const record=await fetchQuestionFromCloudKit(env,legacy[1]);
+      if(!record || record.recordType!=="Question" || legacy[1].startsWith("petassist-"))return json({error:"Question unavailable"},404,cors);
+      const envelope=intakeEnvelope(fieldValue(record,"question"))||{format:"paws-intake-v1",question:fieldValue(record,"question"),details:{}};
+      let token=envelope.details.conversationToken;
+      if(!/^[a-f0-9]{32}$/.test(token||"")) {
+        token=crypto.randomUUID().replaceAll("-","");
+        const access=crypto.randomUUID().replaceAll("-","")+crypto.randomUUID().replaceAll("-","");
+        const object=careObject(env,token);
+        await object.fetch("https://care.invalid/thread-init",{method:"POST",body:JSON.stringify({clientAccess:access})});
+        await object.fetch("https://care.invalid/thread-bind",{method:"POST",body:JSON.stringify({recordName:record.recordName})});
+        envelope.details.conversationToken=token;
+        const saved=await saveQuestionToCloudKit(env,JSON.stringify({operations:[{operationType:"update",record:{recordType:"Question",recordName:record.recordName,recordChangeTag:record.recordChangeTag,fields:{question:{value:JSON.stringify(envelope)}}}}]}));
+        if(!saved.ok) {
+          await object.fetch("https://care.invalid/thread-delete",{method:"POST",body:"{}"});
+          if(saved.conflict)continue;
+          return json({error:"The conversation could not be created. Retry."},503,cors);
+        }
+      }
+      const next=new URL(request.url);next.pathname="/careline/operator/threads/"+token;
+      return handleCareline(new Request(next,{headers:request.headers}),env,next);
+    }
+    return json({error:"Question changed. Refresh and retry."},409,cors);
+  }
+  const match=url.pathname.match(/^\/careline\/(operator|client)\/threads\/([a-f0-9]{32})(?:\/(messages))?$/);
+  if(!match)return json({error:"Not found"},404,cors);
+  const operator=match[1]==="operator",bearer=(request.headers.get("Authorization")||"").replace(/^Bearer /,"");
+  if(operator && !await secretMatches(bearer,env.CARELINE_OPERATOR_KEY))return json({error:"Open Care Line on your authorized iPhone."},401,cors);
+  const object=careObject(env,match[2]),thread=await (await object.fetch("https://care.invalid/thread")).json();
+  if(!operator && !await secretMatches(bearer,thread?.clientAccess))return json({error:"This private conversation link is invalid."},401,cors);
+  if(operator && request.method==="DELETE" && !match[3] && thread?.deleted)return json({ok:true},200,cors);
+  if(!thread?.recordName || thread.deleted)return json({error:"This conversation is no longer available."},404,cors);
+  const record=await fetchQuestionFromCloudKit(env,thread.recordName);
+  if(!record)return json({error:"This conversation is no longer available."},404,cors);
+  if(operator && request.method==="DELETE" && !match[3]) {
+    const result=await object.fetch("https://care.invalid/thread-delete",{method:"POST",body:"{}"});return json(await result.json(),result.status,cors);
+  }
+  if(request.method==="POST" && match[3]==="messages") {
+    const input=await limitedVisitJSON(request),text=typeof input?.text==="string"?input.text.trim():"";
+    if(!text || text.length>4000 || !/^[a-f0-9]{32}$/.test(input?.id||""))return json({error:"Enter a message of 1–4,000 characters."},400,cors);
+    if(!operator && moderateClientMessage(text).blocked)return json({error:"Please revise this message to follow our communication policy."},400,cors);
+    const result=await object.fetch("https://care.invalid/thread-message",{method:"POST",body:JSON.stringify({id:input.id,text,sender:operator?"business":"client",clientAccess:operator?undefined:bearer})});
+    if(!result.ok)return json(await result.json(),result.status,cors);
+    // Delivery is already durable. A CloudKit badge failure must not invite a duplicate reply.
+    try {await updateQuestionPayment(env,thread.recordName,{conversationStatus:operator?"Reply sent":"Needs response",status:operator?"answered":"new"});}catch{console.error("Conversation badge update unavailable");}
+  } else if(request.method!=="GET" || match[3])return json({error:"Method not allowed"},405,cors);
+  const fresh=await (await object.fetch("https://care.invalid/thread")).json();
+  if(fresh.deleted)return json({error:"Conversation unavailable"},404,cors);
+  const packed=intakeEnvelope(fieldValue(record,"question"));
+  return json({token:match[2],petName:fieldValue(record,"petName"),question:packed?.question||fieldValue(record,"question"),service:fieldValue(record,"requestedService"),paymentStatus:fieldValue(record,"paymentStatus"),checkoutURL:fieldValue(record,"paymentStatus")==="Payment requested"?url.origin+"/pay?question="+encodeURIComponent(thread.recordName):"",messages:fresh.messages,conversationURL:operator?"https://paws-whiskers-care-line.dkjmmz6whh.workers.dev/conversation.html#thread="+match[2]+"."+fresh.clientAccess:undefined},200,cors);
 }

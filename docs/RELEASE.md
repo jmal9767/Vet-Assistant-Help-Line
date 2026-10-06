@@ -1,3 +1,5 @@
+> Updated October 5, 2026: new written requests use **private website conversations** answered directly in the app. Email/Text references below apply to historical requests or optional integrations. See [private conversations](PRIVATE_CONVERSATIONS.md) for the current workflow.
+
 # Deploy the care line
 
 The public intake and backend must use the same service menu: Quick Question $10, Detailed Guidance $15, Phone Support $25, Free Community Support — Free. Existing pending $5/$10/$20/$30/$35 payment links retain their original amounts and remain valid for historical requests; new intake does not offer those services.

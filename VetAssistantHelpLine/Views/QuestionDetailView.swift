@@ -90,16 +90,19 @@ struct QuestionDetailView: View {
 
     private var replyActions: some View {
         InfoTile {
-            SectionHeader("Reply", subtitle: question.email.isEmpty ? "No email address was included with this submission." : "Confirm payment, reply from your public care-line account, then mark the case answered.")
+            SectionHeader("Reply", subtitle: question.email.isEmpty ? "No email address was included with this submission." : "Answer directly in your private conversation. Phone-call requests keep a separate call option.")
 
             CompactLabel(
                 title: "Client-facing sender",
-                value: publicReplyAddressText,
+                value: question.conversationToken == nil ? publicReplyAddressText : "Paws & Whiskers Care Line",
                 icon: "eye.slash.fill"
             )
 
             VStack(spacing: 10) {
+                NavigationLink { CareLineConversationView(question: question) } label: { Label("Reply in Care Line", systemImage: "bubble.left.and.bubble.right.fill").frame(maxWidth: .infinity) }.buttonStyle(.borderedProminent)
+
                 if let url = phoneCallURL, question.preferredReply == "Phone call" {
+                    Text("Calls use your phone carrier. Confirm your caller-ID privacy before calling; this app does not mask your number.").font(.footnote)
                     Button {
                         openURL(url)
                     } label: {
@@ -110,26 +113,10 @@ struct QuestionDetailView: View {
                     .tint(AppPalette.clinicGreen)
                 }
 
-                if let url = textReplyURL {
-                    Button {
-                        openURL(url)
-                    } label: {
-                        Label("Reply by Text", systemImage: "message.fill")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(AppPalette.clinicGreen)
+                if question.conversationToken == nil {
+                    Button { prepareEmail(replyURL) } label: { Label("Email an Older Request", systemImage: "envelope.fill").frame(maxWidth: .infinity) }
+                        .buttonStyle(.bordered).disabled(question.email.isEmpty)
                 }
-
-                Button {
-                    prepareEmail(replyURL)
-                } label: {
-                    Label("Prepare Email Reply", systemImage: "envelope.fill")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(question.email.isEmpty || publicHelpLineEmail.isEmpty)
-
                 Button {
                     Task { await store.setStatus(question.status == .new ? .answered : .new, for: question) }
                 } label: {

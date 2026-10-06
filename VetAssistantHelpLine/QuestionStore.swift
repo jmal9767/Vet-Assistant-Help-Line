@@ -23,6 +23,7 @@ final class QuestionStore {
     }
 
     func refresh() async {
+        guard !isLoading else { return }
         isLoading = true
         defer { isLoading = false }
         do {
@@ -60,6 +61,7 @@ final class QuestionStore {
 
     func deletePermanently(_ question: ClientQuestion) async {
         do {
+            if let token = question.conversationToken { try await CareLineConversationService().remove(token) }
             try await database.deleteRecord(withID: question.id)
             questions.removeAll { $0.id == question.id }
             archivedQuestions.removeAll { $0.id == question.id }

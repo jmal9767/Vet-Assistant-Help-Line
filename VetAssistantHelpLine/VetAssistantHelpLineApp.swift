@@ -54,7 +54,8 @@ struct VetAssistantHelpLineApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView().environment(store)
+            ContentView()
+                .task { _ = try? CareLineDeviceIdentity.proof(); try? await CareLineConversationService().verifyConnection() }.environment(store)
         }
     }
 }

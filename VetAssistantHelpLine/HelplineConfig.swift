@@ -11,7 +11,7 @@ enum HelplineConfig {
     static let purpose = """
     Have questions about your dog or cat? Just ask. Send the details and get \
     clear, practical, general educational guidance from an experienced veterinary \
-    assistant by email, text, or phone.
+    assistant on your private conversation page or by phone.
     """
 
     static let costExplanation = """
@@ -25,7 +25,7 @@ enum HelplineConfig {
     static let howItWorks = [
         "Scan the code and choose the option that works for you",
         "Tell me what is happening with your dog or cat; paid options continue to checkout",
-        "I review the details and files, then answer by email, text, or phone"
+        "I review the details and files, then answer on your private conversation page or by phone"
     ]
 
     // Shown on the shareable card; keep in sync with the website pages.
@@ -58,10 +58,10 @@ enum HelplineConfig {
         PriceSection(title: "Access options", items: [
             ServicePrice(service: "Quick Question",
                          price: "$10",
-                         detail: "A simple email or text response"),
+                         detail: "A reply on your private conversation page"),
             ServicePrice(service: "Detailed Guidance",
                          price: "$15",
-                         detail: "More time and explanation by email or text"),
+                         detail: "More detailed guidance in your private conversation"),
             ServicePrice(service: "Phone Support",
                          price: "$25",
                          detail: "Talk through your question by phone"),

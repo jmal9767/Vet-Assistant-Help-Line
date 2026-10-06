@@ -1,3 +1,5 @@
+> Updated October 5, 2026: new written requests use **private website conversations** answered directly in the app. Email/Text references below apply to historical requests or optional integrations. See [private conversations](PRIVATE_CONVERSATIONS.md) for the current workflow.
+
 # CloudKit connection status
 
 Last verified: 2026-09-20. Website submissions reach CloudKit, the operator account is assigned, and phone notifications have been received.

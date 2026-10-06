@@ -85,7 +85,7 @@ struct InboxView: View {
     }
 
     private var overview: some View {
-        HeroPanel(icon: "stethoscope", title: "Client queue", subtitle: "Read each paid request, reply through the selected service, and archive completed cases.") {
+        HeroPanel(icon: "stethoscope", title: "Client queue", subtitle: "Read each paid request, reply in your app or call for phone support, and archive completed cases.") {
             HStack(spacing: 10) {
                 MetricPill(title: "New", value: "\(store.newQuestions.count)", icon: "bell.fill", tint: AppPalette.warmGold)
                 MetricPill(title: "Answered", value: "\(store.answeredQuestions.count)", icon: "checkmark.circle.fill", tint: AppPalette.clinicGreen)

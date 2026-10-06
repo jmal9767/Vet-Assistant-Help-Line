@@ -13,8 +13,8 @@ struct SettingsView: View {
                 VStack(spacing: 16) {
                     InfoTile {
                         SectionHeader("Contact", subtitle: "These are the only details you may need to change.")
-                        CompactLabel(title: "Reply email", value: HelplineConfig.replyEmail, icon: "envelope.fill")
-                        Text("Add this mailbox to iPhone Mail. Before sending, check that From shows this address and your signature contains no personal contact details.")
+                        CompactLabel(title: "Business support email", value: HelplineConfig.replyEmail, icon: "envelope.fill")
+                        Text("New questions use private conversations: answer with Reply in Care Line. This business mailbox remains available for support and older email requests. Before sending email, check the From address and signature.")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }

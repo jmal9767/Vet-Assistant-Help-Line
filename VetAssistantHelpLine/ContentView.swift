@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct ContentView: View {
+    @Environment(QuestionStore.self) private var store
+    @Environment(\.scenePhase) private var scenePhase
     @State private var selectedTab = 0
 
     var body: some View {
@@ -26,6 +28,13 @@ struct ContentView: View {
                 .tag(4)
         }
         .tint(AppPalette.brand)
+        .task(id: scenePhase) {
+            guard scenePhase == .active else { return }
+            while !Task.isCancelled {
+                if !store.isLoading { await store.refresh() }
+                do { try await Task.sleep(for: .seconds(30)) } catch { break }
+            }
+        }
         .onReceive(NotificationCenter.default.publisher(for: .openQuestionFromPush)) { _ in
             selectedTab = 0
         }

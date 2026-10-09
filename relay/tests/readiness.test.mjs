@@ -473,3 +473,31 @@ test('free private conversations remain free and never offer checkout',async()=>
   assert.equal(r.status,200);assert.equal((await r.json()).checkoutURL,'');
   const thread=await(await careGet(s)).json();assert.equal(thread.paymentStatus,'No payment required');assert.equal(thread.checkoutURL,'');
 });
+
+test('both owner devices connect for Visits and Help Line without replacing the original device', async () => {
+  const s = setup(); s.env.CARELINE_OPERATOR_KEY = '9'.repeat(64);
+  const devices = await Promise.all([0, 1, 2].map(async () => {
+    const keys = await webcrypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'}, true, ['sign','verify']);
+    return {keys, publicKey: Buffer.from(await webcrypto.subtle.exportKey('raw', keys.publicKey)).toString('base64')};
+  }));
+  for (const [prefix, route, purpose] of [['PETASSIST','petassist','PawsVisitsDevice/v1'], ['CARELINE','careline','PawsCareLineDevice/v1']]) {
+    s.env[prefix+'_DEVICE_PUBLIC_KEY'] = devices[0].publicKey;
+    s.env[prefix+'_DEVICE_PUBLIC_KEYS'] = JSON.stringify([devices[1].publicKey]);
+    async function proof(device) {
+      const input = {publicKey:device.publicKey, nonce:webcrypto.randomUUID().replaceAll('-',''), timestamp:String(Math.floor(Date.now()/1000))};
+      input.signature = Buffer.from(await webcrypto.subtle.sign({name:'ECDSA',hash:'SHA-256'}, device.keys.privateKey, new TextEncoder().encode(purpose+'\n'+input.publicKey+'\n'+input.nonce+'\n'+input.timestamp))).toString('base64');
+      return input;
+    }
+    for (const device of devices.slice(0,2)) {
+      const signed = await proof(device);
+      assert.equal((await s.call('/'+route+'/device-connection',signed)).status,200);
+      assert.equal((await s.call('/'+route+'/device-connection',signed)).status,401);
+    }
+    assert.equal((await s.call('/'+route+'/device-connection',await proof(devices[2]))).status,401);
+    s.env[prefix+'_DEVICE_PUBLIC_KEYS'] = 'not-json';
+    assert.equal((await s.call('/'+route+'/device-connection',await proof(devices[1]))).status,401);
+    s.env[prefix+'_DEVICE_PUBLIC_KEYS'] = JSON.stringify([devices[0].publicKey]);
+    assert.equal((await s.call('/'+route+'/device-connection',await proof(devices[1]))).status,401);
+    assert.equal((await s.call('/'+route+'/device-connection',await proof(devices[0]))).status,200);
+  }
+});

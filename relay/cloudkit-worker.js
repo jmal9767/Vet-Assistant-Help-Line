@@ -1163,11 +1163,22 @@ async function handleVisits(request,env,url,cors) {
   return json({error:"Method not allowed"},405,cors);
 }
 
+// Keep the existing device while allowing the owner's iPhone and Mac to coexist.
+function registeredDevice(publicKey, original, additional) {
+  if (typeof publicKey !== "string") return false;
+  let keys = [];
+  if (additional) {
+    try { keys = JSON.parse(additional); } catch { return false; }
+    if (!Array.isArray(keys) || keys.length > 20 || keys.some(key => typeof key !== "string")) return false;
+  }
+  if (typeof original === "string" && original.trim()) keys.push(original.trim());
+  return keys.some(key => key.trim() === publicKey);
+}
 async function ownerDeviceConnection(request, env, cors) {
   const rejected = () => json({error:"This iPhone is not authorized for business access."},401,cors);
-  if (!env.PETASSIST_DEVICE_PUBLIC_KEY || !env.PETASSIST_OPERATOR_KEY) return rejected();
+  if (!env.PETASSIST_OPERATOR_KEY) return rejected();
   const input = await limitedVisitJSON(request);
-  if (!input || typeof input.publicKey !== "string" || !await secretMatches(input.publicKey,env.PETASSIST_DEVICE_PUBLIC_KEY.trim()) || !/^[a-f0-9]{32}$/.test(input.nonce || "") || !/^\d{10}$/.test(input.timestamp || "") || Math.abs(Date.now()-Number(input.timestamp)*1000)>60000) return rejected();
+  if (!input || typeof input.publicKey !== "string" || !registeredDevice(input.publicKey,env.PETASSIST_DEVICE_PUBLIC_KEY,env.PETASSIST_DEVICE_PUBLIC_KEYS) || !/^[a-f0-9]{32}$/.test(input.nonce || "") || !/^\d{10}$/.test(input.timestamp || "") || Math.abs(Date.now()-Number(input.timestamp)*1000)>60000) return rejected();
   try {
     const decode = text => Uint8Array.from(atob(text),char=>char.charCodeAt(0));
     const signature = decode(input.signature || ""); if(signature.length !== 64)return rejected();
@@ -1189,9 +1200,9 @@ async function careIntakeReceipt(recordName,token,access,url,env,cors) {
 }
 async function careDeviceConnection(request,env,cors) {
   const rejected=()=>json({error:"This iPhone is not authorized for Help Line replies."},401,cors);
-  if(!env.CARELINE_DEVICE_PUBLIC_KEY || !env.CARELINE_OPERATOR_KEY)return rejected();
+  if(!env.CARELINE_OPERATOR_KEY)return rejected();
   const input=await limitedVisitJSON(request);
-  if(!input || input.publicKey!==env.CARELINE_DEVICE_PUBLIC_KEY.trim() || !/^[a-f0-9]{32}$/.test(input.nonce||"") || !/^\d{10}$/.test(input.timestamp||"") || Math.abs(Date.now()-Number(input.timestamp)*1000)>60000)return rejected();
+  if(!input || !registeredDevice(input.publicKey,env.CARELINE_DEVICE_PUBLIC_KEY,env.CARELINE_DEVICE_PUBLIC_KEYS) || !/^[a-f0-9]{32}$/.test(input.nonce||"") || !/^\d{10}$/.test(input.timestamp||"") || Math.abs(Date.now()-Number(input.timestamp)*1000)>60000)return rejected();
   try {
     const decode=text=>Uint8Array.from(atob(text),char=>char.charCodeAt(0));
     const signature=decode(input.signature||"");if(signature.length!==64)return rejected();
